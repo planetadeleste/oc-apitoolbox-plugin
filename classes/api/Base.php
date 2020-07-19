@@ -7,7 +7,7 @@ use Exception;
 use JWTAuth;
 use Kharanenka\Helper\Result;
 use Lovata\Buddies\Models\User;
-use PlanetaDelEste\ApiShopaholic\Plugin;
+use PlanetaDelEste\ApiToolbox\Plugin;
 use PlanetaDelEste\ApiToolbox\Traits\Controllers\ApiBaseTrait;
 use Tymon\JWTAuth\Exceptions\JWTException;
 
@@ -162,6 +162,10 @@ class Base
             $success = false;
             $message = static::tr(static::ALERT_RECORD_NOT_CREATED);
 
+            if (!$this->hasPermission($model, 'store')) {
+                throw new JWTException(static::ALERT_PERMISSIONS_DENIED, 403);
+            }
+
             if ($this->save($model, $this->data)) {
                 $success = true;
                 $message = static::tr(static::ALERT_RECORD_CREATED);
@@ -192,6 +196,10 @@ class Base
                 throw new JWTException(static::ALERT_RECORD_NOT_FOUND, 403);
             }
 
+            if (!$this->hasPermission($model, 'update')) {
+                throw new JWTException(static::ALERT_PERMISSIONS_DENIED, 403);
+            }
+
             if ($this->save($model, $this->data)) {
                 Result::setTrue();
                 $message = static::tr(static::ALERT_RECORD_UPDATED);
@@ -215,6 +223,9 @@ class Base
     {
         try {
             throw new Exception('Comming soon');
+//            if (!$this->hasPermission($model, 'destroy')) {
+//                throw new JWTException(static::ALERT_PERMISSIONS_DENIED, 403);
+//            }
         } catch (Exception $e) {
             return response()->json(['error' => $e->getMessage()], 403);
         }
@@ -230,6 +241,17 @@ class Base
     {
         $model->fill($data);
         return $model->save();
+    }
+
+    /**
+     * @param \Model $obModel
+     * @param string $action
+     *
+     * @return bool
+     */
+    protected function hasPermission($obModel, $action)
+    {
+        return true;
     }
 
     /**

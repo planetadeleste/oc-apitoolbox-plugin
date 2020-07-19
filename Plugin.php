@@ -20,6 +20,7 @@ class Plugin extends PluginBase
     const EVENT_API_EXTEND_STORE = 'planetadeleste.apiToolbox.apiExtendStore';
     const EVENT_API_EXTEND_UPDATE = 'planetadeleste.apiToolbox.apiExtendUpdate';
     const EVENT_API_EXTEND_DESTROY = 'planetadeleste.apiToolbox.apiExtendDestroy';
+    const EVENT_API_PERMISSIONS = 'planetadeleste.apiToolbox.apiPermissions';
     const EVENT_API_ADD_COLLECTION = 'planetadeleste.apiToolbox.apiAddCollection';
 
     public $require = ['Lovata.Toolbox', 'Lovata.Buddies'];
