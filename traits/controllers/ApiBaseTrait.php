@@ -14,7 +14,7 @@ trait ApiBaseTrait
     /**
      * @var \Model
      */
-    protected $model;
+    protected $obModel;
 
     /**
      * @var string

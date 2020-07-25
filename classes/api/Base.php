@@ -9,6 +9,7 @@ use Kharanenka\Helper\Result;
 use Lovata\Buddies\Models\User;
 use PlanetaDelEste\ApiToolbox\Plugin;
 use PlanetaDelEste\ApiToolbox\Traits\Controllers\ApiBaseTrait;
+use System\Classes\PluginManager;
 use Tymon\JWTAuth\Exceptions\JWTException;
 
 /**
@@ -129,6 +130,7 @@ class Base
                 throw new Exception(static::ALERT_RECORD_NOT_FOUND, 403);
             }
 
+            /** @var \Lovata\Toolbox\Classes\Collection\ElementCollection $sItemClass */
             $sItemClass = $this->collection::ITEM_CLASS;
             $this->item = $sItemClass::make($iModelId);
 
@@ -145,7 +147,8 @@ class Base
                 ? app($this->getShowResource(), [$this->item])
                 : $this->item;
         } catch (Exception $e) {
-            return response()->json(['error' => $e->getMessage()], 403);
+            Result::setFalse()->setMessage($e->getMessage());
+            return response()->json(Result::get(), 403);
         }
     }
 
@@ -157,23 +160,24 @@ class Base
         try {
             $this->currentUser();
 
-            $model = app($this->getModelClass());
+            $this->obModel = app($this->getModelClass());
             $this->exists = false;
-            $success = false;
             $message = static::tr(static::ALERT_RECORD_NOT_CREATED);
 
-            if (!$this->hasPermission($model, 'store')) {
+            if (!$this->hasPermission($this->obModel, 'store')) {
                 throw new JWTException(static::ALERT_PERMISSIONS_DENIED, 403);
             }
 
-            if ($this->save($model, $this->data)) {
-                $success = true;
+            if ($this->save()) {
                 $message = static::tr(static::ALERT_RECORD_CREATED);
             }
 
-            return Result::setData(compact('success', 'message', 'model'))->getJSON();
+            return Result::setData($this->obModel)
+                ->setMessage($message)
+                ->getJSON();
         } catch (Exception $e) {
-            return response()->json(['error' => $e->getMessage()], 403);
+            Result::setFalse()->setMessage($e->getMessage());
+            return response()->json(Result::get(), 403);
         }
     }
 
@@ -188,24 +192,24 @@ class Base
             $this->currentUser();
 
             /** @var \Model $model */
-            $model = app($this->getModelClass())->where($this->primaryKey, $id)->firstOrFail();
+            $this->obModel = app($this->getModelClass())->where($this->primaryKey, $id)->firstOrFail();
             $this->exists = true;
             $message = static::tr(static::ALERT_RECORD_NOT_UPDATED);
             Result::setFalse();
-            if (!$model) {
+            if (!$this->obModel) {
                 throw new JWTException(static::ALERT_RECORD_NOT_FOUND, 403);
             }
 
-            if (!$this->hasPermission($model, 'update')) {
+            if (!$this->hasPermission($this->obModel, 'update')) {
                 throw new JWTException(static::ALERT_PERMISSIONS_DENIED, 403);
             }
 
-            if ($this->save($model, $this->data)) {
+            if ($this->save()) {
                 Result::setTrue();
                 $message = static::tr(static::ALERT_RECORD_UPDATED);
             }
 
-            return Result::setData($model)
+            return Result::setData($this->obModel)
                 ->setMessage($message)
                 ->getJSON();
         } catch (Exception $e) {
@@ -232,15 +236,12 @@ class Base
     }
 
     /**
-     * @param \Model $model
-     * @param array  $data
-     *
-     * @return mixed
+     * @return bool
      */
-    protected function save($model, $data)
+    protected function save()
     {
-        $model->fill($data);
-        return $model->save();
+        $this->obModel->fill($this->data);
+        return $this->obModel->save();
     }
 
     /**
@@ -399,17 +400,16 @@ class Base
     }
 
     /**
-     * @param string    $sName
-     *
-     * @param CmsObject $cmsObject
-     * @param array     $properties
-     * @param bool      $isSoftComponent
+     * @param string         $sName
+     * @param CmsObject|null $cmsObject
+     * @param array          $properties
+     * @param bool           $isSoftComponent
      *
      * @return \Cms\Classes\ComponentBase
      * @throws \SystemException
      * @throws \Exception
      */
-    protected function component($sName, $cmsObject = null, $properties = [], $isSoftComponent = false)
+    public function component($sName, $cmsObject = null, $properties = [], $isSoftComponent = false)
     {
         if (array_key_exists($sName, static::$components)) {
             return static::$components[$sName];
@@ -417,10 +417,20 @@ class Base
 
         $component = ComponentManager::instance()->makeComponent($sName, $cmsObject, $properties, $isSoftComponent);
         if (!$component) {
-            throw new \Exception('component not found');
+            throw new Exception('component not found');
         }
 
         static::$components[$sName] = $component;
         return $component;
+    }
+
+    /**
+     * @param string $sNamespace
+     *
+     * @return bool
+     */
+    public function hasPlugin($sNamespace)
+    {
+        return PluginManager::instance()->hasPlugin($sNamespace);
     }
 }
