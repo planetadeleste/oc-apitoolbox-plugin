@@ -9,6 +9,7 @@ use Kharanenka\Helper\Result;
 use Lovata\Buddies\Models\User;
 use PlanetaDelEste\ApiToolbox\Plugin;
 use PlanetaDelEste\ApiToolbox\Traits\Controllers\ApiBaseTrait;
+use PlanetaDelEste\ApiToolbox\Traits\Controllers\ApiCastTrait;
 use System\Classes\PluginManager;
 use Tymon\JWTAuth\Exceptions\JWTException;
 
@@ -26,6 +27,7 @@ use Tymon\JWTAuth\Exceptions\JWTException;
 class Base
 {
     use ApiBaseTrait;
+    use ApiCastTrait;
 
     const ALERT_TOKEN_NOT_FOUND = 'token_not_found';
     const ALERT_USER_NOT_FOUND = 'user_not_found';
@@ -54,6 +56,7 @@ class Base
     public function __construct()
     {
         $this->data = input();
+        $this->setCastData($this->data);
         $this->setResources();
         $this->collection = $this->makeCollection();
         $this->collection = $this->applyFilters();
@@ -241,7 +244,36 @@ class Base
     protected function save()
     {
         $this->obModel->fill($this->data);
+        $this->saveImages();
         return $this->obModel->save();
+    }
+
+    protected function saveImages()
+    {
+        if (request()->hasFile('preview_image') && $this->obModel->hasRelation('preview_image')) {
+            $obFile = request()->file('preview_image');
+            if ($obFile->isValid()) {
+                if ($this->obModel->preview_image) {
+                    $this->obModel->preview_image->delete();
+                }
+
+                $this->obModel->preview_image = $obFile;
+            }
+        }
+
+        if (request()->hasFile('images') && $this->obModel->hasRelation('images')) {
+            $arFiles = request()->file('images');
+            if (!empty($arFiles)) {
+                if ($this->obModel->images->count()) {
+                    $this->obModel->images->each(
+                        function ($obImage) {
+                            $obImage->delete();
+                        }
+                    );
+                }
+                $this->obModel->images = $arFiles;
+            }
+        }
     }
 
     /**

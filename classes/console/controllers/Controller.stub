@@ -1,7 +1,7 @@
 <?php namespace {{ studly_author }}\{{ studly_plugin }}\Controllers\Api;
 
 use PlanetaDelEste\ApiToolbox\Classes\Api\Base;
-use {{ studly_author }}\{{ studly_plugin }}\Models\{{ studly_model }}
+use {{ studly_author }}\{{ studly_plugin }}\Models\{{ studly_model }};
 
 /**
  * Class {{ studly_name }}
