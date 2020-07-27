@@ -1,6 +1,7 @@
 <?php namespace PlanetaDelEste\ApiToolbox\Traits\Controllers;
 
 use Event;
+use Kharanenka\Helper\Result;
 use PlanetaDelEste\ApiToolbox\Plugin;
 use System\Classes\PluginManager;
 
@@ -145,6 +146,18 @@ trait ApiBaseTrait
         }
 
         return \RainLab\Translate\Models\Message::trans($message, $options);
+    }
+
+    /**
+     * @param \Exception $obException
+     * @param int        $iStatus
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public static function exceptionResult($obException, $iStatus = 403)
+    {
+        Result::setFalse()->setMessage($obException->getMessage());
+        return response()->json(Result::get(), $iStatus);
     }
 
     protected function setResources()

@@ -39,6 +39,7 @@ class Base
     const ALERT_RECORDS_UPDATED = 'records_updated';
     const ALERT_RECORD_CREATED = 'record_created';
     const ALERT_RECORD_DELETED = 'record_deleted';
+    const ALERT_RECORD_NOT_DELETED = 'record_not_deleted';
     const ALERT_RECORD_NOT_UPDATED = 'record_not_updated';
     const ALERT_RECORD_NOT_CREATED = 'record_not_created';
 
@@ -76,15 +77,14 @@ class Base
             /**
              * Extend collection results
              */
-            Event::fire(Plugin::EVENT_API_EXTEND_INDEX, [$this, &$this->collection], true);
+            Event::fire(Plugin::EVENT_API_EXTEND_INDEX, [$this, &$this->collection]);
 
             $obModelCollection = $this->collection->paginate($this->itemsPerPage);
             return $this->getIndexResource()
                 ? app($this->getIndexResource(), [$obModelCollection])
                 : $obModelCollection;
         } catch (Exception $e) {
-            trace_log($e);
-            return response()->json(['error' => $e->getMessage()], 403);
+            return static::exceptionResult($e);
         }
     }
 
@@ -101,15 +101,14 @@ class Base
             /**
              * Extend collection results
              */
-            Event::fire(Plugin::EVENT_API_EXTEND_LIST, [$this, &$this->collection], true);
+            Event::fire(Plugin::EVENT_API_EXTEND_LIST, [$this, &$this->collection]);
 
             $arListItems = $this->collection->values();
             return $this->getListResource()
                 ? app($this->getListResource(), [collect($arListItems)])
                 : $arListItems;
         } catch (Exception $e) {
-            trace_log($e);
-            return response()->json(['error' => $e->getMessage()], 403);
+            return static::exceptionResult($e);
         }
     }
 
@@ -144,14 +143,13 @@ class Base
             /**
              * Extend collection results
              */
-            Event::fire(Plugin::EVENT_API_EXTEND_SHOW, [$this, $this->item], true);
+            Event::fire(Plugin::EVENT_API_EXTEND_SHOW, [$this, $this->item]);
 
             return $this->getShowResource()
                 ? app($this->getShowResource(), [$this->item])
                 : $this->item;
         } catch (Exception $e) {
-            Result::setFalse()->setMessage($e->getMessage());
-            return response()->json(Result::get(), 403);
+            return static::exceptionResult($e);
         }
     }
 
@@ -167,7 +165,7 @@ class Base
             $this->exists = false;
             $message = static::tr(static::ALERT_RECORD_NOT_CREATED);
 
-            if (!$this->hasPermission($this->obModel, 'store')) {
+            if (!$this->hasPermission('store')) {
                 throw new JWTException(static::ALERT_PERMISSIONS_DENIED, 403);
             }
 
@@ -179,8 +177,7 @@ class Base
                 ->setMessage($message)
                 ->getJSON();
         } catch (Exception $e) {
-            Result::setFalse()->setMessage($e->getMessage());
-            return response()->json(Result::get(), 403);
+            return static::exceptionResult($e);
         }
     }
 
@@ -193,17 +190,16 @@ class Base
     {
         try {
             $this->currentUser();
-
-            /** @var \Model $model */
             $this->obModel = app($this->getModelClass())->where($this->primaryKey, $id)->firstOrFail();
             $this->exists = true;
             $message = static::tr(static::ALERT_RECORD_NOT_UPDATED);
             Result::setFalse();
+
             if (!$this->obModel) {
                 throw new JWTException(static::ALERT_RECORD_NOT_FOUND, 403);
             }
 
-            if (!$this->hasPermission($this->obModel, 'update')) {
+            if (!$this->hasPermission('update')) {
                 throw new JWTException(static::ALERT_PERMISSIONS_DENIED, 403);
             }
 
@@ -216,25 +212,40 @@ class Base
                 ->setMessage($message)
                 ->getJSON();
         } catch (Exception $e) {
-            Result::setFalse()->setMessage($e->getMessage());
-            return response()->json(Result::get(), 403);
+            return static::exceptionResult($e);
         }
     }
 
     /**
      * @param int $id
      *
-     * @return \Illuminate\Http\JsonResponse
+     * @return \Illuminate\Http\JsonResponse|string
      */
     public function destroy($id)
     {
         try {
-            throw new Exception('Comming soon');
-//            if (!$this->hasPermission($model, 'destroy')) {
-//                throw new JWTException(static::ALERT_PERMISSIONS_DENIED, 403);
-//            }
+            $this->currentUser();
+            $this->obModel = app($this->getModelClass())->where($this->primaryKey, $id)->firstOrFail();
+
+            if (!$this->obModel) {
+                throw new JWTException(static::ALERT_RECORD_NOT_FOUND, 403);
+            }
+
+            if (!$this->hasPermission('destroy')) {
+                throw new JWTException(static::ALERT_PERMISSIONS_DENIED, 403);
+            }
+
+            if ($this->obModel->delete()) {
+                Result::setTrue()
+                    ->setMessage(static::tr(static::ALERT_RECORD_DELETED));
+            } else {
+                Result::setFalse()
+                    ->setMessage(static::tr(static::ALERT_RECORD_NOT_DELETED));
+            }
+
+            return Result::getJSON();
         } catch (Exception $e) {
-            return response()->json(['error' => $e->getMessage()], 403);
+            return static::exceptionResult($e);
         }
     }
 
@@ -277,12 +288,11 @@ class Base
     }
 
     /**
-     * @param \Model $obModel
      * @param string $action
      *
      * @return bool
      */
-    protected function hasPermission($obModel, $action)
+    protected function hasPermission($action)
     {
         return true;
     }
@@ -303,8 +313,7 @@ class Base
 
             return response()->json(Result::get());
         } catch (Exception $e) {
-            Result::setFalse()->setMessage($e->getMessage());
-            return response()->json(Result::get(), 403);
+            return static::exceptionResult($e);
         }
     }
 
