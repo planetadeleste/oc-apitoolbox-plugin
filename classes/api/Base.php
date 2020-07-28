@@ -433,7 +433,7 @@ class Base
             }
         }
 
-        if ($this->collection->methodExists('sort') && $arSort['column'] !== 'no') {
+        if ($obCollection->methodExists('sort') && $arSort['column'] !== 'no') {
             $obCollection = $obCollection->sort($arSort['column'].'|'.$arSort['direction']);
         }
 
