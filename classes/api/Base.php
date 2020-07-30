@@ -10,6 +10,7 @@ use Lovata\Buddies\Models\User;
 use PlanetaDelEste\ApiToolbox\Plugin;
 use PlanetaDelEste\ApiToolbox\Traits\Controllers\ApiBaseTrait;
 use PlanetaDelEste\ApiToolbox\Traits\Controllers\ApiCastTrait;
+use PlanetaDelEste\ApiToolbox\Traits\Controllers\ApiValidationTrait;
 use System\Classes\PluginManager;
 use Tymon\JWTAuth\Exceptions\JWTException;
 
@@ -28,6 +29,7 @@ class Base
 {
     use ApiBaseTrait;
     use ApiCastTrait;
+    use ApiValidationTrait;
 
     const ALERT_TOKEN_NOT_FOUND = 'token_not_found';
     const ALERT_USER_NOT_FOUND = 'user_not_found';
@@ -54,6 +56,11 @@ class Base
     /** @var int Items per page in pagination */
     public $itemsPerPage = 10;
 
+    protected $arFileList = [
+        'attachOne'  => ['preview_image'],
+        'attachMany' => ['images']
+    ];
+
     public function __construct()
     {
         $this->data = input();
@@ -61,7 +68,6 @@ class Base
         $this->setResources();
         $this->collection = $this->makeCollection();
         $this->collection = $this->applyFilters();
-
     }
 
     /**
@@ -169,6 +175,8 @@ class Base
                 throw new JWTException(static::ALERT_PERMISSIONS_DENIED, 403);
             }
 
+            $this->validate();
+
             if ($this->save()) {
                 $message = static::tr(static::ALERT_RECORD_CREATED);
             }
@@ -202,6 +210,8 @@ class Base
             if (!$this->hasPermission('update')) {
                 throw new JWTException(static::ALERT_PERMISSIONS_DENIED, 403);
             }
+
+            $this->validate();
 
             if ($this->save()) {
                 Result::setTrue();
@@ -255,34 +265,93 @@ class Base
     protected function save()
     {
         $this->obModel->fill($this->data);
-        $this->saveImages();
+        $this->attachFiles();
         return $this->obModel->save();
     }
 
-    protected function saveImages()
+    /**
+     * Attach files related to model
+     */
+    protected function attachFiles()
     {
-        if (request()->hasFile('preview_image') && $this->obModel->hasRelation('preview_image')) {
-            $obFile = request()->file('preview_image');
-            if ($obFile->isValid()) {
-                if ($this->obModel->preview_image) {
-                    $this->obModel->preview_image->delete();
-                }
-
-                $this->obModel->preview_image = $obFile;
+        $arAttachOneAttrList = array_get($this->arFileList, 'attachOne');
+        if (!empty($arAttachOneAttrList)) {
+            foreach ($arAttachOneAttrList as $sAttachOneKey) {
+                $this->attachOne($sAttachOneKey);
             }
         }
 
-        if (request()->hasFile('images') && $this->obModel->hasRelation('images')) {
-            $arFiles = request()->file('images');
+        $arAttachManyAttrList = array_get($this->arFileList, 'attachMany');
+        if (!empty($arAttachManyAttrList)) {
+            foreach ($arAttachManyAttrList as $sAttachManyKey) {
+                $this->attachMany($sAttachManyKey);
+            }
+        }
+    }
+
+    /**
+     * Attach one file to model, using $arFileList array
+     *
+     * @param string      $sAttachKey
+     * @param null|\Model $obModel
+     * @param bool        $save
+     */
+    protected function attachOne($sAttachKey, $obModel = null, $save = false)
+    {
+        if (!$obModel) {
+            if (!$this->obModel) {
+                return;
+            }
+            $obModel = $this->obModel;
+        }
+
+        if (request()->hasFile($sAttachKey) && $obModel->hasRelation($sAttachKey)) {
+            $obFile = request()->file($sAttachKey);
+            if ($obFile->isValid()) {
+                if ($obModel->{$sAttachKey}) {
+                    $obModel->{$sAttachKey}->delete();
+                }
+
+                $obModel->{$sAttachKey} = $obFile;
+                if ($save) {
+                    $obModel->save();
+                }
+            }
+        }
+    }
+
+    /**
+     * Attach many files to model, using $arFileList array
+     *
+     * @param string      $sAttachKey
+     * @param null|\Model $obModel
+     * @param bool        $save
+     */
+    protected function attachMany($sAttachKey, $obModel = null, $save = false)
+    {
+        if (!$obModel) {
+            if (!$this->obModel) {
+                return;
+            }
+
+            $obModel = $this->obModel;
+        }
+
+        if (request()->hasFile($sAttachKey) && $obModel->hasRelation($sAttachKey)) {
+            $arFiles = request()->file($sAttachKey);
             if (!empty($arFiles)) {
-                if ($this->obModel->images->count()) {
-                    $this->obModel->images->each(
+                if ($obModel->{$sAttachKey}->count()) {
+                    $obModel->{$sAttachKey}->each(
                         function ($obImage) {
                             $obImage->delete();
                         }
                     );
                 }
-                $this->obModel->images = $arFiles;
+
+                $obModel->{$sAttachKey} = $arFiles;
+                if ($save) {
+                    $obModel->save();
+                }
             }
         }
     }
