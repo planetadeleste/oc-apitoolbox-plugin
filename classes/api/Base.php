@@ -7,11 +7,14 @@ use Exception;
 use JWTAuth;
 use Kharanenka\Helper\Result;
 use Lovata\Buddies\Models\User;
+use October\Rain\Extension\Extendable;
+use October\Rain\Extension\ExtendableTrait;
 use PlanetaDelEste\ApiToolbox\Plugin;
 use PlanetaDelEste\ApiToolbox\Traits\Controllers\ApiBaseTrait;
 use PlanetaDelEste\ApiToolbox\Traits\Controllers\ApiCastTrait;
 use PlanetaDelEste\ApiToolbox\Traits\Controllers\ApiValidationTrait;
 use System\Classes\PluginManager;
+use System\Models\File;
 use Tymon\JWTAuth\Exceptions\JWTException;
 
 /**
@@ -25,7 +28,7 @@ use Tymon\JWTAuth\Exceptions\JWTException;
  *
  * @package PlanetaDelEste\ApiToolbox\Classes\Api
  */
-class Base
+class Base extends Extendable
 {
     use ApiBaseTrait;
     use ApiCastTrait;
@@ -63,6 +66,8 @@ class Base
 
     public function __construct()
     {
+        parent::__construct();
+
         $this->data = input();
         $this->setCastData($this->data);
         $this->setResources();
@@ -76,7 +81,7 @@ class Base
     public function index()
     {
         try {
-            if (method_exists($this, 'extendIndex')) {
+            if ($this->methodExists('extendIndex')) {
                 $this->extendIndex();
             }
 
@@ -100,7 +105,7 @@ class Base
     public function list()
     {
         try {
-            if (method_exists($this, 'extendList')) {
+            if ($this->methodExists('extendList')) {
                 $this->extendList();
             }
 
@@ -142,7 +147,7 @@ class Base
             $sItemClass = $this->collection::ITEM_CLASS;
             $this->item = $sItemClass::make($iModelId);
 
-            if (method_exists($this, 'extendShow')) {
+            if ($this->methodExists('extendShow')) {
                 $this->extendShow();
             }
 
@@ -276,6 +281,7 @@ class Base
     {
         $arAttachOneAttrList = array_get($this->arFileList, 'attachOne');
         if (!empty($arAttachOneAttrList)) {
+            $arAttachOneAttrList = array_wrap($arAttachOneAttrList);
             foreach ($arAttachOneAttrList as $sAttachOneKey) {
                 $this->attachOne($sAttachOneKey);
             }
@@ -283,6 +289,7 @@ class Base
 
         $arAttachManyAttrList = array_get($this->arFileList, 'attachMany');
         if (!empty($arAttachManyAttrList)) {
+            $arAttachManyAttrList = array_wrap($arAttachManyAttrList);
             foreach ($arAttachManyAttrList as $sAttachManyKey) {
                 $this->attachMany($sAttachManyKey);
             }
@@ -308,7 +315,7 @@ class Base
         if (request()->hasFile($sAttachKey) && $obModel->hasRelation($sAttachKey)) {
             $obFile = request()->file($sAttachKey);
             if ($obFile->isValid()) {
-                if ($obModel->{$sAttachKey}) {
+                if ($obModel->{$sAttachKey} instanceof File) {
                     $obModel->{$sAttachKey}->delete();
                 }
 
@@ -462,7 +469,7 @@ class Base
             }
         }
 
-        if (method_exists($this, 'extendFilters')) {
+        if ($this->methodExists('extendFilters')) {
             $this->extendFilters($filters);
         }
 
@@ -502,7 +509,7 @@ class Base
             }
         }
 
-        if ($obCollection->methodExists('sort') && $arSort['column'] !== 'no') {
+        if ($obCollection->methodExists('sort') && $arSort['column']) {
             $obCollection = $obCollection->sort($arSort['column'].'|'.$arSort['direction']);
         }
 
