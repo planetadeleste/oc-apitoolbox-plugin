@@ -24,6 +24,8 @@ class ItemResource extends Base
 {% endif %}
 {% if images %}            'images' => IndexCollectionImages::make(collect($this->images)),
 {% endif %}
+{% if active %}            'active' => (boolean)$this->active,
+{% endif %}
         ];
     }
 

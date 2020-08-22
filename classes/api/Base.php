@@ -490,7 +490,6 @@ class Base extends Extendable
         $arSort = array_get($data, 'sort');
         $obCollection = $this->collection;
 
-
         if (!empty($arFilters)) {
             if ($obCollection->methodExists('filter')) {
                 $obCollection = $obCollection->filter($arFilters);

@@ -205,7 +205,7 @@ trait ApiBaseTrait
         }
 
         if ($sCollectionClass = array_get($arCollectionClasses, $this->getModelClass())) {
-            return forward_static_call([$sCollectionClass, 'make']);
+            return app($sCollectionClass);
         }
 
         return null;

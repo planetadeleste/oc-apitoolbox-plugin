@@ -43,18 +43,23 @@ class CreateResource extends GeneratorCommand
     public function handle()
     {
         $this->vars = $this->processVars($this->prepareVars());
-        $this->vars['images'] = $bImages = !!$this->option('add-images');
-        $this->vars['preview_image'] = $bPreviewImage = !!$this->option('add-preview-image');
-        if ($bImages) {
+        $this->vars['images'] = $bImages = !!$this->option('add-images') || in_array('images', $this->arColumns);
+        $this->vars['preview_image'] = $bPreviewImage = !!$this->option('add-preview-image') || in_array(
+            'preview_image',
+            $this->arColumns
+        );
+        $this->vars['active'] = in_array('active', $this->arColumns);
+
+        if ($bImages && !in_array('images', $this->arColumns)) {
             $this->arColumns[] = 'images';
         }
-        if ($bPreviewImage) {
+
+        if ($bPreviewImage && !in_array('preview_image', $this->arColumns)) {
             $this->arColumns[] = 'preview_image';
         }
+
         $this->vars['attributes'] = $this->arColumns;
-
         $this->makeStubs();
-
         $this->info($this->type.' created successfully.');
     }
 
@@ -82,7 +87,10 @@ class CreateResource extends GeneratorCommand
         /** @var \Model $obModel */
         $obModel = app(join("\\", [$sExpansionAuthor, $sExpansionPlugin, 'Models', $sModel]));
         if ($obModel) {
-            $this->arColumns = $obModel->getConnection()->getSchemaBuilder()->getColumnListing($obModel->getTable());
+            $this->arColumns = property_exists($obModel, 'cached')
+                ? $obModel->cached
+                : $obModel->getConnection()->getSchemaBuilder()->getColumnListing($obModel->getTable());
+            ;
         }
 
         return [
