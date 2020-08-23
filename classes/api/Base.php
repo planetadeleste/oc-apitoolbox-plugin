@@ -4,6 +4,7 @@ use Cms\Classes\CmsObject;
 use Cms\Classes\ComponentManager;
 use Event;
 use Exception;
+use Illuminate\Http\UploadedFile;
 use JWTAuth;
 use Kharanenka\Helper\Result;
 use Lovata\Buddies\Models\User;
@@ -303,7 +304,7 @@ class Base extends Extendable
      * @param null|\Model $obModel
      * @param bool        $save
      */
-    protected function attachOne($sAttachKey, $obModel = null, $save = false)
+    protected function attachOne(string $sAttachKey, $obModel = null, $save = false)
     {
         if (!$obModel) {
             if (!$this->obModel) {
@@ -312,17 +313,24 @@ class Base extends Extendable
             $obModel = $this->obModel;
         }
 
-        if (request()->hasFile($sAttachKey) && $obModel->hasRelation($sAttachKey)) {
-            $obFile = request()->file($sAttachKey);
-            if ($obFile->isValid()) {
+        if ($obModel->hasRelation($sAttachKey)) {
+            if (request()->hasFile($sAttachKey)) {
+                $obFile = request()->file($sAttachKey);
+                if ($obFile->isValid()) {
+                    if ($obModel->{$sAttachKey} instanceof File) {
+                        $obModel->{$sAttachKey}->delete();
+                    }
+
+                    $this->attachFile($obModel, $obFile, $sAttachKey);
+                }
+            } elseif (!array_get($this->data, $sAttachKey)) {
                 if ($obModel->{$sAttachKey} instanceof File) {
                     $obModel->{$sAttachKey}->delete();
                 }
+            }
 
-                $obModel->{$sAttachKey} = $obFile;
-                if ($save) {
-                    $obModel->save();
-                }
+            if ($save) {
+                $obModel->save();
             }
         }
     }
@@ -334,7 +342,7 @@ class Base extends Extendable
      * @param null|\Model $obModel
      * @param bool        $save
      */
-    protected function attachMany($sAttachKey, $obModel = null, $save = false)
+    protected function attachMany(string $sAttachKey, $obModel = null, $save = false)
     {
         if (!$obModel) {
             if (!$this->obModel) {
@@ -344,9 +352,23 @@ class Base extends Extendable
             $obModel = $this->obModel;
         }
 
-        if (request()->hasFile($sAttachKey) && $obModel->hasRelation($sAttachKey)) {
-            $arFiles = request()->file($sAttachKey);
-            if (!empty($arFiles)) {
+        if ($obModel->hasRelation($sAttachKey)) {
+            if (request()->hasFile($sAttachKey)) {
+                $arFiles = request()->file($sAttachKey);
+                if (!empty($arFiles)) {
+                    if ($obModel->{$sAttachKey}->count()) {
+                        $obModel->{$sAttachKey}->each(
+                            function ($obImage) {
+                                $obImage->delete();
+                            }
+                        );
+                    }
+
+                    foreach ($arFiles as $obFile) {
+                        $this->attachFile($obModel, $obFile, $sAttachKey);
+                    }
+                }
+            } elseif (!array_get($this->data, $sAttachKey)) {
                 if ($obModel->{$sAttachKey}->count()) {
                     $obModel->{$sAttachKey}->each(
                         function ($obImage) {
@@ -354,13 +376,27 @@ class Base extends Extendable
                         }
                     );
                 }
+            }
 
-                $obModel->{$sAttachKey} = $arFiles;
-                if ($save) {
-                    $obModel->save();
-                }
+            if ($save) {
+                $obModel->save();
             }
         }
+    }
+
+    /**
+     * @param \Model       $obModel
+     * @param UploadedFile $obFile
+     * @param string       $sAttachKey
+     */
+    protected function attachFile(\Model $obModel, UploadedFile $obFile, string $sAttachKey)
+    {
+        $obSystemFile = new File;
+        $obSystemFile->data = $obFile;
+        $obSystemFile->is_public = true;
+        $obSystemFile->save();
+
+        $obModel->{$sAttachKey}()->add($obSystemFile);
     }
 
     /**
