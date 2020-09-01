@@ -314,6 +314,8 @@ class Base extends Extendable
         }
 
         if ($obModel->hasRelation($sAttachKey)) {
+            $obModel->load($sAttachKey);
+
             if (request()->hasFile($sAttachKey)) {
                 $obFile = request()->file($sAttachKey);
                 if ($obFile->isValid()) {
@@ -353,6 +355,8 @@ class Base extends Extendable
         }
 
         if ($obModel->hasRelation($sAttachKey)) {
+            $obModel->load($sAttachKey);
+
             if (request()->hasFile($sAttachKey)) {
                 $arFiles = request()->file($sAttachKey);
                 if (!empty($arFiles)) {
