@@ -271,8 +271,18 @@ class Base extends Extendable
     protected function save()
     {
         $this->obModel->fill($this->data);
+        return $this->saveAndAttach();
+    }
+
+    /**
+     * @return bool
+     */
+    protected function saveAndAttach()
+    {
+        $bResponse = $this->obModel->save();
         $this->attachFiles();
-        return $this->obModel->save();
+
+        return $bResponse;
     }
 
     /**
@@ -280,9 +290,11 @@ class Base extends Extendable
      */
     protected function attachFiles()
     {
+        $bSaveModel = false;
         $arAttachOneAttrList = array_get($this->arFileList, 'attachOne');
         if (!empty($arAttachOneAttrList)) {
             $arAttachOneAttrList = array_wrap($arAttachOneAttrList);
+            $bSaveModel = true;
             foreach ($arAttachOneAttrList as $sAttachOneKey) {
                 $this->attachOne($sAttachOneKey);
             }
@@ -291,9 +303,14 @@ class Base extends Extendable
         $arAttachManyAttrList = array_get($this->arFileList, 'attachMany');
         if (!empty($arAttachManyAttrList)) {
             $arAttachManyAttrList = array_wrap($arAttachManyAttrList);
+            $bSaveModel = true;
             foreach ($arAttachManyAttrList as $sAttachManyKey) {
                 $this->attachMany($sAttachManyKey);
             }
+        }
+
+        if ($bSaveModel) {
+            $this->obModel->save();
         }
     }
 
