@@ -8,6 +8,7 @@ use Illuminate\Http\UploadedFile;
 use JWTAuth;
 use Kharanenka\Helper\Result;
 use Lovata\Buddies\Models\User;
+use Lovata\Toolbox\Classes\Collection\ElementCollection;
 use October\Rain\Extension\Extendable;
 use October\Rain\Extension\ExtendableTrait;
 use PlanetaDelEste\ApiToolbox\Plugin;
@@ -138,7 +139,7 @@ class Base extends Extendable
             Event::fire(Plugin::EVENT_API_BEFORE_SHOW_COLLECT, [$this, $value]);
 
             /** @var int|null $iModelId */
-            $iModelId = app($this->getModelClass())->where($this->primaryKey, $value)->value('id');
+            $iModelId = app($this->getModelClass())->where($this->getPrimaryKey(), $value)->value('id');
 
             if (!$iModelId) {
                 throw new Exception(static::ALERT_RECORD_NOT_FOUND, 403);
@@ -204,7 +205,7 @@ class Base extends Extendable
     {
         try {
             $this->currentUser();
-            $this->obModel = app($this->getModelClass())->where($this->primaryKey, $id)->firstOrFail();
+            $this->obModel = app($this->getModelClass())->where($this->getPrimaryKey(), $id)->firstOrFail();
             $this->exists = true;
             $message = static::tr(static::ALERT_RECORD_NOT_UPDATED);
             Result::setFalse();
@@ -241,7 +242,7 @@ class Base extends Extendable
     {
         try {
             $this->currentUser();
-            $this->obModel = app($this->getModelClass())->where($this->primaryKey, $id)->firstOrFail();
+            $this->obModel = app($this->getModelClass())->where($this->getPrimaryKey(), $id)->firstOrFail();
 
             if (!$this->obModel) {
                 throw new JWTException(static::ALERT_RECORD_NOT_FOUND, 403);
@@ -499,11 +500,11 @@ class Base extends Extendable
      *      'filters' => []
      *   ]
      */
-    protected function filters()
+    protected function filters(): array
     {
         $sortDefault = [
-            'column'    => $this->sortColumn,
-            'direction' => $this->sortDirection
+            'column'    => $this->getSortColumn(),
+            'direction' => $this->getSortDirection()
         ];
         $sort = get('sort', []);
         if (is_string($sort)) {
@@ -534,9 +535,9 @@ class Base extends Extendable
     }
 
     /**
-     * @return \Lovata\Toolbox\Classes\Collection\ElementCollection|mixed|null
+     * @return ElementCollection|mixed|null
      */
-    protected function applyFilters()
+    protected function applyFilters(): ?ElementCollection
     {
         if (!$this->collection) {
             return $this->collection;
@@ -566,7 +567,11 @@ class Base extends Extendable
         }
 
         if ($obCollection->methodExists('sort') && $arSort['column']) {
-            $obCollection = $obCollection->sort($arSort['column'].'|'.$arSort['direction']);
+            $sSort = $arSort['column'];
+            if ($sSort != 'no') {
+                $sSort .= '|'.$arSort['direction'];
+            }
+            $obCollection = $obCollection->sort($sSort);
         }
 
         return $obCollection;

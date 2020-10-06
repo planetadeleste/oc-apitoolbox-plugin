@@ -5,6 +5,15 @@ use Kharanenka\Helper\Result;
 use PlanetaDelEste\ApiToolbox\Plugin;
 use System\Classes\PluginManager;
 
+/**
+ * Trait ApiBaseTrait
+ *
+ * @package PlanetaDelEste\ApiToolbox\Traits\Controllers
+ *
+ * @property string $primaryKey
+ * @property string $sortColumn
+ * @property string $sortDirection
+ */
 trait ApiBaseTrait
 {
     /**
@@ -58,26 +67,6 @@ trait ApiBaseTrait
      */
     public $item;
 
-    /**
-     * Primary column name for show element
-     *
-     * @var string
-     */
-    public $primaryKey = 'id';
-
-    /**
-     * Default sort by column
-     *
-     * @var string
-     */
-    public $sortColumn = null;
-
-    /**
-     * Default sort direction
-     *
-     * @var string
-     */
-    public $sortDirection = 'desc';
 
     /**
      * @return string
@@ -173,7 +162,7 @@ trait ApiBaseTrait
         $classname = ltrim(static::class, '\\');
         $arPath = explode('\\', $this->getModelClass());
         $name = array_pop($arPath);
-        list($author, $plugin) = explode('\\', $classname);
+        [$author, $plugin] = explode('\\', $classname);
         $resourceClassBase = join('\\', [$author, $plugin, 'Classes', 'Resource', $name]);
         $this->showResource = $resourceClassBase.'\\ShowResource';
         $this->listResource = $resourceClassBase.'\\ListCollection';
@@ -183,7 +172,7 @@ trait ApiBaseTrait
     /**
      * @return \Lovata\Toolbox\Classes\Collection\ElementCollection|null
      */
-    protected function makeCollection()
+    protected function makeCollection(): ?\Lovata\Toolbox\Classes\Collection\ElementCollection
     {
         if (!$this->getModelClass()) {
             return null;
@@ -209,5 +198,29 @@ trait ApiBaseTrait
         }
 
         return null;
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getSortColumn(): ?string
+    {
+        return property_exists(get_called_class(), 'sortColumn') ? $this->sortColumn : null;
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getSortDirection(): ?string
+    {
+        return property_exists(get_called_class(), 'sortDirection') ? $this->sortDirection : 'desc';
+    }
+
+    /**
+     * @return string
+     */
+    public function getPrimaryKey(): string
+    {
+        return property_exists(get_called_class(), 'primaryKey') ? $this->primaryKey : 'id';
     }
 }
