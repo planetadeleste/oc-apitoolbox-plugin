@@ -5,19 +5,16 @@ use Cms\Classes\ComponentManager;
 use Event;
 use Exception;
 use Illuminate\Http\UploadedFile;
-use JWTAuth;
 use Kharanenka\Helper\Result;
 use Lovata\Buddies\Models\User;
 use Lovata\Toolbox\Classes\Collection\ElementCollection;
 use October\Rain\Extension\Extendable;
-use October\Rain\Extension\ExtendableTrait;
 use PlanetaDelEste\ApiToolbox\Plugin;
 use PlanetaDelEste\ApiToolbox\Traits\Controllers\ApiBaseTrait;
 use PlanetaDelEste\ApiToolbox\Traits\Controllers\ApiCastTrait;
 use PlanetaDelEste\ApiToolbox\Traits\Controllers\ApiValidationTrait;
 use System\Classes\PluginManager;
 use System\Models\File;
-use Tymon\JWTAuth\Exceptions\JWTException;
 
 /**
  * Class Base
@@ -38,6 +35,7 @@ class Base extends Extendable
 
     const ALERT_TOKEN_NOT_FOUND = 'token_not_found';
     const ALERT_USER_NOT_FOUND = 'user_not_found';
+    const ALERT_JWT_NOT_FOUND = 'jwt_auth_not_found';
     const ALERT_ACCESS_DENIED = 'access_denied';
     const ALERT_PERMISSIONS_DENIED = 'insufficient_permissions';
     const ALERT_RECORD_NOT_FOUND = 'record_not_found';
@@ -179,7 +177,7 @@ class Base extends Extendable
             $message = static::tr(static::ALERT_RECORD_NOT_CREATED);
 
             if (!$this->hasPermission('store')) {
-                throw new JWTException(static::ALERT_PERMISSIONS_DENIED, 403);
+                throw new Exception(static::ALERT_PERMISSIONS_DENIED, 403);
             }
 
             $this->validate();
@@ -211,11 +209,11 @@ class Base extends Extendable
             Result::setFalse();
 
             if (!$this->obModel) {
-                throw new JWTException(static::ALERT_RECORD_NOT_FOUND, 403);
+                throw new Exception(static::ALERT_RECORD_NOT_FOUND, 403);
             }
 
             if (!$this->hasPermission('update')) {
-                throw new JWTException(static::ALERT_PERMISSIONS_DENIED, 403);
+                throw new Exception(static::ALERT_PERMISSIONS_DENIED, 403);
             }
 
             $this->validate();
@@ -245,11 +243,11 @@ class Base extends Extendable
             $this->obModel = app($this->getModelClass())->where($this->getPrimaryKey(), $id)->firstOrFail();
 
             if (!$this->obModel) {
-                throw new JWTException(static::ALERT_RECORD_NOT_FOUND, 403);
+                throw new Exception(static::ALERT_RECORD_NOT_FOUND, 403);
             }
 
             if (!$this->hasPermission('destroy')) {
-                throw new JWTException(static::ALERT_PERMISSIONS_DENIED, 403);
+                throw new Exception(static::ALERT_PERMISSIONS_DENIED, 403);
             }
 
             if ($this->obModel->delete()) {
@@ -269,7 +267,7 @@ class Base extends Extendable
     /**
      * @return bool
      */
-    protected function save()
+    protected function save(): bool
     {
         $this->obModel->fill($this->data);
         return $this->saveAndAttach();
@@ -278,7 +276,7 @@ class Base extends Extendable
     /**
      * @return bool
      */
-    protected function saveAndAttach()
+    protected function saveAndAttach(): bool
     {
         $bResponse = $this->obModel->save();
         $this->attachFiles();
@@ -426,7 +424,7 @@ class Base extends Extendable
      *
      * @return bool
      */
-    protected function hasPermission($action)
+    protected function hasPermission(string $action): bool
     {
         return true;
     }
@@ -434,7 +432,7 @@ class Base extends Extendable
     /**
      * @return \Illuminate\Http\JsonResponse
      */
-    public function check()
+    public function check(): \Illuminate\Http\JsonResponse
     {
         try {
             $group = null;
@@ -454,7 +452,7 @@ class Base extends Extendable
     /**
      * @return \Illuminate\Http\JsonResponse
      */
-    public function csrfToken()
+    public function csrfToken(): \Illuminate\Http\JsonResponse
     {
         Result::setData(['token' => csrf_token()]);
 
@@ -462,7 +460,6 @@ class Base extends Extendable
     }
 
     /**
-     * @throws \Tymon\JWTAuth\Exceptions\JWTException
      * @throws \Exception
      */
     protected function currentUser()
@@ -471,19 +468,23 @@ class Base extends Extendable
             return $this->user;
         }
 
-        if (!JWTAuth::getToken()) {
-            throw new JWTException(static::tr(static::ALERT_TOKEN_NOT_FOUND));
+        if (!class_exists('JWTAuth')) {
+            throw new Exception(static::tr(static::ALERT_JWT_NOT_FOUND));
         }
 
-        if (!$userId = JWTAuth::parseToken()->authenticate()->id) {
-            throw new JWTException(static::tr(static::ALERT_USER_NOT_FOUND));
+        if (!\JWTAuth::getToken()) {
+            throw new Exception(static::tr(static::ALERT_TOKEN_NOT_FOUND));
+        }
+
+        if (!$userId = \JWTAuth::parseToken()->authenticate()->id) {
+            throw new Exception(static::tr(static::ALERT_USER_NOT_FOUND));
         }
 
         /** @var User $user */
         $user = User::active()->find($userId);
 
         if (!$user) {
-            throw new JWTException(static::tr(static::ALERT_USER_NOT_FOUND));
+            throw new Exception(static::tr(static::ALERT_USER_NOT_FOUND));
         }
 
         $this->user = $user;
@@ -587,8 +588,12 @@ class Base extends Extendable
      * @throws \SystemException
      * @throws \Exception
      */
-    public function component($sName, $cmsObject = null, $properties = [], $isSoftComponent = false)
-    {
+    public function component(
+        string $sName,
+        $cmsObject = null,
+        $properties = [],
+        $isSoftComponent = false
+    ): \Cms\Classes\ComponentBase {
         if (array_key_exists($sName, static::$components)) {
             return static::$components[$sName];
         }
@@ -607,7 +612,7 @@ class Base extends Extendable
      *
      * @return bool
      */
-    public function hasPlugin($sNamespace)
+    public function hasPlugin(string $sNamespace): bool
     {
         return PluginManager::instance()->hasPlugin($sNamespace);
     }
