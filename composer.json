@@ -1,5 +1,5 @@
 {
-    "name": "planetadeleste/oc-api-toolbox",
+    "name": "planetadeleste/oc-apitoolbox-plugin",
     "description": "Base toolbox plugin for Api Shopaholic plugins",
     "type": "october-plugin",
     "license": "MIT",
