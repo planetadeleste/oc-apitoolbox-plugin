@@ -11,6 +11,11 @@
             "role": "creator"
         }
     ],
+    "autoload": {
+        "psr-4": {
+            "PlanetaDelEste\\ApiToolbox\\": ""
+        }
+    },
     "require": {
         "php": ">=7.2",
         "ext-json":"*"
