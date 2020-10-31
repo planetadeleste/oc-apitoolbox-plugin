@@ -569,7 +569,7 @@ class Base extends Extendable
 
         if ($obCollection->methodExists('sort') && $arSort['column']) {
             $sSort = $arSort['column'];
-            if ($sSort != 'no') {
+            if ($sSort != 'no' && !str_contains($sSort, '|')) {
                 $sSort .= '|'.$arSort['direction'];
             }
             $obCollection = $obCollection->sort($sSort);
