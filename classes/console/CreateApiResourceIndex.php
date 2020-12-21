@@ -1,11 +1,11 @@
 <?php namespace PlanetaDelEste\ApiToolbox\Classes\Console;
 
-use PlanetaDelEste\ApiToolbox\Classes\Parser\Create\ControllerCreateFile;
+use PlanetaDelEste\ApiToolbox\Classes\Parser\Create\ResourceIndexCreateFile;
 
-class CreateApiController extends CommonConsole
+class CreateApiResourceIndex extends CommonConsole
 {
     /** @var string The console command name. */
-    protected $name = 'toolbox:create.api.controller';
+    protected $name = 'toolbox:create.api.resourceindex';
     /** @var string The console command description. */
     protected $description = 'Create a new api resource index collection.';
 
@@ -19,8 +19,7 @@ class CreateApiController extends CommonConsole
         $this->setAuthor(true);
         $this->setPlugin(true);
         $this->setModel();
-        $this->setController();
         $this->setAdditionList(self::CODE_COMMAND_PARENT);
-        $this->createFile(ControllerCreateFile::class);
+        $this->createFile(ResourceIndexCreateFile::class);
     }
 }

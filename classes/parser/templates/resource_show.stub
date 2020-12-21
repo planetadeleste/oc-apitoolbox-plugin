@@ -1,0 +1,25 @@
+<?php namespace {{studly_author}}\{{studly_plugin}}\Classes\Resource\{{studly_model}};
+
+use PlanetaDelEste\ApiToolbox\Plugin;
+
+/**
+ * Class ShowResource
+ *
+ * @mixin \{{studly_expansion_author}}\{{studly_expansion_plugin}}\Classes\Item\{{studly_model}}Item
+ * @package {{studly_author}}\{{studly_plugin}}\Classes\Resource\{{studly_model}}
+ */
+class ShowResource extends ItemResource
+{
+    public function getDataKeys(): array
+    {
+        return [
+{{cached}}
+        ];
+    }
+
+    protected function getEvent(): string
+    {
+        return Plugin::EVENT_SHOWRESOURCE_DATA;
+    }
+}
+

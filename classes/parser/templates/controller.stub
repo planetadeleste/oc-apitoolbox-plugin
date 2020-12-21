@@ -1,0 +1,17 @@
+<?php namespace {{studly_author}}\{{studly_plugin}}\Controllers\Api;
+
+use PlanetaDelEste\ApiToolbox\Classes\Api\Base;
+use {{studly_expansion_author}}\{{studly_expansion_plugin}}\Models\{{studly_model}};
+
+/**
+ * Class {{studly_controller}}
+ *
+ * @package {{studly_author}}\{{studly_plugin}}\Controllers\Api
+ */
+class {{studly_controller}} extends Base
+{
+    public function getModelClass(): string
+    {
+        return {{studly_model}}::class;
+    }
+}

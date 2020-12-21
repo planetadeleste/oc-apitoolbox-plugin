@@ -1,0 +1,3 @@
+{% for attr in attributes %}
+            '{{ attr }}',
+{% endfor %}

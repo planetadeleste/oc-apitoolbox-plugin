@@ -1,11 +1,11 @@
-<?php namespace {{ studly_author }}\{{ studly_plugin }}\Classes\Resource\{{ studly_name }};
+<?php namespace {{studly_author}}\{{studly_plugin}}\Classes\Resource\{{studly_model}};
 
 use Illuminate\Http\Resources\Json\ResourceCollection;
 
 /**
  * Class IndexCollection
  *
- * @package {{ studly_author }}\{{ studly_plugin }}\Classes\Resource\{{ studly_name }}
+ * @package {{studly_author}}\{{studly_plugin}}\Classes\Resource\{{studly_model}}
  */
 class IndexCollection extends ResourceCollection
 {
