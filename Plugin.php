@@ -1,7 +1,11 @@
 <?php namespace PlanetaDelEste\ApiToolbox;
 
 use PlanetaDelEste\ApiToolbox\Classes\Console\CreateApiController;
-use PlanetaDelEste\ApiToolbox\Classes\Console\CreateResource;
+use PlanetaDelEste\ApiToolbox\Classes\Console\CreateApiResourceIndex;
+use PlanetaDelEste\ApiToolbox\Classes\Console\CreateApiResourceItem;
+use PlanetaDelEste\ApiToolbox\Classes\Console\CreateApiResourceList;
+use PlanetaDelEste\ApiToolbox\Classes\Console\CreateApiResources;
+use PlanetaDelEste\ApiToolbox\Classes\Console\CreateApiResourceShow;
 use System\Classes\PluginBase;
 
 /**
@@ -27,7 +31,11 @@ class Plugin extends PluginBase
 
     public function register()
     {
-        $this->registerConsoleCommand('apitoolbox:create:resource', CreateResource::class);
-        $this->registerConsoleCommand('apitoolbox:create:controller', CreateApiController::class);
+        $this->registerConsoleCommand('toolbox:create.api.controller', CreateApiController::class);
+        $this->registerConsoleCommand('toolbox:create.api.resources', CreateApiResources::class);
+        $this->registerConsoleCommand('toolbox:create.api.resourceindex', CreateApiResourceIndex::class);
+        $this->registerConsoleCommand('toolbox:create.api.resourcelist', CreateApiResourceList::class);
+        $this->registerConsoleCommand('toolbox:create.api.resourceitem', CreateApiResourceItem::class);
+        $this->registerConsoleCommand('toolbox:create.api.resourceshow', CreateApiResourceShow::class);
     }
 }
