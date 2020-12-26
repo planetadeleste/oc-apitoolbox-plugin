@@ -23,6 +23,7 @@ use System\Models\File;
  * @method void extendList()
  * @method void extendShow()
  * @method void extendDestroy()
+ * @method void extendSave()
  * @method void extendFilters(array &$filters)
  *
  * @package PlanetaDelEste\ApiToolbox\Classes\Api
@@ -270,6 +271,10 @@ class Base extends Extendable
     protected function save(): bool
     {
         $this->obModel->fill($this->data);
+        if ($this->methodExists('extendSave')) {
+            $this->extendSave();
+        }
+
         return $this->saveAndAttach();
     }
 
