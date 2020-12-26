@@ -15,6 +15,7 @@ use PlanetaDelEste\ApiToolbox\Traits\Controllers\ApiCastTrait;
 use PlanetaDelEste\ApiToolbox\Traits\Controllers\ApiValidationTrait;
 use System\Classes\PluginManager;
 use System\Models\File;
+use System\Traits\EventEmitter;
 
 /**
  * Class Base
@@ -33,6 +34,7 @@ class Base extends Extendable
     use ApiBaseTrait;
     use ApiCastTrait;
     use ApiValidationTrait;
+    use EventEmitter;
 
     const ALERT_TOKEN_NOT_FOUND = 'token_not_found';
     const ALERT_USER_NOT_FOUND = 'user_not_found';
@@ -69,11 +71,16 @@ class Base extends Extendable
     {
         parent::__construct();
 
+        $this->init();
         $this->data = input();
         $this->setCastData($this->data);
         $this->setResources();
         $this->collection = $this->makeCollection();
         $this->collection = $this->applyFilters();
+    }
+
+    public function init()
+    {
     }
 
     /**
@@ -89,7 +96,7 @@ class Base extends Extendable
             /**
              * Extend collection results
              */
-            Event::fire(Plugin::EVENT_API_EXTEND_INDEX, [$this, &$this->collection]);
+            $this->fireSystemEvent(Plugin::EVENT_API_EXTEND_INDEX, [&$this->collection], false);
 
             $obModelCollection = $this->collection->paginate($this->itemsPerPage);
             return $this->getIndexResource()
@@ -113,7 +120,7 @@ class Base extends Extendable
             /**
              * Extend collection results
              */
-            Event::fire(Plugin::EVENT_API_EXTEND_LIST, [$this, &$this->collection]);
+            $this->fireSystemEvent(Plugin::EVENT_API_EXTEND_LIST, [&$this->collection], false);
 
             $arListItems = $this->collection->values();
             return $this->getListResource()
@@ -135,7 +142,7 @@ class Base extends Extendable
             /**
              * Fire event before show item
              */
-            Event::fire(Plugin::EVENT_API_BEFORE_SHOW_COLLECT, [$this, $value]);
+            $this->fireSystemEvent(Plugin::EVENT_API_BEFORE_SHOW_COLLECT, [$value], false);
 
             /** @var int|null $iModelId */
             $iModelId = app($this->getModelClass())->where($this->getPrimaryKey(), $value)->value('id');
@@ -155,7 +162,7 @@ class Base extends Extendable
             /**
              * Extend collection results
              */
-            Event::fire(Plugin::EVENT_API_EXTEND_SHOW, [$this, $this->item]);
+            $this->fireSystemEvent(Plugin::EVENT_API_EXTEND_SHOW, [$this->item]);
 
             return $this->getShowResource()
                 ? app($this->getShowResource(), [$this->item])
@@ -182,6 +189,8 @@ class Base extends Extendable
             }
 
             $this->validate();
+
+            $this->fireSystemEvent(Plugin::EVENT_BEFORE_SAVE, [$this->obModel, $this->data]);
 
             if ($this->save()) {
                 $message = static::tr(static::ALERT_RECORD_CREATED);
@@ -219,6 +228,8 @@ class Base extends Extendable
 
             $this->validate();
 
+            $this->fireSystemEvent(Plugin::EVENT_BEFORE_SAVE, [$this->obModel, $this->data]);
+
             if ($this->save()) {
                 Result::setTrue();
                 $message = static::tr(static::ALERT_RECORD_UPDATED);
@@ -250,6 +261,8 @@ class Base extends Extendable
             if (!$this->hasPermission('destroy')) {
                 throw new Exception(static::ALERT_PERMISSIONS_DENIED, 403);
             }
+
+            $this->fireSystemEvent(Plugin::EVENT_BEFORE_DESTROY, [$this->obModel]);
 
             if ($this->obModel->delete()) {
                 Result::setTrue()
@@ -285,6 +298,8 @@ class Base extends Extendable
     {
         $bResponse = $this->obModel->save();
         $this->attachFiles();
+
+        $this->fireSystemEvent(Plugin::EVENT_AFTER_SAVE, [$this->obModel, $this->data]);
 
         return $bResponse;
     }
@@ -535,6 +550,18 @@ class Base extends Extendable
 
         if ($this->methodExists('extendFilters')) {
             $this->extendFilters($filters);
+        }
+
+        $arFilters = $this->fireSystemEvent(Plugin::EVENT_BEFORE_FILTER, [$filters]);
+        if (!empty($arFilters)) {
+            foreach ($arFilters as $arFilter) {
+                if (empty($arFilter) || !is_array($arFilter)) {
+                    continue;
+                }
+                foreach ($arFilter as $sKey => $sValue) {
+                    $filters[$sKey] = $sValue;
+                }
+            }
         }
 
         return compact('sort', 'filters');

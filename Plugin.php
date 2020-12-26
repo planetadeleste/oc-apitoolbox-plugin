@@ -17,6 +17,7 @@ class Plugin extends PluginBase
 {
     const EVENT_SHOWRESOURCE_DATA = 'planetadeleste.apiToolbox.showResourceData';
     const EVENT_ITEMRESOURCE_DATA = 'planetadeleste.apiToolbox.itemResourceData';
+
     const EVENT_API_EXTEND_INDEX = 'planetadeleste.apiToolbox.apiExtendIndex';
     const EVENT_API_EXTEND_LIST = 'planetadeleste.apiToolbox.apiExtendList';
     const EVENT_API_EXTEND_SHOW = 'planetadeleste.apiToolbox.apiExtendShow';
@@ -26,6 +27,12 @@ class Plugin extends PluginBase
     const EVENT_API_EXTEND_DESTROY = 'planetadeleste.apiToolbox.apiExtendDestroy';
     const EVENT_API_PERMISSIONS = 'planetadeleste.apiToolbox.apiPermissions';
     const EVENT_API_ADD_COLLECTION = 'planetadeleste.apiToolbox.apiAddCollection';
+
+    const EVENT_BEFORE_FILTER = 'planetadeleste.apiToolbox.beforeFilter';
+    const EVENT_BEFORE_DESTROY = 'planetadeleste.apiToolbox.beforeDestroy';
+    const EVENT_AFTER_DESTROY = 'planetadeleste.apiToolbox.afterDestroy';
+    const EVENT_BEFORE_SAVE = 'planetadeleste.apiToolbox.beforeSave';
+    const EVENT_AFTER_SAVE = 'planetadeleste.apiToolbox.afterSave';
 
     public $require = ['Lovata.Toolbox', 'Lovata.Buddies'];
 
