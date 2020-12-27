@@ -142,7 +142,10 @@ class Base extends Extendable
             /**
              * Fire event before show item
              */
-            $this->fireSystemEvent(Plugin::EVENT_API_BEFORE_SHOW_COLLECT, [$value], false);
+            $sValue = $this->fireSystemEvent(Plugin::EVENT_API_BEFORE_SHOW_COLLECT, [$value], false);
+            if (!empty($sValue)) {
+                $value = is_array($sValue) ? array_first($sValue) : $sValue;
+            }
 
             /** @var int|null $iModelId */
             $iModelId = app($this->getModelClass())->where($this->getPrimaryKey(), $value)->value('id');
@@ -162,7 +165,7 @@ class Base extends Extendable
             /**
              * Extend collection results
              */
-            $this->fireSystemEvent(Plugin::EVENT_API_EXTEND_SHOW, [$this->item]);
+            $this->fireSystemEvent(Plugin::EVENT_API_EXTEND_SHOW, [&$this->item]);
 
             return $this->getShowResource()
                 ? app($this->getShowResource(), [$this->item])
@@ -188,9 +191,8 @@ class Base extends Extendable
                 throw new Exception(static::ALERT_PERMISSIONS_DENIED, 403);
             }
 
+            $this->fireSystemEvent(Plugin::EVENT_BEFORE_SAVE, [&$this->obModel, $this->data]);
             $this->validate();
-
-            $this->fireSystemEvent(Plugin::EVENT_BEFORE_SAVE, [$this->obModel, $this->data]);
 
             if ($this->save()) {
                 $message = static::tr(static::ALERT_RECORD_CREATED);
@@ -226,9 +228,8 @@ class Base extends Extendable
                 throw new Exception(static::ALERT_PERMISSIONS_DENIED, 403);
             }
 
+            $this->fireSystemEvent(Plugin::EVENT_BEFORE_SAVE, [&$this->obModel, $this->data]);
             $this->validate();
-
-            $this->fireSystemEvent(Plugin::EVENT_BEFORE_SAVE, [$this->obModel, $this->data]);
 
             if ($this->save()) {
                 Result::setTrue();
@@ -262,7 +263,7 @@ class Base extends Extendable
                 throw new Exception(static::ALERT_PERMISSIONS_DENIED, 403);
             }
 
-            $this->fireSystemEvent(Plugin::EVENT_BEFORE_DESTROY, [$this->obModel]);
+            $this->fireSystemEvent(Plugin::EVENT_BEFORE_DESTROY, [&$this->obModel]);
 
             if ($this->obModel->delete()) {
                 Result::setTrue()
@@ -299,7 +300,7 @@ class Base extends Extendable
         $bResponse = $this->obModel->save();
         $this->attachFiles();
 
-        $this->fireSystemEvent(Plugin::EVENT_AFTER_SAVE, [$this->obModel, $this->data]);
+        $this->fireSystemEvent(Plugin::EVENT_AFTER_SAVE, [&$this->obModel, $this->data]);
 
         return $bResponse;
     }
