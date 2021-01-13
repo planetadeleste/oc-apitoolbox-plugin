@@ -72,7 +72,7 @@ class Base extends Extendable
         parent::__construct();
 
         $this->init();
-        $this->data = input();
+        $this->data = $this->getInputData();
         $this->setCastData($this->data);
         $this->setResources();
         $this->collection = $this->makeCollection();
@@ -154,9 +154,7 @@ class Base extends Extendable
                 throw new Exception(static::ALERT_RECORD_NOT_FOUND, 403);
             }
 
-            /** @var \Lovata\Toolbox\Classes\Collection\ElementCollection $sItemClass */
-            $sItemClass = $this->collection::ITEM_CLASS;
-            $this->item = $sItemClass::make($iModelId);
+            $this->item = $this->getItem($iModelId);
 
             if ($this->methodExists('extendShow')) {
                 $this->extendShow();
@@ -165,7 +163,7 @@ class Base extends Extendable
             /**
              * Extend collection results
              */
-            $this->fireSystemEvent(Plugin::EVENT_API_EXTEND_SHOW, [&$this->item]);
+            $this->fireSystemEvent(Plugin::EVENT_API_EXTEND_SHOW, [$this->item]);
 
             return $this->getShowResource()
                 ? app($this->getShowResource(), [$this->item])
@@ -191,14 +189,19 @@ class Base extends Extendable
                 throw new Exception(static::ALERT_PERMISSIONS_DENIED, 403);
             }
 
-            $this->fireSystemEvent(Plugin::EVENT_BEFORE_SAVE, [&$this->obModel, $this->data]);
+            $this->fireSystemEvent(Plugin::EVENT_BEFORE_SAVE, [$this->obModel, &$this->data]);
             $this->validate();
 
             if ($this->save()) {
                 $message = static::tr(static::ALERT_RECORD_CREATED);
             }
 
-            return Result::setData($this->obModel)
+            $obItem = $this->getItem($this->obModel->id);
+            $obResourceItem = $this->getShowResource()
+                ? app($this->getShowResource(), [$obItem])
+                : $obItem;
+
+            return Result::setData($obResourceItem)
                 ->setMessage($message)
                 ->getJSON();
         } catch (Exception $e) {
@@ -228,7 +231,7 @@ class Base extends Extendable
                 throw new Exception(static::ALERT_PERMISSIONS_DENIED, 403);
             }
 
-            $this->fireSystemEvent(Plugin::EVENT_BEFORE_SAVE, [&$this->obModel, $this->data]);
+            $this->fireSystemEvent(Plugin::EVENT_BEFORE_SAVE, [$this->obModel, &$this->data]);
             $this->validate();
 
             if ($this->save()) {
@@ -263,7 +266,7 @@ class Base extends Extendable
                 throw new Exception(static::ALERT_PERMISSIONS_DENIED, 403);
             }
 
-            $this->fireSystemEvent(Plugin::EVENT_BEFORE_DESTROY, [&$this->obModel]);
+            $this->fireSystemEvent(Plugin::EVENT_BEFORE_DESTROY, [$this->obModel]);
 
             if ($this->obModel->delete()) {
                 Result::setTrue()
@@ -297,10 +300,8 @@ class Base extends Extendable
      */
     protected function saveAndAttach(): bool
     {
-        $bResponse = $this->obModel->save();
-        $this->attachFiles();
-
-        $this->fireSystemEvent(Plugin::EVENT_AFTER_SAVE, [&$this->obModel, $this->data]);
+        $bResponse = $this->attachFiles();
+        $this->fireSystemEvent(Plugin::EVENT_AFTER_SAVE, [$this->obModel, $this->data]);
 
         return $bResponse;
     }
@@ -308,13 +309,15 @@ class Base extends Extendable
     /**
      * Attach files related to model
      */
-    protected function attachFiles()
+    protected function attachFiles(): bool
     {
-        $bSaveModel = false;
+        $bResponse = $this->obModel->save();
+        $bSave = false;
+
         $arAttachOneAttrList = array_get($this->arFileList, 'attachOne');
         if (!empty($arAttachOneAttrList)) {
             $arAttachOneAttrList = array_wrap($arAttachOneAttrList);
-            $bSaveModel = true;
+            $bSave = true;
             foreach ($arAttachOneAttrList as $sAttachOneKey) {
                 $this->attachOne($sAttachOneKey);
             }
@@ -323,15 +326,13 @@ class Base extends Extendable
         $arAttachManyAttrList = array_get($this->arFileList, 'attachMany');
         if (!empty($arAttachManyAttrList)) {
             $arAttachManyAttrList = array_wrap($arAttachManyAttrList);
-            $bSaveModel = true;
+            $bSave = true;
             foreach ($arAttachManyAttrList as $sAttachManyKey) {
                 $this->attachMany($sAttachManyKey);
             }
         }
 
-        if ($bSaveModel) {
-            $this->obModel->save();
-        }
+        return $bSave ? $this->obModel->save() : $bResponse;
     }
 
     /**
@@ -438,6 +439,21 @@ class Base extends Extendable
         $obSystemFile->save();
 
         $obModel->{$sAttachKey}()->add($obSystemFile);
+    }
+
+    protected function getInputData(): array
+    {
+        $arData = input();
+        foreach ($this->arFileList as $sRelationName => $arRelated) {
+            if (empty($arRelated) || !is_array($arRelated)) {
+                continue;
+            }
+            foreach ($arRelated as $sColumn) {
+                array_forget($arData, $sColumn);
+            }
+        }
+
+        return $arData;
     }
 
     /**
@@ -602,13 +618,20 @@ class Base extends Extendable
 
         if ($obCollection->methodExists('sort') && $arSort['column']) {
             $sSort = $arSort['column'];
-            if ($sSort != 'no' && !str_contains($sSort, '|')) {
-                $sSort .= '|'.$arSort['direction'];
-            }
+//            if ($sSort != 'no' && !str_contains($sSort, '|')) {
+//                $sSort .= '|'.$arSort['direction'];
+//            }
             $obCollection = $obCollection->sort($sSort);
         }
 
         return $obCollection;
+    }
+
+    protected function getItem(int $iModelID)
+    {
+        /** @var \Lovata\Toolbox\Classes\Collection\ElementCollection $sItemClass */
+        $sItemClass = $this->collection::ITEM_CLASS;
+        return $sItemClass::make($iModelID);
     }
 
     /**
