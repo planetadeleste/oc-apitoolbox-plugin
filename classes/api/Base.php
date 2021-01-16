@@ -239,7 +239,11 @@ class Base extends Extendable
                 $message = static::tr(static::ALERT_RECORD_UPDATED);
             }
 
-            return Result::setData($this->obModel)
+            $obItem = $this->getItem($this->obModel->id);
+            $obResourceItem = $this->getShowResource()
+                ? app($this->getShowResource(), [$obItem])
+                : $obItem;
+            return Result::setData($obResourceItem)
                 ->setMessage($message)
                 ->getJSON();
         } catch (Exception $e) {
@@ -363,7 +367,7 @@ class Base extends Extendable
 
                     $this->attachFile($obModel, $obFile, $sAttachKey);
                 }
-            } elseif (!array_get($this->data, $sAttachKey)) {
+            } elseif (!input($sAttachKey)) {
                 if ($obModel->{$sAttachKey} instanceof File) {
                     $obModel->{$sAttachKey}->delete();
                 }
@@ -410,7 +414,7 @@ class Base extends Extendable
                         $this->attachFile($obModel, $obFile, $sAttachKey);
                     }
                 }
-            } elseif (!array_get($this->data, $sAttachKey)) {
+            } elseif (!input($sAttachKey)) {
                 if ($obModel->{$sAttachKey}->count()) {
                     $obModel->{$sAttachKey}->each(
                         function ($obImage) {
@@ -445,9 +449,10 @@ class Base extends Extendable
     {
         $arData = input();
         foreach ($this->arFileList as $sRelationName => $arRelated) {
-            if (empty($arRelated) || !is_array($arRelated)) {
+            if (empty($arRelated)) {
                 continue;
             }
+            $arRelated = array_wrap($arRelated);
             foreach ($arRelated as $sColumn) {
                 array_forget($arData, $sColumn);
             }
