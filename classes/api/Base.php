@@ -142,10 +142,7 @@ class Base extends Extendable
             /**
              * Fire event before show item
              */
-            $sValue = $this->fireSystemEvent(Plugin::EVENT_API_BEFORE_SHOW_COLLECT, [$value], false);
-            if (!empty($sValue)) {
-                $value = is_array($sValue) ? array_first($sValue) : $sValue;
-            }
+            $this->fireSystemEvent(Plugin::EVENT_API_BEFORE_SHOW_COLLECT, [$value], false);
 
             /** @var int|null $iModelId */
             $iModelId = app($this->getModelClass())->where($this->getPrimaryKey(), $value)->value('id');
