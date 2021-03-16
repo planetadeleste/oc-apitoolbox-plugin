@@ -583,6 +583,13 @@ class Base extends Extendable
             }
         }
 
+        if ($sFilter = array_get($filters, "sort")) {
+            if (is_string($sFilter)) {
+                $sort['column'] = $sFilter;
+            }
+            array_forget($filters, "sort");
+        }
+
         return compact('sort', 'filters');
     }
 
@@ -600,30 +607,39 @@ class Base extends Extendable
         $arSort = array_get($data, 'sort');
         $obCollection = $this->collection;
 
-        if (!empty($arFilters)) {
-            if ($obCollection->methodExists('filter')) {
-                $obCollection = $obCollection->filter($arFilters);
-            }
-            foreach ($arFilters as $sFilterName => $sFilterValue) {
-                if ($sFilterName == 'page') {
-                    continue;
-                }
-                $sMethodName = camel_case($sFilterName);
-                if ($obCollection->methodExists($sMethodName)) {
-                    $obCollection = call_user_func_array(
-                        [$obCollection, $sMethodName],
-                        array_wrap($sFilterValue)
-                    );
-                }
-            }
-        }
-
         if ($obCollection->methodExists('sort') && $arSort['column']) {
             $sSort = $arSort['column'];
 //            if ($sSort != 'no' && !str_contains($sSort, '|')) {
 //                $sSort .= '|'.$arSort['direction'];
 //            }
             $obCollection = $obCollection->sort($sSort);
+        }
+
+        if (!empty($arFilters)) {
+            if ($obCollection->methodExists('filter')) {
+                $obCollection = $obCollection->filter($arFilters);
+            }
+
+
+            foreach ($arFilters as $sFilterName => $sFilterValue) {
+                if ($sFilterName == 'page') {
+                    continue;
+                }
+
+                $sMethodName = camel_case($sFilterName);
+                if ($obCollection->methodExists($sMethodName)) {
+                    $obResult = call_user_func_array(
+                        [$obCollection, $sMethodName],
+                        array_wrap($sFilterValue)
+                    );
+
+                    if (is_array($obResult)) {
+                        $obCollection->intersect(array_keys($obResult));
+                    } else {
+                        $obCollection = $obResult;
+                    }
+                }
+            }
         }
 
         return $obCollection;

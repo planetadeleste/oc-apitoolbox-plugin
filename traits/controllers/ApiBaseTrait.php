@@ -194,7 +194,7 @@ trait ApiBaseTrait
         }
 
         if ($sCollectionClass = array_get($arCollectionClasses, $this->getModelClass())) {
-            return app($sCollectionClass);
+            return $sCollectionClass::make();
         }
 
         return null;
@@ -205,7 +205,7 @@ trait ApiBaseTrait
      */
     public function getSortColumn(): ?string
     {
-        return property_exists(get_called_class(), 'sortColumn') ? $this->sortColumn : null;
+        return $this->propertyExists('sortColumn') ? $this->sortColumn : null;
     }
 
     /**
@@ -213,7 +213,7 @@ trait ApiBaseTrait
      */
     public function getSortDirection(): ?string
     {
-        return property_exists(get_called_class(), 'sortDirection') ? $this->sortDirection : 'desc';
+        return $this->propertyExists('sortDirection') ? $this->sortDirection : 'desc';
     }
 
     /**
@@ -221,6 +221,6 @@ trait ApiBaseTrait
      */
     public function getPrimaryKey(): string
     {
-        return property_exists(get_called_class(), 'primaryKey') ? $this->primaryKey : 'id';
+        return $this->propertyExists('primaryKey') ? $this->primaryKey : 'id';
     }
 }
