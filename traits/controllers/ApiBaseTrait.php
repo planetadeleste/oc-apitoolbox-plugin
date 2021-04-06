@@ -146,7 +146,10 @@ trait ApiBaseTrait
     public static function exceptionResult($obException, $iStatus = 403)
     {
         trace_log($obException);
-        Result::setFalse()->setMessage($obException->getMessage());
+        Result::setFalse();
+        if (!input('silently')) {
+            Result::setMessage($obException->getMessage());
+        }
         return response()->json(Result::get(), $iStatus);
     }
 

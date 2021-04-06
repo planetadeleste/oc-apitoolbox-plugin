@@ -630,7 +630,7 @@ class Base extends Extendable
                 if ($obCollection->methodExists($sMethodName)) {
                     $obResult = call_user_func_array(
                         [$obCollection, $sMethodName],
-                        array_wrap($sFilterValue)
+                        [$sFilterValue]
                     );
 
                     if (is_array($obResult)) {
