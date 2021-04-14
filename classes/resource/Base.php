@@ -7,6 +7,9 @@ use Illuminate\Http\Resources\Json\Resource;
  * Class Base
  *
  * @package PlanetaDelEste\ApiToolbox\Classes\Resource
+ *
+ * @property \October\Rain\Argon\Argon $updated_at
+ * @property \October\Rain\Argon\Argon $created_at
  */
 abstract class Base extends Resource
 {
@@ -86,7 +89,7 @@ abstract class Base extends Resource
      *
      * @return array
      */
-    public function getDates()
+    public function getDates(): array
     {
         return [
             'updated_at' => $this->updated_at ? $this->updated_at->toDateTimeString() : null,
