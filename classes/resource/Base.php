@@ -1,5 +1,6 @@
 <?php namespace PlanetaDelEste\ApiToolbox\Classes\Resource;
 
+use Carbon\Carbon;
 use Event;
 use Illuminate\Http\Resources\Json\Resource;
 
@@ -92,8 +93,12 @@ abstract class Base extends Resource
     public function getDates(): array
     {
         return [
-            'updated_at' => $this->updated_at ? $this->updated_at->toDateTimeString() : null,
-            'created_at' => $this->created_at ? $this->created_at->toDateTimeString() : null,
+            'updated_at' => $this->updated_at && $this->updated_at instanceof Carbon
+                ? $this->updated_at->toDateTimeString()
+                : $this->updated_at,
+            'created_at' => $this->created_at && $this->created_at instanceof Carbon
+                ? $this->created_at->toDateTimeString()
+                : $this->created_at,
         ];
     }
 }

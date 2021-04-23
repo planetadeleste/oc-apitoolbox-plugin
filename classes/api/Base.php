@@ -144,9 +144,7 @@ class Base extends Extendable
              */
             $this->fireSystemEvent(Plugin::EVENT_API_BEFORE_SHOW_COLLECT, [$value], false);
 
-            /** @var int|null $iModelId */
-            $iModelId = app($this->getModelClass())->where($this->getPrimaryKey(), $value)->value('id');
-
+            $iModelId = $this->getItemId($value);
             if (!$iModelId) {
                 throw new Exception(static::ALERT_RECORD_NOT_FOUND, 403);
             }
@@ -645,9 +643,21 @@ class Base extends Extendable
         return $obCollection;
     }
 
+    /**
+     * @param string|int $sValue
+     *
+     * @return mixed
+     */
+    protected function getItemId($sValue)
+    {
+        return ($this->getPrimaryKey() == 'id')
+            ? $sValue
+            : app($this->getModelClass())->where($this->getPrimaryKey(), $sValue)->value('id');
+    }
+
     protected function getItem(int $iModelID)
     {
-        /** @var \Lovata\Toolbox\Classes\Collection\ElementCollection $sItemClass */
+        /** @var \Lovata\Toolbox\Classes\Item\ElementItem $sItemClass */
         $sItemClass = $this->collection::ITEM_CLASS;
         return $sItemClass::make($iModelID);
     }
