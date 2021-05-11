@@ -34,6 +34,9 @@ class Plugin extends PluginBase
     const EVENT_BEFORE_SAVE = 'planetadeleste.apiToolbox.beforeSave';
     const EVENT_AFTER_SAVE = 'planetadeleste.apiToolbox.afterSave';
 
+    const EVENT_LOCAL_EXTEND_INDEX = 'apiToolbox.apiExtendIndex';
+    const EVENT_LOCAL_EXTEND_LIST = 'apiToolbox.apiExtendList';
+    const EVENT_LOCAL_EXTEND_SHOW = 'apiToolbox.apiExtendShow';
     const EVENT_LOCAL_BEFORE_FILTER = 'apiToolbox.beforeFilter';
     const EVENT_LOCAL_BEFORE_DESTROY = 'apiToolbox.beforeDestroy';
     const EVENT_LOCAL_AFTER_DESTROY = 'apiToolbox.afterDestroy';
