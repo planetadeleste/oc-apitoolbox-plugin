@@ -47,7 +47,7 @@ abstract class Base extends Resource
         }
 
         if (is_string($this->getEvent())) {
-            $arResponseData = Event::fire($this->getEvent(), [$arData, $this]);
+            $arResponseData = Event::fire($this->getEvent(), [$this, $arData]);
             if (!empty($arResponseData)) {
                 foreach ($arResponseData as $arResponseItem) {
                     if (empty($arResponseItem) || !is_array($arResponseItem)) {
