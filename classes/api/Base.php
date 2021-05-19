@@ -142,7 +142,7 @@ class Base extends Extendable
             /**
              * Fire event before show item
              */
-            $this->fireSystemEvent(Plugin::EVENT_API_BEFORE_SHOW_COLLECT, [$value], false);
+            $this->fireSystemEvent(Plugin::EVENT_API_BEFORE_SHOW_COLLECT, [&$value], false);
 
             $iModelId = $this->getItemId($value);
             if (!$iModelId) {
