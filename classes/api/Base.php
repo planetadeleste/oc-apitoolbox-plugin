@@ -529,6 +529,20 @@ class Base extends Extendable
     }
 
     /**
+     * Check if api request get from backend or frontend
+     * @return bool
+     */
+    protected function isBackend(): bool
+    {
+        try {
+            $this->currentUser();
+            return request()->header('X-ENV') == 'backend';
+        } catch (Exception $ex) {
+            return false;
+        }
+    }
+
+    /**
      * @return array
      *  [
      *      'sort' => [
