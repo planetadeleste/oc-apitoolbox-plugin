@@ -2,7 +2,7 @@
 
 use PlanetaDelEste\ApiToolbox\Classes\Resource\Base;
 [[preview_image]]use PlanetaDelEste\ApiShopaholic\Classes\Resource\File\IndexCollection as IndexCollectionImages;
-[[preview_image]]use PlanetaDelEste\ApiToolbox\Plugin;
+[[preview_image]]use {{studly_author}}\{{studly_plugin}}\Plugin;
 
 /**
  * Class ItemResource
@@ -34,6 +34,8 @@ class ItemResource extends Base
 
     protected function getEvent(): string
     {
-        return Plugin::EVENT_ITEMRESOURCE_DATA;
+        // Paste below code in {{studly_author}}\{{studly_plugin}}\Plugin class
+        // const EVENT_ITEMRESOURCE_DATA = '{{lower_author}}.{{lower_plugin}}.resource.itemData';
+        return Plugin::EVENT_ITEMRESOURCE_DATA.'.{{lower_model}}';
     }
 }

@@ -14,4 +14,9 @@ class {{studly_controller}} extends Base
     {
         return {{studly_model}}::class;
     }
+
+    public function getSortColumn(): string
+    {
+        return 'sort';
+    }
 }
