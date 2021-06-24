@@ -653,6 +653,10 @@ class Base extends Extendable
                 }
             }
         }
+        
+        if(!empty($this->data['per_page'])){
+            $this->itemsPerPage = $this->data['per_page'];
+        }
 
         return $obCollection;
     }
