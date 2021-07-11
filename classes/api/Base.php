@@ -2,13 +2,13 @@
 
 use Cms\Classes\CmsObject;
 use Cms\Classes\ComponentManager;
-use Event;
 use Exception;
 use Illuminate\Http\UploadedFile;
 use Kharanenka\Helper\Result;
 use Lovata\Buddies\Models\User;
 use Lovata\Toolbox\Classes\Collection\ElementCollection;
 use October\Rain\Extension\Extendable;
+use October\Rain\Support\Arr;
 use PlanetaDelEste\ApiToolbox\Plugin;
 use PlanetaDelEste\ApiToolbox\Traits\Controllers\ApiBaseTrait;
 use PlanetaDelEste\ApiToolbox\Traits\Controllers\ApiCastTrait;
@@ -530,6 +530,7 @@ class Base extends Extendable
 
     /**
      * Check if api request get from backend or frontend
+     *
      * @return bool
      */
     protected function isBackend(): bool
@@ -585,6 +586,11 @@ class Base extends Extendable
 
         $arFilters = $this->fireSystemEvent(Plugin::EVENT_BEFORE_FILTER, [$filters]);
         if (!empty($arFilters)) {
+            $arFilters = array_wrap($arFilters);
+            if (Arr::isAssoc($arFilters)) {
+                $arFilters = [$arFilters];
+            }
+
             foreach ($arFilters as $arFilter) {
                 if (empty($arFilter) || !is_array($arFilter)) {
                     continue;
@@ -642,7 +648,7 @@ class Base extends Extendable
                 if ($obCollection->methodExists($sMethodName)) {
                     $obResult = call_user_func_array(
                         [$obCollection, $sMethodName],
-                        [$sFilterValue]
+                        array_wrap($sFilterValue)
                     );
 
                     if (is_array($obResult)) {
@@ -653,8 +659,8 @@ class Base extends Extendable
                 }
             }
         }
-        
-        if(!empty($this->data['per_page'])){
+
+        if (!empty($this->data['per_page'])) {
             $this->itemsPerPage = $this->data['per_page'];
         }
 
