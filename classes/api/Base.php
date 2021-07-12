@@ -543,6 +543,17 @@ class Base extends Extendable
         }
     }
 
+    protected function userInGroup(string $sGroupCode): bool
+    {
+        try {
+            $this->currentUser();
+            $arGroups = $this->user->groups->lists('code');
+            return in_array($sGroupCode, $arGroups);
+        } catch (Exception $e) {
+            return false;
+        }
+    }
+
     /**
      * @return array
      *  [
@@ -580,6 +591,8 @@ class Base extends Extendable
             }
         }
 
+        $obFilters = Filter::instance()->addFilters($filters);
+
         if ($this->methodExists('extendFilters')) {
             $this->extendFilters($filters);
         }
@@ -596,7 +609,7 @@ class Base extends Extendable
                     continue;
                 }
                 foreach ($arFilter as $sKey => $sValue) {
-                    $filters[$sKey] = $sValue;
+                    $obFilters->addFilter($sKey, $sValue);
                 }
             }
         }
@@ -605,8 +618,10 @@ class Base extends Extendable
             if (is_string($sFilter)) {
                 $sort['column'] = $sFilter;
             }
-            array_forget($filters, "sort");
+            $obFilters->forget('sort');
         }
+
+        $filters = $obFilters->get();
 
         return compact('sort', 'filters');
     }
@@ -621,15 +636,13 @@ class Base extends Extendable
         }
 
         $data = $this->filters();
-        $arFilters = array_get($data, 'filters');
+        $obFilters = Filter::instance();
+        $arFilters = $obFilters->get();
         $arSort = array_get($data, 'sort');
         $obCollection = $this->collection;
 
         if ($obCollection->methodExists('sort') && $arSort['column']) {
             $sSort = $arSort['column'];
-//            if ($sSort != 'no' && !str_contains($sSort, '|')) {
-//                $sSort .= '|'.$arSort['direction'];
-//            }
             $obCollection = $obCollection->sort($sSort);
         }
 
@@ -648,7 +661,7 @@ class Base extends Extendable
                 if ($obCollection->methodExists($sMethodName)) {
                     $obResult = call_user_func_array(
                         [$obCollection, $sMethodName],
-                        array_wrap($sFilterValue)
+                        $sFilterValue
                     );
 
                     if (is_array($obResult)) {
@@ -658,10 +671,6 @@ class Base extends Extendable
                     }
                 }
             }
-        }
-
-        if (!empty($this->data['per_page'])) {
-            $this->itemsPerPage = $this->data['per_page'];
         }
 
         return $obCollection;
