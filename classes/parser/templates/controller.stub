@@ -1,6 +1,9 @@
 <?php namespace {{studly_author}}\{{studly_plugin}}\Controllers\Api;
 
 use PlanetaDelEste\ApiToolbox\Classes\Api\Base;
+use {{studly_author}}\{{studly_plugin}}\Classes\Resource\{{studly_model}}\{{studly_model}}IndexCollection;
+use {{studly_author}}\{{studly_plugin}}\Classes\Resource\{{studly_model}}\{{studly_model}}ListCollection;
+use {{studly_author}}\{{studly_plugin}}\Classes\Resource\{{studly_model}}\{{studly_model}}ShowResource;
 use {{studly_expansion_author}}\{{studly_expansion_plugin}}\Models\{{studly_model}};
 
 /**
