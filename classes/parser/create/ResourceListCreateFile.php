@@ -5,7 +5,7 @@ use Lovata\Toolbox\Classes\Parser\Create\CommonCreateFile;
 class ResourceListCreateFile extends CommonCreateFile
 {
     /** @var string */
-    protected $sFile = 'ListCollection.php';
+    protected $sFile = '{{studly_model}}ListCollection.php';
     /** @var string */
     protected $sFolderPath = '/{{lower_author}}/{{lower_plugin}}/classes/resource/{{lower_model}}/';
     /** @var string */

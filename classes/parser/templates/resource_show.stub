@@ -6,13 +6,6 @@
  * @mixin \{{studly_expansion_author}}\{{studly_expansion_plugin}}\Classes\Item\{{studly_model}}Item
  * @package {{studly_author}}\{{studly_plugin}}\Classes\Resource\{{studly_model}}
  */
-class ShowResource extends ItemResource
+class {{studly_model}}ShowResource extends ItemResource
 {
-    public function getDataKeys(): array
-    {
-        return [
-{{cached}}
-        ];
-    }
-
 }

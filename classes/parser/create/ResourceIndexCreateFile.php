@@ -5,7 +5,7 @@ use Lovata\Toolbox\Classes\Parser\Create\CommonCreateFile;
 class ResourceIndexCreateFile extends CommonCreateFile
 {
     /** @var string */
-    protected $sFile = 'IndexCollection.php';
+    protected $sFile = '{{studly_model}}IndexCollection.php';
     /** @var string */
     protected $sFolderPath = '/{{lower_author}}/{{lower_plugin}}/classes/resource/{{lower_model}}/';
     /** @var string */

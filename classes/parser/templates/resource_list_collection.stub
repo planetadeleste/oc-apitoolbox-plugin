@@ -5,7 +5,7 @@
  *
  * @package {{studly_author}}\{{studly_plugin}}\Classes\Resource\{{studly_model}}
  */
-class ListCollection extends IndexCollection
+class {{studly_model}}ListCollection extends IndexCollection
 {
-    public $collects = ItemResource::class;
+    public $collects = {{studly_model}}ItemResource::class;
 }

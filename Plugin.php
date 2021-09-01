@@ -1,5 +1,6 @@
 <?php namespace PlanetaDelEste\ApiToolbox;
 
+use PlanetaDelEste\ApiToolbox\Classes\Console\CreateApiAll;
 use PlanetaDelEste\ApiToolbox\Classes\Console\CreateApiController;
 use PlanetaDelEste\ApiToolbox\Classes\Console\CreateApiResourceIndex;
 use PlanetaDelEste\ApiToolbox\Classes\Console\CreateApiResourceItem;
@@ -48,6 +49,7 @@ class Plugin extends PluginBase
 
     public function register()
     {
+        $this->registerConsoleCommand('toolbox:create.api.all', CreateApiAll::class);
         $this->registerConsoleCommand('toolbox:create.api.controller', CreateApiController::class);
         $this->registerConsoleCommand('toolbox:create.api.resources', CreateApiResources::class);
         $this->registerConsoleCommand('toolbox:create.api.resourceindex', CreateApiResourceIndex::class);

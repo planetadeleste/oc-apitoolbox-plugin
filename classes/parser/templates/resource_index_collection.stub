@@ -7,9 +7,9 @@ use Illuminate\Http\Resources\Json\ResourceCollection;
  *
  * @package {{studly_author}}\{{studly_plugin}}\Classes\Resource\{{studly_model}}
  */
-class IndexCollection extends ResourceCollection
+class {{studly_model}}IndexCollection extends ResourceCollection
 {
-    public $collects = ShowResource::class;
+    public $collects = {{studly_model}}ShowResource::class;
 
     public function toArray($request)
     {

@@ -10,7 +10,7 @@ use PlanetaDelEste\ApiToolbox\Classes\Resource\Base;
  * @mixin \{{studly_expansion_author}}\{{studly_expansion_plugin}}\Classes\Item\{{studly_model}}Item
  * @package {{studly_author}}\{{studly_plugin}}\Classes\Resource\{{studly_model}}
  */
-class ItemResource extends Base
+class {{studly_model}}ItemResource extends Base
 {
     /**
      * @return array|void

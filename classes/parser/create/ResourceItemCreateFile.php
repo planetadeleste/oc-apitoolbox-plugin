@@ -5,7 +5,7 @@ use Lovata\Toolbox\Classes\Parser\Create\CommonCreateFile;
 class ResourceItemCreateFile extends CommonCreateFile
 {
     /** @var string */
-    protected $sFile = 'ItemResource.php';
+    protected $sFile = '{{studly_model}}ItemResource.php';
     /** @var string */
     protected $sFolderPath = '/{{lower_author}}/{{lower_plugin}}/classes/resource/{{lower_model}}/';
     /** @var string */
