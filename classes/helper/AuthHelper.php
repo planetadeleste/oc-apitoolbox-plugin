@@ -11,6 +11,14 @@ class AuthHelper
     /** @var array Loaded users */
     protected static $arUsers = [];
 
+    /**
+     * Check if logged user has group of code $sCode
+     *
+     * @param string $sCode
+     *
+     * @return bool|null
+     * @throws \Tymon\JWTAuth\Exceptions\JWTException
+     */
     public static function inGroup(string $sCode): ?bool
     {
         if (!$obUser = self::user()) {
@@ -23,6 +31,7 @@ class AuthHelper
 
     /**
      * @return User|null
+     * @throws \Tymon\JWTAuth\Exceptions\JWTException
      */
     public static function user(): ?User
     {
@@ -40,6 +49,7 @@ class AuthHelper
 
     /**
      * @return null|int
+     * @throws \Tymon\JWTAuth\Exceptions\JWTException
      */
     public static function userId(): ?int
     {
@@ -50,6 +60,9 @@ class AuthHelper
         return \JWTAuth::parseToken()->authenticate()->id;
     }
 
+    /**
+     * @return bool
+     */
     public static function check(): bool
     {
         try {

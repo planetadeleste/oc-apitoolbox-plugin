@@ -3,6 +3,9 @@
 use Carbon\Carbon;
 use Event;
 use Illuminate\Http\Resources\Json\Resource;
+use Illuminate\Support\Collection;
+use Lovata\Toolbox\Classes\Collection\ElementCollection;
+use Lovata\Toolbox\Classes\Item\ElementItem;
 
 /**
  * Class Base
@@ -24,6 +27,15 @@ abstract class Base extends Resource
      */
     public function toArray($request)
     {
+        if (empty($this->resource) ||
+            ($this->resource instanceof Collection ||
+                $this->resource instanceof ElementItem ||
+                $this->resource instanceof ElementCollection
+                && $this->resource->isEmpty())
+        ) {
+            return [];
+        }
+
         $arDataKeys = $this->getDataKeys();
         $arDates = $this->getDates();
         $arData = $this->getData();
@@ -65,9 +77,21 @@ abstract class Base extends Resource
     }
 
     /**
-     * @return string|null
+     * Get item dates in DateTimeString format
+     *
+     * @return array
      */
-    abstract protected function getEvent();
+    public function getDates(): array
+    {
+        return [
+            'updated_at' => $this->updated_at && $this->updated_at instanceof Carbon
+                ? $this->updated_at->toDateTimeString()
+                : $this->updated_at,
+            'created_at' => $this->created_at && $this->created_at instanceof Carbon
+                ? $this->created_at->toDateTimeString()
+                : $this->created_at,
+        ];
+    }
 
     /**
      * @return array
@@ -84,21 +108,8 @@ abstract class Base extends Resource
         return [];
     }
 
-
     /**
-     * Get item dates in DateTimeString format
-     *
-     * @return array
+     * @return string|null
      */
-    public function getDates(): array
-    {
-        return [
-            'updated_at' => $this->updated_at && $this->updated_at instanceof Carbon
-                ? $this->updated_at->toDateTimeString()
-                : $this->updated_at,
-            'created_at' => $this->created_at && $this->created_at instanceof Carbon
-                ? $this->created_at->toDateTimeString()
-                : $this->created_at,
-        ];
-    }
+    abstract protected function getEvent();
 }
