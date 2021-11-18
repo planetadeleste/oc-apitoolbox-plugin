@@ -25,12 +25,12 @@ abstract class Base extends Resource
      *
      * @return array
      */
-    public function toArray($request)
+    public function toArray($request): array
     {
         if (empty($this->resource) ||
-            ($this->resource instanceof Collection ||
-                $this->resource instanceof ElementItem ||
-                $this->resource instanceof ElementCollection
+            (($this->resource instanceof Collection ||
+                    $this->resource instanceof ElementItem ||
+                    $this->resource instanceof ElementCollection)
                 && $this->resource->isEmpty())
         ) {
             return [];
@@ -96,14 +96,14 @@ abstract class Base extends Resource
     /**
      * @return array
      */
-    abstract public function getData();
+    abstract public function getData(): array;
 
     /**
      * Returns all used Item key attributes
      *
      * @return array
      */
-    public function getDataKeys()
+    public function getDataKeys(): array
     {
         return [];
     }
@@ -111,5 +111,5 @@ abstract class Base extends Resource
     /**
      * @return string|null
      */
-    abstract protected function getEvent();
+    abstract protected function getEvent(): ?string;
 }
