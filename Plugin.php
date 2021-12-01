@@ -7,6 +7,7 @@ use PlanetaDelEste\ApiToolbox\Classes\Console\CreateApiResourceItem;
 use PlanetaDelEste\ApiToolbox\Classes\Console\CreateApiResourceList;
 use PlanetaDelEste\ApiToolbox\Classes\Console\CreateApiResources;
 use PlanetaDelEste\ApiToolbox\Classes\Console\CreateApiResourceShow;
+use PlanetaDelEste\ApiToolbox\Classes\Console\CreateApiRoute;
 use System\Classes\PluginBase;
 
 /**
@@ -56,5 +57,6 @@ class Plugin extends PluginBase
         $this->registerConsoleCommand('toolbox:create.api.resourcelist', CreateApiResourceList::class);
         $this->registerConsoleCommand('toolbox:create.api.resourceitem', CreateApiResourceItem::class);
         $this->registerConsoleCommand('toolbox:create.api.resourceshow', CreateApiResourceShow::class);
+        $this->registerConsoleCommand('toolbox:create.api.route', CreateApiRoute::class);
     }
 }

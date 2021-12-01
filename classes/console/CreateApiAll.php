@@ -33,5 +33,6 @@ class CreateApiAll extends CommonConsole
         $this->call('toolbox:create.api.resourceindex', ['data' => $this->arData]);
         $this->call('toolbox:create.api.resourcelist', ['data' => $this->arData]);
         $this->call('toolbox:create.api.controller', ['data' => $this->arData]);
+        $this->call('toolbox:create.api.route', ['data' => $this->arData]);
     }
 }

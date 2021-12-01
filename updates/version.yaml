@@ -1,2 +1,76 @@
-1.0.0:
+v1.0.0:
     - 'Init plugin'
+v1.0.1:
+    - 'Update composer.json'
+v1.0.2:
+    - Migrate console commands to Lovata.Toolbox console
+v1.0.3:
+    - Fix register console commands
+v1.0.4:
+    - Add extendSave method
+v1.0.5:
+    - Use EventEmitter
+v1.0.6:
+    - Return ShowResource element on update
+    - Fix attaching files
+    - New getItem model
+    - Fix attaching files
+    - Do not force char "|" on sort filter
+    - Add local event constants
+    - Pass params by reference on events
+v1.0.7:
+    - Use returned value as primary value to show load model
+v1.0.8:
+    - Move sort instance before filters
+    - Use make method to crate collections instead of app()
+    - Use `propertyExists` method instead of `property_exists` function to get dynamic properties
+v1.0.9:
+    - New getItemId method on Base api class
+    - Fix issue on global model dates on Base resource class
+    - Add properties doc
+    - Fix applying method filters
+    - Permit to not return error message
+v1.0.10:
+    - Add has_plugin, has_jwtauth_plugin helpers
+v1.0.11:
+    - Switch resource event params
+    - Add local events constants
+v1.0.12:
+    - Rename events
+    - New ApiControllerHandler abstract class
+v1.0.13:
+    - New isBackend method
+v1.0.14:
+    - Add locale param to tr method
+v1.0.15:
+    - Add getSortColumn method to controller stub
+    - Use local current plugin class for event constant
+    - Remove event from show resource
+v1.0.16:
+    - Fix extending filters
+    - add per_page parameter (thanks to Octavian)
+    - With this parameter you can change number of elements shown on each page
+v1.0.17:
+    - New Filter singleton class
+    - Fix issue passing multiple params to collection method throw filters
+v1.0.18:
+    - Create abstract class to add collections event
+v1.0.19:
+    - New create.api.all command
+    - Rename resources adding studly model name as prefix.
+v1.0.20:
+    - Add use resource classes
+v1.0.21:
+    - Fix show resource extends class name
+v1.0.22:
+    - Fix ListCollection extends class name
+v1.0.23:
+    - New helper class AuthHelper
+v1.0.24:
+    - Return empty array if resource is empty or null
+    - New store SortingListTrait trait class
+v1.0.25:
+    - Fix issue checking for empty resource object
+v1.0.26:
+    - Update version.yaml
+    - Add 'toolbox:create.api.route' console command
