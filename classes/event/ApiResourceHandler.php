@@ -9,7 +9,8 @@ abstract class ApiResourceHandler
 {
     public function subscribe(Dispatcher $obEvent)
     {
-        $sEvent = app($this->getResourceClass())->event();
+        $sResourceClass = $this->getResourceClass();
+        $sEvent = $sResourceClass::make([])->event();
         if (!$sEvent) {
             return;
         }
