@@ -77,6 +77,16 @@ abstract class Base extends Resource
     }
 
     /**
+     * Get event name of item resource
+     *
+     * @return string|null
+     */
+    public function event(): ?string
+    {
+        return $this->getEvent();
+    }
+
+    /**
      * Get item dates in DateTimeString format
      *
      * @return array
