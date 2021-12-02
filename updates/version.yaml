@@ -76,3 +76,5 @@ v1.0.26:
     - Add 'toolbox:create.api.route' console command
 v1.0.27:
     - Add event getter
+v1.0.28:
+    - New ApiResourceHandler class
