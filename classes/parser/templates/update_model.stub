@@ -20,7 +20,7 @@ class Update{{studly_controller}}Table extends Migration
      */
     public function up()
     {
-        if(Schema::hasTable(self::TABLE)){
+        if (Schema::hasTable(self::TABLE)) {
             Schema::table(self::TABLE, function (Blueprint $obTable) {
 
             });
@@ -32,13 +32,13 @@ class Update{{studly_controller}}Table extends Migration
      */
     public function down()
     {
-        if(!Schema::hasTable(self::TABLE)){
-            return false;
+        if (!Schema::hasTable(self::TABLE)) {
+            return;
         }
 
         if (Schema::hasColumns(self::TABLE, $this->arColumns)) {
             Schema::table(self::TABLE, function (Blueprint $obTable) {
-                    $obTable->dropColumn($this->arColumns);
+                $obTable->dropColumn($this->arColumns);
             });
         }
     }
