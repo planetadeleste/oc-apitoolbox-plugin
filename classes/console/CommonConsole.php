@@ -2,6 +2,99 @@
 
 use Lovata\Toolbox\Classes\Console\CommonCreateFile;
 
+/**
+ * @property-read string $slug
+ * @property-read string $name
+ * @property-read string $preview_image
+ * @property-read string $file
+ * @property-read string $images
+ * @property-read string $fields
+ * @property-read string $developer
+ * @property-read string $author
+ * @property-read string $expansion_author
+ * @property-read string $expansion_plugin
+ * @property-read string $plugin
+ * @property-read string $model
+ * @property-read string $controller
+ * @property-read string $logo
+ * @property-read string $import_svg
+ * @property-read string $export_svg
+ * @property-read string $empty_import_export_svg
+ * @property-read string $import_export_svg
+ * @property-read string $nested_tree
+ * @property-read string $sortable
+ * @property-read string $default_sorting
+ * @property-read string $sorting
+ * @property-read string $empty_sortable_nested_tree
+ * @property-read string $view_count
+ * @property-read string $active
+ * @property-read string $command_parent
+ * @property-read string $item
+ * @property-read string $collection
+ * @property-read string $store
+ *
+ * Studly case
+ * @property-read string $studly_slug
+ * @property-read string $studly_name
+ * @property-read string $studly_preview_image
+ * @property-read string $studly_file
+ * @property-read string $studly_images
+ * @property-read string $studly_fields
+ * @property-read string $studly_developer
+ * @property-read string $studly_author
+ * @property-read string $studly_expansion_author
+ * @property-read string $studly_expansion_plugin
+ * @property-read string $studly_plugin
+ * @property-read string $studly_model
+ * @property-read string $studly_controller
+ * @property-read string $studly_logo
+ * @property-read string $studly_import_svg
+ * @property-read string $studly_export_svg
+ * @property-read string $studly_empty_import_export_svg
+ * @property-read string $studly_import_export_svg
+ * @property-read string $studly_nested_tree
+ * @property-read string $studly_sortable
+ * @property-read string $studly_default_sorting
+ * @property-read string $studly_sorting
+ * @property-read string $studly_empty_sortable_nested_tree
+ * @property-read string $studly_view_count
+ * @property-read string $studly_active
+ * @property-read string $studly_command_parent
+ * @property-read string $studly_item
+ * @property-read string $studly_collection
+ * @property-read string $studly_store
+ *
+ * Lower case
+ * @property-read string $lower_slug
+ * @property-read string $lower_name
+ * @property-read string $lower_preview_image
+ * @property-read string $lower_file
+ * @property-read string $lower_images
+ * @property-read string $lower_fields
+ * @property-read string $lower_developer
+ * @property-read string $lower_author
+ * @property-read string $lower_expansion_author
+ * @property-read string $lower_expansion_plugin
+ * @property-read string $lower_plugin
+ * @property-read string $lower_model
+ * @property-read string $lower_controller
+ * @property-read string $lower_logo
+ * @property-read string $lower_import_svg
+ * @property-read string $lower_export_svg
+ * @property-read string $lower_empty_import_export_svg
+ * @property-read string $lower_import_export_svg
+ * @property-read string $lower_nested_tree
+ * @property-read string $lower_sortable
+ * @property-read string $lower_default_sorting
+ * @property-read string $lower_sorting
+ * @property-read string $lower_empty_sortable_nested_tree
+ * @property-read string $lower_view_count
+ * @property-read string $lower_active
+ * @property-read string $lower_command_parent
+ * @property-read string $lower_item
+ * @property-read string $lower_collection
+ * @property-read string $lower_store
+ */
 class CommonConsole extends CommonCreateFile
 {
     /**
@@ -13,25 +106,39 @@ class CommonConsole extends CommonCreateFile
         '▒█░░░ ▀▀▀ ▀░░▀ ▀░░▀ ▀▀▀ ░░▀░░ ▀░░▀ ▒█▄▄▀ ▀▀▀ ▀▀▀ ▒█▄▄▄ ▀▀▀ ░░▀░░ ▀▀▀',
     ];
 
+    public function __get($sName)
+    {
+        return array_get($this->arData, 'replace.'.$sName);
+    }
+
     protected function getModelCachedAttrs()
     {
-        $sExpansionAuthor = array_get($this->arData, 'replace.studly_expansion_author');
-        $sExpansionPlugin = array_get($this->arData, 'replace.studly_expansion_plugin');
-        $sModel = array_get($this->arData, 'replace.studly_model');
-        if (!$sExpansionAuthor || !$sExpansionPlugin || !$sModel) {
-            return;
-        }
-
-        /** @var \Model|\Eloquent $obModel */
-        $obModel = app(join("\\", [$sExpansionAuthor, $sExpansionPlugin, 'Models', $sModel]));
-        if ($obModel) {
+        if ($obModel = $this->getObModel()) {
             if (property_exists($obModel, 'cached')) {
                 $arColumns = $obModel->cached;
-                $sFileContent = \File::get(plugins_path('planetadeleste/apitoolbox/classes/parser/templates/cached_attributes.stub'));
+                $sFileContent = \File::get(
+                    plugins_path('planetadeleste/apitoolbox/classes/parser/templates/cached_attributes.stub')
+                );
                 $sContent = \Twig::parse($sFileContent, ['attributes' => $arColumns]);
                 array_set($this->arData, 'replace.cached', $sContent);
                 $this->setEnableList($arColumns);
             }
         }
     }
+
+    /**
+     * @return null|\Model|\Eloquent
+     */
+    protected function getObModel()
+    {
+        $sAuthor = $this->studly_expansion_author ?: $this->studly_author;
+        $sPlugin = $this->studly_expansion_plugin ?: $this->studly_plugin;
+        $sModel = $this->studly_model;
+        if (!$sAuthor || !$sPlugin || !$sModel) {
+            return null;
+        }
+
+        return app(join("\\", [$sAuthor, $sPlugin, 'Models', $sModel]));
+    }
+
 }

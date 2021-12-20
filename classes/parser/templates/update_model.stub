@@ -1,0 +1,45 @@
+<?php namespace {{studly_author}}\{{studly_plugin}}\Updates;
+
+use Schema;
+use Illuminate\Database\Schema\Blueprint;
+use October\Rain\Database\Updates\Migration;
+
+/**
+ * Class UpdateTable{{studly_controller}}
+ * @package {{studly_author}}\{{studly_plugin}}\Classes\Console
+ [[developer]]* @author {{developer}}
+ [[developer]]*/
+class CreateTable{{studly_controller}} extends Migration
+{
+    const TABLE = '{{table}}';
+
+    protected $arColumns = [];
+
+    /**
+     * Apply migration
+     */
+    public function up()
+    {
+        if(Schema::hasTable(self::TABLE)){
+            Schema::table(self::TABLE, function (Blueprint $obTable) {
+
+            });
+        }
+    }
+
+    /**
+     * Rollback migration
+     */
+    public function down()
+    {
+        if(!Schema::hasTable(self::TABLE)){
+            return false;
+        }
+
+        if (Schema::hasColumns(self::TABLE, $this->arColumns)) {
+            Schema::table(self::TABLE, function (Blueprint $obTable) {
+                    $obTable->dropColumn($this->arColumns);
+            });
+        }
+    }
+}
