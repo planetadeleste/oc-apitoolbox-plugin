@@ -9,7 +9,7 @@ use October\Rain\Database\Updates\Migration;
  * @package {{studly_author}}\{{studly_plugin}}\Classes\Console
  [[developer]]* @author {{developer}}
  [[developer]]*/
-class CreateTable{{studly_controller}} extends Migration
+class Update{{studly_controller}}Table extends Migration
 {
     const TABLE = '{{table}}';
 

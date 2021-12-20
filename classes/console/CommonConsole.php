@@ -1,5 +1,6 @@
 <?php namespace PlanetaDelEste\ApiToolbox\Classes\Console;
 
+use Lang;
 use Lovata\Toolbox\Classes\Console\CommonCreateFile;
 
 /**
@@ -97,6 +98,8 @@ use Lovata\Toolbox\Classes\Console\CommonCreateFile;
  */
 class CommonConsole extends CommonCreateFile
 {
+    const CODE_VERSION = 'version';
+
     /**
      * @var string[]
      */
@@ -109,6 +112,25 @@ class CommonConsole extends CommonCreateFile
     public function __get($sName)
     {
         return array_get($this->arData, 'replace.'.$sName);
+    }
+
+    /**
+     * Set model
+     */
+    protected function setVersion()
+    {
+        if ($this->checkAdditionList(self::CODE_VERSION)) {
+            return;
+        }
+
+        $this->setAdditionList(self::CODE_VERSION);
+        $sMessage = Lang::get('lovata.toolbox::lang.message.set', [
+            'name'    => self::CODE_VERSION,
+            'example' => 'v1.0.1',
+        ]);
+
+        $sModel = $this->ask($sMessage);
+        $this->setRegisterString($sModel, self::CODE_VERSION);
     }
 
     protected function getModelCachedAttrs()

@@ -23,10 +23,11 @@ class CreateUpdateModel extends CommonConsole
         $this->setPlugin(true);
         $this->setModel();
         $this->setController();
+        $this->setVersion();
         $this->setAdditionList(self::CODE_COMMAND_PARENT);
 
         if ($obModel = $this->getObModel()) {
-            array_set($this->arData, 'replaced.table', $obModel->getTable());
+            array_set($this->arData, 'replace.table', $obModel->getTable());
         }
 
         $this->createFile(UpdateModelCreateFile::class);
