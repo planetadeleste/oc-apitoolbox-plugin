@@ -191,6 +191,10 @@ class Base extends Extendable
                 $message = static::tr(static::ALERT_RECORD_CREATED);
             }
 
+            if (!Result::status() && Result::message()) {
+                throw new Exception(Result::message());
+            }
+
             $obItem = $this->getItem($this->obModel->id);
             $obResourceItem = $this->getShowResource()
                 ? app($this->getShowResource(), [$obItem])
@@ -230,6 +234,11 @@ class Base extends Extendable
             $this->validate();
 
             if ($this->save()) {
+
+                if (!Result::status() && Result::message()) {
+                    throw new Exception(Result::message());
+                }
+
                 Result::setTrue();
                 $message = static::tr(static::ALERT_RECORD_UPDATED);
             }
@@ -707,9 +716,9 @@ class Base extends Extendable
      */
     public function component(
         string $sName,
-        $cmsObject = null,
-        $properties = [],
-        $isSoftComponent = false
+               $cmsObject = null,
+               $properties = [],
+               $isSoftComponent = false
     ): \Cms\Classes\ComponentBase {
         if (array_key_exists($sName, static::$components)) {
             return static::$components[$sName];
