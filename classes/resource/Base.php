@@ -20,6 +20,9 @@ abstract class Base extends Resource
     /** @var bool Add created_at, updated_at dates */
     public $addDates = true;
 
+    /** @var string[] Property of type Date */
+    public $arDates = ['created_at', 'updated_at'];
+
     /**
      * @param \Illuminate\Http\Request $request
      *
@@ -77,36 +80,32 @@ abstract class Base extends Resource
     }
 
     /**
-     * Get event name of item resource
-     *
-     * @return string|null
-     */
-    public function event(): ?string
-    {
-        return $this->getEvent();
-    }
-
-    /**
      * Get item dates in DateTimeString format
      *
      * @return array
      */
     public function getDates(): array
     {
-        return [
-            'updated_at' => $this->updated_at && $this->updated_at instanceof Carbon
-                ? $this->updated_at->toDateTimeString()
-                : $this->updated_at,
-            'created_at' => $this->created_at && $this->created_at instanceof Carbon
-                ? $this->created_at->toDateTimeString()
-                : $this->created_at,
-        ];
-    }
+        $arDates = [];
+        if (empty($this->arDates)) {
+            return $arDates;
+        }
 
-    /**
-     * @return array
-     */
-    abstract public function getData(): array;
+        foreach ($this->arDates as $sKey => $sValue) {
+            $sProp = is_numeric($sKey) ? $sValue : $sKey;
+            $sFormat = is_string($sKey) && !is_numeric($sKey) ? $sValue : null;
+            $obDate = $this->{$sProp};
+            $sDateValue = $obDate instanceof Carbon
+                ? $sFormat
+                    ? $obDate->format($sFormat)
+                    : $obDate->toDateTimeString()
+                : $obDate;
+
+            $arDates[$sProp] = $sDateValue;
+        }
+
+        return $arDates;
+    }
 
     /**
      * Returns all used Item key attributes
@@ -116,6 +115,21 @@ abstract class Base extends Resource
     public function getDataKeys(): array
     {
         return [];
+    }
+
+    /**
+     * @return array
+     */
+    abstract public function getData(): array;
+
+    /**
+     * Get event name of item resource
+     *
+     * @return string|null
+     */
+    public function event(): ?string
+    {
+        return $this->getEvent();
     }
 
     /**
