@@ -71,6 +71,7 @@ class Base extends Extendable
     {
         parent::__construct();
 
+        $this->setLocale();
         $this->init();
         $this->data = $this->getInputData();
         $this->setCastData($this->data);
@@ -741,5 +742,25 @@ class Base extends Extendable
     public function hasPlugin(string $sNamespace): bool
     {
         return PluginManager::instance()->hasPlugin($sNamespace);
+    }
+
+    /**
+     * Set locale
+     *
+     * @return void
+     */
+    protected function setLocale(): void
+    {
+        if (!$this->hasPlugin('RainLab.Translate')) {
+            return;
+        }
+
+        $obTranslate = \RainLab\Translate\Classes\Translator::instance();
+
+        if (!$sActiveLangCode = request()->header('Accept-Language')) {
+            $sActiveLangCode = $obTranslate->getLocale();
+        }
+
+        $obTranslate->setLocale($sActiveLangCode);
     }
 }

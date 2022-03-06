@@ -6,6 +6,7 @@ use Illuminate\Http\Resources\Json\Resource;
 use Illuminate\Support\Collection;
 use Lovata\Toolbox\Classes\Collection\ElementCollection;
 use Lovata\Toolbox\Classes\Item\ElementItem;
+use System\Classes\PluginManager;
 
 /**
  * Class Base
@@ -60,6 +61,8 @@ abstract class Base extends Resource
                 $arData[$sKey] = $this->{$sKey};
             }
         }
+
+        $this->translate($arData);
 
         if (is_string($this->getEvent())) {
             $arResponseData = Event::fire($this->getEvent(), [$this, $arData]);
@@ -136,4 +139,48 @@ abstract class Base extends Resource
      * @return string|null
      */
     abstract protected function getEvent(): ?string;
+
+    /**
+     * Map translated data
+     *
+     * @param array $arData
+     *
+     * @return void
+     */
+    protected function translate(array &$arData): void
+    {
+        if (!$this->resource instanceof ElementItem
+            || empty($this->resource->getObject())
+            || !PluginManager::instance()->hasPlugin('RainLab.Translate')
+            || !$this->resource->getObject()->isClassExtendedWith('RainLab.Translate.Behaviors.TranslatableModel')) {
+            return;
+        }
+
+        $arTranslatable = $this->resource->getObject()->translatable;
+        if (empty($arTranslatable) || !is_array($arTranslatable)) {
+            return;
+        }
+
+        $obTranslate = \RainLab\Translate\Classes\Translator::instance();
+
+        if (!$sActiveLangCode = request()->header('Accept-Language')) {
+            $sActiveLangCode = $obTranslate->getLocale();
+        }
+
+        if ($sActiveLangCode === $obTranslate->getDefaultLocale()) {
+            return;
+        }
+
+        foreach ($arTranslatable as $sField) {
+            //Check field name
+            if (empty($sField) || !is_string($sField) || !isset($arData[$sField])) {
+                continue;
+            }
+
+            $sTranslatedValue = $this->resource->getAttribute($sField.'|'.$sActiveLangCode);
+            if (!empty($sTranslatedValue)) {
+                array_set($arData, $sField, $sTranslatedValue);
+            }
+        }
+    }
 }
