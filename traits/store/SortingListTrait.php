@@ -2,30 +2,10 @@
 
 /**
  * @property string $sValue
+ * @property array  $arListFromDB
  */
 trait SortingListTrait
 {
-    private $_arListFromDB = [
-        'created_at|asc' => [
-            'field' => 'created_at',
-            'dir'   => 'asc'
-        ],
-        'created_at|desc' => [
-            'field' => 'created_at',
-            'dir'   => 'desc'
-        ],
-        'name|asc' => [
-            'field' => 'name',
-            'dir'   => 'asc'
-        ],
-        'name|desc' => [
-            'field' => 'name',
-            'dir'   => 'desc'
-        ],
-    ];
-
-    protected $arListFromDB = [];
-
     /**
      * Get ID list from database
      *
@@ -33,7 +13,7 @@ trait SortingListTrait
      */
     protected function getIDListFromDB(): array
     {
-        $arListFromDB = $this->_arListFromDB + $this->arListFromDB;
+        $arListFromDB = $this->getFieldList();
         if ($arSortData = array_get($arListFromDB, $this->sValue)) {
             if ($sField = array_get($arSortData, 'field')) {
                 $sDir = array_get($arSortData, 'dir', 'asc');
@@ -45,6 +25,33 @@ trait SortingListTrait
     }
 
     /**
+     * Construct array with dir,field keys
+     * @return array
+     */
+    protected function getFieldList(): array
+    {
+        $arFieldList = ['created_at', 'name'];
+        $arListFromDB = [];
+
+        if (property_exists($this, 'arListFromDB')) {
+            $arFieldList = $this->arListFromDB;
+        }
+
+        foreach ($arFieldList as $sFieldName) {
+            $arListFromDB[$sFieldName.'|asc'] = [
+                'dir'   => 'asc',
+                'field' => $sFieldName,
+            ];
+            $arListFromDB[$sFieldName.'|desc'] = [
+                'dir'   => 'desc',
+                'field' => $sFieldName,
+            ];
+        }
+
+        return $arListFromDB;
+    }
+
+    /**
      * @param string $sColumn
      * @param string $sDir
      *
@@ -52,6 +59,11 @@ trait SortingListTrait
      */
     protected function orderBy(string $sColumn = 'created_at', string $sDir = 'asc'): array
     {
+        $sMethod = camel_case('get_'.$sColumn.'_list');
+        if (method_exists($this, $sMethod)) {
+            return $this->{$sMethod}($sDir);
+        }
+
         $sModelClass = $this->getModelClass();
         return $sModelClass::orderBy($sColumn, $sDir)->lists('id');
     }

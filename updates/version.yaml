@@ -78,3 +78,6 @@ v1.0.27:
     - Add event getter
 v1.0.28:
     - New ApiResourceHandler class
+v1.0.29:
+    - New ModelHandlerTrait class
+    - Simplify setting SortingListTrait fields columns

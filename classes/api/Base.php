@@ -77,7 +77,7 @@ class Base extends Extendable
         $this->setCastData($this->data);
         $this->setResources();
         $this->collection = $this->makeCollection();
-        $this->collection = $this->applyFilters();
+        $this->applyFilters();
     }
 
     public function init()
@@ -683,7 +683,7 @@ class Base extends Extendable
             }
         }
 
-        return $obCollection;
+        return $this->collection = $obCollection;
     }
 
     /**

@@ -139,9 +139,9 @@ trait ApiBaseTrait
 
     protected function setResources()
     {
-        if ($this->getListResource()
-            && $this->getIndexResource()
-            && $this->getShowResource()
+        if (($this->getListResource()
+                && $this->getIndexResource()
+                && $this->getShowResource())
             || !$this->getModelClass()) {
             return;
         }
