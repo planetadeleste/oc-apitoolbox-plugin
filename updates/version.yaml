@@ -79,5 +79,24 @@ v1.0.27:
 v1.0.28:
     - New ApiResourceHandler class
 v1.0.29:
+    - Fix issue calling undefined resource
+v1.0.30:
+    - New toolbox:create.model.update console command
+v1.0.31:
+    - Add version ask
+    - Store in version folder
+    - Update class name
+v1.0.32:
+    - Fix UpdateModelCreateFile console command
+v1.0.33:
+    - Throw exception on result status
+v1.0.34:
+    - New property to set date keys
+v1.0.35:
+    - Auto set getPageUrl, getPageParamList methods
+v1.0.36:
+    - Set locale on contructor
+    - Load resource item
+v1.0.37:
     - New ModelHandlerTrait class
     - Simplify setting SortingListTrait fields columns
