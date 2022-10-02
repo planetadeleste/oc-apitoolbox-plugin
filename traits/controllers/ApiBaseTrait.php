@@ -65,8 +65,8 @@ trait ApiBaseTrait
      * @param array       $options
      * @param string|null $locale
      *
-     * @deprecated Use ApiHelper::tr() instead
      * @return string
+     * @deprecated Use ApiHelper::tr() instead
      */
     public static function tr(string $message, array $options = [], string $locale = null): string
     {
@@ -173,9 +173,9 @@ trait ApiBaseTrait
     }
 
     /**
-     * @return string
+     * @return string|null
      */
-    public function getModelClass(): string
+    public function getModelClass(): ?string
     {
         return $this->modelClass;
     }

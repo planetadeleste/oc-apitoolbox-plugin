@@ -104,3 +104,5 @@ v1.0.38:
     - New ApiHelper
     - Switch static::tr to ApiHelper::tr
     - Made some code improvements
+v1.0.39:
+    - Set nullable getModelClass method
