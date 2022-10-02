@@ -100,3 +100,7 @@ v1.0.36:
 v1.0.37:
     - New ModelHandlerTrait class
     - Simplify setting SortingListTrait fields columns
+v1.0.38:
+    - New ApiHelper
+    - Switch static::tr to ApiHelper::tr
+    - Made some code improvements

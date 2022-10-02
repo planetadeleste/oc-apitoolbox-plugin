@@ -9,6 +9,7 @@ use Lovata\Buddies\Models\User;
 use Lovata\Toolbox\Classes\Collection\ElementCollection;
 use October\Rain\Extension\Extendable;
 use October\Rain\Support\Arr;
+use PlanetaDelEste\ApiToolbox\Classes\Helper\ApiHelper;
 use PlanetaDelEste\ApiToolbox\Plugin;
 use PlanetaDelEste\ApiToolbox\Traits\Controllers\ApiBaseTrait;
 use PlanetaDelEste\ApiToolbox\Traits\Controllers\ApiCastTrait;
@@ -76,11 +77,11 @@ class Base extends Extendable
         $this->data = $this->getInputData();
         $this->setCastData($this->data);
         $this->setResources();
-        $this->collection = $this->makeCollection();
+        $this->makeCollection();
         $this->applyFilters();
     }
 
-    public function init()
+    public function init(): void
     {
     }
 
@@ -147,7 +148,7 @@ class Base extends Extendable
 
             $iModelId = $this->getItemId($value);
             if (!$iModelId) {
-                throw new Exception(static::ALERT_RECORD_NOT_FOUND, 403);
+                throw new \RuntimeException(static::ALERT_RECORD_NOT_FOUND, 403);
             }
 
             $this->item = $this->getItem($iModelId);
@@ -179,21 +180,21 @@ class Base extends Extendable
 
             $this->obModel = app($this->getModelClass());
             $this->exists = false;
-            $message = static::tr(static::ALERT_RECORD_NOT_CREATED);
+            $message = ApiHelper::tr(static::ALERT_RECORD_NOT_CREATED);
 
             if (!$this->hasPermission('store')) {
-                throw new Exception(static::ALERT_PERMISSIONS_DENIED, 403);
+                throw new \RuntimeException(static::ALERT_PERMISSIONS_DENIED, 403);
             }
 
             $this->fireSystemEvent(Plugin::EVENT_BEFORE_SAVE, [$this->obModel, &$this->data]);
             $this->validate();
 
             if ($this->save()) {
-                $message = static::tr(static::ALERT_RECORD_CREATED);
+                $message = ApiHelper::tr(static::ALERT_RECORD_CREATED);
             }
 
             if (!Result::status() && Result::message()) {
-                throw new Exception(Result::message());
+                throw new \RuntimeException(Result::message());
             }
 
             $obItem = $this->getItem($this->obModel->id);
@@ -220,15 +221,15 @@ class Base extends Extendable
             $this->currentUser();
             $this->obModel = app($this->getModelClass())->where($this->getPrimaryKey(), $id)->firstOrFail();
             $this->exists = true;
-            $message = static::tr(static::ALERT_RECORD_NOT_UPDATED);
+            $message = ApiHelper::tr(static::ALERT_RECORD_NOT_UPDATED);
             Result::setFalse();
 
             if (!$this->obModel) {
-                throw new Exception(static::ALERT_RECORD_NOT_FOUND, 403);
+                throw new \RuntimeException(static::ALERT_RECORD_NOT_FOUND, 403);
             }
 
             if (!$this->hasPermission('update')) {
-                throw new Exception(static::ALERT_PERMISSIONS_DENIED, 403);
+                throw new \RuntimeException(static::ALERT_PERMISSIONS_DENIED, 403);
             }
 
             $this->fireSystemEvent(Plugin::EVENT_BEFORE_SAVE, [$this->obModel, &$this->data]);
@@ -237,11 +238,11 @@ class Base extends Extendable
             if ($this->save()) {
 
                 if (!Result::status() && Result::message()) {
-                    throw new Exception(Result::message());
+                    throw new \RuntimeException(Result::message());
                 }
 
                 Result::setTrue();
-                $message = static::tr(static::ALERT_RECORD_UPDATED);
+                $message = ApiHelper::tr(static::ALERT_RECORD_UPDATED);
             }
 
             $obItem = $this->getItem($this->obModel->id);
@@ -257,7 +258,7 @@ class Base extends Extendable
     }
 
     /**
-     * @param int $id
+     * @param int|string $id
      *
      * @return \Illuminate\Http\JsonResponse|string
      */
@@ -268,21 +269,21 @@ class Base extends Extendable
             $this->obModel = app($this->getModelClass())->where($this->getPrimaryKey(), $id)->firstOrFail();
 
             if (!$this->obModel) {
-                throw new Exception(static::ALERT_RECORD_NOT_FOUND, 403);
+                throw new \RuntimeException(static::ALERT_RECORD_NOT_FOUND, 403);
             }
 
             if (!$this->hasPermission('destroy')) {
-                throw new Exception(static::ALERT_PERMISSIONS_DENIED, 403);
+                throw new \RuntimeException(static::ALERT_PERMISSIONS_DENIED, 403);
             }
 
             $this->fireSystemEvent(Plugin::EVENT_BEFORE_DESTROY, [$this->obModel]);
 
             if ($this->obModel->delete()) {
                 Result::setTrue()
-                    ->setMessage(static::tr(static::ALERT_RECORD_DELETED));
+                    ->setMessage(ApiHelper::tr(static::ALERT_RECORD_DELETED));
             } else {
                 Result::setFalse()
-                    ->setMessage(static::tr(static::ALERT_RECORD_NOT_DELETED));
+                    ->setMessage(ApiHelper::tr(static::ALERT_RECORD_NOT_DELETED));
             }
 
             return Result::getJSON();
@@ -347,11 +348,11 @@ class Base extends Extendable
     /**
      * Attach one file to model, using $arFileList array
      *
-     * @param string      $sAttachKey
-     * @param null|\Model $obModel
-     * @param bool        $save
+     * @param string                $sAttachKey
+     * @param null|\Model|\Eloquent $obModel
+     * @param bool                  $save
      */
-    protected function attachOne(string $sAttachKey, $obModel = null, $save = false)
+    protected function attachOne(string $sAttachKey, $obModel = null, bool $save = false): void
     {
         if (!$obModel) {
             if (!$this->obModel) {
@@ -387,11 +388,11 @@ class Base extends Extendable
     /**
      * Attach many files to model, using $arFileList array
      *
-     * @param string      $sAttachKey
-     * @param null|\Model $obModel
-     * @param bool        $save
+     * @param string                $sAttachKey
+     * @param null|\Model|\Eloquent $obModel
+     * @param bool                  $save
      */
-    protected function attachMany(string $sAttachKey, $obModel = null, $save = false)
+    protected function attachMany(string $sAttachKey, $obModel = null, bool $save = false): void
     {
         if (!$obModel) {
             if (!$this->obModel) {
@@ -440,7 +441,7 @@ class Base extends Extendable
      * @param UploadedFile $obFile
      * @param string       $sAttachKey
      */
-    protected function attachFile(\Model $obModel, UploadedFile $obFile, string $sAttachKey)
+    protected function attachFile(\Model $obModel, UploadedFile $obFile, string $sAttachKey): void
     {
         $obSystemFile = new File;
         $obSystemFile->data = $obFile;
@@ -450,9 +451,13 @@ class Base extends Extendable
         $obModel->{$sAttachKey}()->add($obSystemFile);
     }
 
+    /**
+     * @return array
+     */
     protected function getInputData(): array
     {
-        $arData = input();
+        $arData = array_wrap(input());
+
         foreach ($this->arFileList as $sRelationName => $arRelated) {
             if (empty($arRelated)) {
                 continue;
@@ -516,22 +521,22 @@ class Base extends Extendable
         }
 
         if (!class_exists('JWTAuth')) {
-            throw new Exception(static::tr(static::ALERT_JWT_NOT_FOUND));
+            throw new \RuntimeException(ApiHelper::tr(static::ALERT_JWT_NOT_FOUND));
         }
 
         if (!\JWTAuth::getToken()) {
-            throw new Exception(static::tr(static::ALERT_TOKEN_NOT_FOUND));
+            throw new \RuntimeException(ApiHelper::tr(static::ALERT_TOKEN_NOT_FOUND));
         }
 
         if (!$userId = \JWTAuth::parseToken()->authenticate()->id) {
-            throw new Exception(static::tr(static::ALERT_USER_NOT_FOUND));
+            throw new \RuntimeException(ApiHelper::tr(static::ALERT_USER_NOT_FOUND));
         }
 
         /** @var User $user */
         $user = User::active()->find($userId);
 
         if (!$user) {
-            throw new Exception(static::tr(static::ALERT_USER_NOT_FOUND));
+            throw new \RuntimeException(ApiHelper::tr(static::ALERT_USER_NOT_FOUND));
         }
 
         $this->user = $user;
@@ -547,7 +552,7 @@ class Base extends Extendable
     {
         try {
             $this->currentUser();
-            return request()->header('X-ENV') == 'backend';
+            return request()->header('X-ENV') === 'backend';
         } catch (Exception $ex) {
             return false;
         }
@@ -663,7 +668,7 @@ class Base extends Extendable
 
 
             foreach ($arFilters as $sFilterName => $sFilterValue) {
-                if ($sFilterName == 'page') {
+                if ($sFilterName === 'page') {
                     continue;
                 }
 
@@ -693,12 +698,17 @@ class Base extends Extendable
      */
     protected function getItemId($sValue)
     {
-        return ($this->getPrimaryKey() == 'id')
+        return ($this->getPrimaryKey() === 'id')
             ? $sValue
             : app($this->getModelClass())->where($this->getPrimaryKey(), $sValue)->value('id');
     }
 
-    protected function getItem(int $iModelID)
+    /**
+     * @param int $iModelID
+     *
+     * @return \Lovata\Toolbox\Classes\Item\ElementItem
+     */
+    protected function getItem(int $iModelID): \Lovata\Toolbox\Classes\Item\ElementItem
     {
         /** @var \Lovata\Toolbox\Classes\Item\ElementItem $sItemClass */
         $sItemClass = $this->collection::ITEM_CLASS;
@@ -727,7 +737,7 @@ class Base extends Extendable
 
         $component = ComponentManager::instance()->makeComponent($sName, $cmsObject, $properties, $isSoftComponent);
         if (!$component) {
-            throw new Exception('component not found');
+            throw new \RuntimeException('component not found');
         }
 
         static::$components[$sName] = $component;

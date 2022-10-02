@@ -2,6 +2,7 @@
 
 use Event;
 use Kharanenka\Helper\Result;
+use PlanetaDelEste\ApiToolbox\Classes\Helper\ApiHelper;
 use PlanetaDelEste\ApiToolbox\Plugin;
 use System\Classes\PluginManager;
 
@@ -64,21 +65,12 @@ trait ApiBaseTrait
      * @param array       $options
      * @param string|null $locale
      *
+     * @deprecated Use ApiHelper::tr() instead
      * @return string
      */
-    public static function tr(string $message, array $options = [], $locale = null): string
+    public static function tr(string $message, array $options = [], string $locale = null): string
     {
-        if (!PluginManager::instance()->hasPlugin('RainLab.Translate')) {
-            return $message;
-        }
-
-        if (!\RainLab\Translate\Models\Message::$locale) {
-            \RainLab\Translate\Models\Message::setContext(
-                \RainLab\Translate\Classes\Translator::instance()->getLocale()
-            );
-        }
-
-        return \RainLab\Translate\Models\Message::trans($message, $options, $locale);
+        return ApiHelper::tr($message, $options, $locale);
     }
 
     /**
@@ -87,7 +79,7 @@ trait ApiBaseTrait
      *
      * @return \Illuminate\Http\JsonResponse
      */
-    public static function exceptionResult($obException, $iStatus = 403)
+    public static function exceptionResult(\Exception $obException, int $iStatus = 403): \Illuminate\Http\JsonResponse
     {
         trace_log($obException);
         Result::setFalse();
@@ -100,7 +92,7 @@ trait ApiBaseTrait
     /**
      * @return bool
      */
-    public function exists()
+    public function exists(): bool
     {
         return $this->exists;
     }
@@ -137,7 +129,7 @@ trait ApiBaseTrait
         return $this->propertyExists('primaryKey') ? $this->primaryKey : 'id';
     }
 
-    protected function setResources()
+    protected function setResources(): void
     {
         if (($this->getListResource()
                 && $this->getIndexResource()
@@ -150,7 +142,7 @@ trait ApiBaseTrait
         $arPath = explode('\\', $this->getModelClass());
         $name = array_pop($arPath);
         [$author, $plugin] = explode('\\', $classname);
-        $resourceClassBase = join('\\', [$author, $plugin, 'Classes', 'Resource', $name]);
+        $resourceClassBase = implode('\\', [$author, $plugin, 'Classes', 'Resource', $name]);
         $this->showResource = $resourceClassBase.'\\ShowResource';
         $this->listResource = $resourceClassBase.'\\ListCollection';
         $this->indexResource = $resourceClassBase.'\\IndexCollection';
@@ -159,7 +151,7 @@ trait ApiBaseTrait
     /**
      * @return string|null
      */
-    public function getListResource()
+    public function getListResource(): ?string
     {
         return $this->listResource;
     }
@@ -167,7 +159,7 @@ trait ApiBaseTrait
     /**
      * @return string|null
      */
-    public function getIndexResource()
+    public function getIndexResource(): ?string
     {
         return $this->indexResource;
     }
@@ -175,7 +167,7 @@ trait ApiBaseTrait
     /**
      * @return string|null
      */
-    public function getShowResource()
+    public function getShowResource(): ?string
     {
         return $this->showResource;
     }
@@ -183,7 +175,7 @@ trait ApiBaseTrait
     /**
      * @return string
      */
-    public function getModelClass()
+    public function getModelClass(): string
     {
         return $this->modelClass;
     }
@@ -213,7 +205,7 @@ trait ApiBaseTrait
         }
 
         if ($sCollectionClass = array_get($arCollectionClasses, $this->getModelClass())) {
-            return $sCollectionClass::make();
+            return $this->collection = $sCollectionClass::make();
         }
 
         return null;
