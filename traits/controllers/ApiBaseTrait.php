@@ -2,9 +2,9 @@
 
 use Event;
 use Kharanenka\Helper\Result;
+use Lovata\Toolbox\Classes\Collection\ElementCollection;
 use PlanetaDelEste\ApiToolbox\Classes\Helper\ApiHelper;
 use PlanetaDelEste\ApiToolbox\Plugin;
-use System\Classes\PluginManager;
 
 /**
  * Trait ApiBaseTrait
@@ -21,44 +21,57 @@ trait ApiBaseTrait
      * @var \Lovata\Toolbox\Classes\Collection\ElementCollection
      */
     public $collection;
+
     /**
      * @var \Lovata\Toolbox\Classes\Item\ElementItem
      */
     public $item;
+
     /**
      * @var \Lovata\Buddies\Models\User|\RainLab\User\Models\User|null
      */
     protected $user;
+
     /**
      * @var \Model
      */
     protected $obModel;
+
     /**
      * @var string
      */
     protected $modelClass;
+
     /**
      * API Resource collection class used for list items
      *
      * @var null|string
      */
     protected $listResource = null;
+
     /**
      * API Resource collection class used for index
      *
      * @var null|string
      */
     protected $indexResource = null;
+
     /**
      * API Resource class for load item
      *
      * @var null|string
      */
     protected $showResource = null;
+
     /**
      * @var bool
      */
     protected $exists = false;
+
+    /**
+     * @var array Name of methods to skip on filter collection
+     */
+    protected static $arSkipCollectionMethods = [];
 
     /**
      * @param string      $message
@@ -209,5 +222,14 @@ trait ApiBaseTrait
         }
 
         return null;
+    }
+
+    protected function getSkipMethods(): array
+    {
+        if (!empty(self::$arSkipCollectionMethods)) {
+            return self::$arSkipCollectionMethods;
+        }
+
+        return self::$arSkipCollectionMethods = get_class_methods(ElementCollection::class);
     }
 }

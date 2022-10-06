@@ -666,9 +666,10 @@ class Base extends Extendable
                 $obCollection = $obCollection->filter($arFilters);
             }
 
+            $arSkipMethods = $this->getSkipMethods();
 
             foreach ($arFilters as $sFilterName => $sFilterValue) {
-                if ($sFilterName === 'page') {
+                if (in_array($sFilterName, $arSkipMethods)) {
                     continue;
                 }
 
@@ -681,14 +682,12 @@ class Base extends Extendable
 
                     if (is_array($obResult)) {
                         $obCollection->intersect(array_keys($obResult));
-                    } else {
-                        $obCollection = $obResult;
                     }
                 }
             }
         }
 
-        return $this->collection = $obCollection;
+        return $obCollection;
     }
 
     /**

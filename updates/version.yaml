@@ -106,3 +106,5 @@ v1.0.38:
     - Made some code improvements
 v1.0.39:
     - Set nullable getModelClass method
+v1.0.40:
+    - Fix issue filtering collection with ElementCollection methods name as params
