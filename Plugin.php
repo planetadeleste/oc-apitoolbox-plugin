@@ -18,34 +18,42 @@ use System\Classes\PluginBase;
  */
 class Plugin extends PluginBase
 {
-    const EVENT_SHOWRESOURCE_DATA = 'planetadeleste.apitoolbox.resource.showData';
-    const EVENT_ITEMRESOURCE_DATA = 'planetadeleste.apitoolbox.resource.itemData';
+    public const EVENT_SHOWRESOURCE_DATA = 'planetadeleste.apitoolbox.resource.showData';
+    public const EVENT_ITEMRESOURCE_DATA = 'planetadeleste.apitoolbox.resource.itemData';
 
-    const EVENT_API_EXTEND_INDEX = 'planetadeleste.apitoolbox.controller.extendIndex';
-    const EVENT_API_EXTEND_LIST = 'planetadeleste.apitoolbox.controller.extendList';
-    const EVENT_API_EXTEND_SHOW = 'planetadeleste.apitoolbox.controller.extendShow';
-    const EVENT_API_BEFORE_SHOW_COLLECT = 'planetadeleste.apitoolbox.controller.beforeShowCollect';
-    const EVENT_API_EXTEND_STORE = 'planetadeleste.apitoolbox.controller.extendStore';
-    const EVENT_API_EXTEND_UPDATE = 'planetadeleste.apitoolbox.controller.extendUpdate';
-    const EVENT_API_EXTEND_DESTROY = 'planetadeleste.apitoolbox.controller.extendDestroy';
-    const EVENT_API_PERMISSIONS = 'planetadeleste.apitoolbox.apiPermissions';
+    public const EVENT_API_EXTEND_INDEX = 'planetadeleste.apitoolbox.controller.extendIndex';
+    public const EVENT_API_AFTER_INDEX = 'planetadeleste.apitoolbox.controller.afterIndex';
 
-    const EVENT_API_ADD_COLLECTION = 'planetadeleste.apitoolbox.controller.addCollection';
+    public const EVENT_API_EXTEND_LIST = 'planetadeleste.apitoolbox.controller.extendList';
+    public const EVENT_API_AFTER_LIST = 'planetadeleste.apitoolbox.controller.afterList';
 
-    const EVENT_BEFORE_FILTER = 'planetadeleste.apitoolbox.controller.beforeFilter';
-    const EVENT_BEFORE_DESTROY = 'planetadeleste.apitoolbox.controller.beforeDestroy';
-    const EVENT_AFTER_DESTROY = 'planetadeleste.apitoolbox.controller.afterDestroy';
-    const EVENT_BEFORE_SAVE = 'planetadeleste.apitoolbox.controller.beforeSave';
-    const EVENT_AFTER_SAVE = 'planetadeleste.apitoolbox.controller.afterSave';
+    public const EVENT_API_EXTEND_SHOW = 'planetadeleste.apitoolbox.controller.extendShow';
+    public const EVENT_API_BEFORE_SHOW_COLLECT = 'planetadeleste.apitoolbox.controller.beforeShowCollect';
+    public const EVENT_API_AFTER_SHOW = 'planetadeleste.apitoolbox.controller.afterShow';
 
-    const EVENT_LOCAL_EXTEND_INDEX = 'apitoolbox.controller.extendIndex';
-    const EVENT_LOCAL_EXTEND_LIST = 'apitoolbox.controller.extendList';
-    const EVENT_LOCAL_EXTEND_SHOW = 'apitoolbox.controller.extendShow';
-    const EVENT_LOCAL_BEFORE_FILTER = 'apitoolbox.controller.beforeFilter';
-    const EVENT_LOCAL_BEFORE_DESTROY = 'apitoolbox.controller.beforeDestroy';
-    const EVENT_LOCAL_AFTER_DESTROY = 'apitoolbox.controller.afterDestroy';
-    const EVENT_LOCAL_BEFORE_SAVE = 'apitoolbox.controller.beforeSave';
-    const EVENT_LOCAL_AFTER_SAVE = 'apitoolbox.controller.afterSave';
+    public const EVENT_API_EXTEND_STORE = 'planetadeleste.apitoolbox.controller.extendStore';
+    public const EVENT_API_EXTEND_UPDATE = 'planetadeleste.apitoolbox.controller.extendUpdate';
+    public const EVENT_API_EXTEND_DESTROY = 'planetadeleste.apitoolbox.controller.extendDestroy';
+    public const EVENT_API_PERMISSIONS = 'planetadeleste.apitoolbox.apiPermissions';
+
+    public const EVENT_API_ADD_COLLECTION = 'planetadeleste.apitoolbox.controller.addCollection';
+
+    public const EVENT_BEFORE_FILTER = 'planetadeleste.apitoolbox.controller.beforeFilter';
+    public const EVENT_BEFORE_DESTROY = 'planetadeleste.apitoolbox.controller.beforeDestroy';
+    public const EVENT_AFTER_DESTROY = 'planetadeleste.apitoolbox.controller.afterDestroy';
+    public const EVENT_BEFORE_SAVE = 'planetadeleste.apitoolbox.controller.beforeSave';
+    public const EVENT_AFTER_SAVE = 'planetadeleste.apitoolbox.controller.afterSave';
+
+    // LOCAL EVENTS
+    public const EVENT_LOCAL_EXTEND_INDEX = 'apitoolbox.controller.extendIndex';
+    public const EVENT_LOCAL_AFTER_INDEX = 'apitoolbox.controller.afterIndex';
+    public const EVENT_LOCAL_EXTEND_LIST = 'apitoolbox.controller.extendList';
+    public const EVENT_LOCAL_EXTEND_SHOW = 'apitoolbox.controller.extendShow';
+    public const EVENT_LOCAL_BEFORE_FILTER = 'apitoolbox.controller.beforeFilter';
+    public const EVENT_LOCAL_BEFORE_DESTROY = 'apitoolbox.controller.beforeDestroy';
+    public const EVENT_LOCAL_AFTER_DESTROY = 'apitoolbox.controller.afterDestroy';
+    public const EVENT_LOCAL_BEFORE_SAVE = 'apitoolbox.controller.beforeSave';
+    public const EVENT_LOCAL_AFTER_SAVE = 'apitoolbox.controller.afterSave';
 
     public $require = ['Lovata.Toolbox', 'Lovata.Buddies'];
 

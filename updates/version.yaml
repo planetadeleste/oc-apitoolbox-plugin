@@ -108,3 +108,5 @@ v1.0.39:
     - Set nullable getModelClass method
 v1.0.40:
     - Fix issue filtering collection with ElementCollection methods name as params
+v1.0.41:
+    - Add events after index, list and show content

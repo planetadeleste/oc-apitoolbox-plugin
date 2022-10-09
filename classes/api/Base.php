@@ -101,9 +101,12 @@ class Base extends Extendable
             $this->fireSystemEvent(Plugin::EVENT_API_EXTEND_INDEX, [&$this->collection], false);
 
             $obModelCollection = $this->collection->paginate($this->itemsPerPage);
-            return $this->getIndexResource()
+            $obResponse = $this->getIndexResource()
                 ? app($this->getIndexResource(), [$obModelCollection])
                 : $obModelCollection;
+            $this->fireSystemEvent(Plugin::EVENT_API_AFTER_INDEX, [$obResponse], false);
+
+            return $obResponse;
         } catch (Exception $e) {
             return static::exceptionResult($e);
         }
@@ -125,9 +128,12 @@ class Base extends Extendable
             $this->fireSystemEvent(Plugin::EVENT_API_EXTEND_LIST, [&$this->collection], false);
 
             $arListItems = $this->collection->values();
-            return $this->getListResource()
+            $obResponse = $this->getListResource()
                 ? app($this->getListResource(), [collect($arListItems)])
                 : $arListItems;
+            $this->fireSystemEvent(Plugin::EVENT_API_AFTER_LIST, [$obResponse], false);
+
+            return $obResponse;
         } catch (Exception $e) {
             return static::exceptionResult($e);
         }
@@ -162,9 +168,12 @@ class Base extends Extendable
              */
             $this->fireSystemEvent(Plugin::EVENT_API_EXTEND_SHOW, [$this->item]);
 
-            return $this->getShowResource()
+            $obResponse = $this->getShowResource()
                 ? app($this->getShowResource(), [$this->item])
                 : $this->item;
+            $this->fireSystemEvent(Plugin::EVENT_API_AFTER_SHOW, [$obResponse], false);
+
+            return $obResponse;
         } catch (Exception $e) {
             return static::exceptionResult($e);
         }
