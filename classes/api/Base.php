@@ -641,7 +641,10 @@ class Base extends Extendable
         if ($sFilter = array_get($filters, "sort")) {
             if (is_string($sFilter)) {
                 $sort['column'] = $sFilter;
+            } elseif (is_array($sFilter)) {
+                $sort = array_merge($sort, $sFilter);
             }
+
             $obFilters->forget('sort');
         }
 
@@ -665,14 +668,17 @@ class Base extends Extendable
         $arSort = array_get($data, 'sort');
         $obCollection = $this->collection;
 
-        if ($obCollection->methodExists('sort') && $arSort['column']) {
-            $sSort = $arSort['column'];
-            $obCollection = $obCollection->sort($sSort);
+        if ($obCollection->methodExists('sort') && ($sSort = array_get($arSort, 'column'))) {
+            if (($sDir = array_get($arSort, 'direction')) && !str_contains($sSort, '|')) {
+                $sSort .= '|'.$sDir;
+            }
+
+            $obCollection->sort($sSort);
         }
 
         if (!empty($arFilters)) {
             if ($obCollection->methodExists('filter')) {
-                $obCollection = $obCollection->filter($arFilters);
+                $obCollection->filter($arFilters);
             }
 
             $arSkipMethods = $this->getSkipMethods();
