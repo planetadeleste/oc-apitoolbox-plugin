@@ -27,4 +27,14 @@ class ApiHelper
 
         return \RainLab\Translate\Models\Message::trans($message, $options, $locale);
     }
+
+    public static function isBackend(): bool
+    {
+        return AuthHelper::check() && request()->header('X-ENV') === 'backend';
+    }
+
+    public static function isFrontend(): bool
+    {
+        return AuthHelper::check() && request()->header('X-ENV') === 'frontend';
+    }
 }
