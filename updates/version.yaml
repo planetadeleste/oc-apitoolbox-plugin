@@ -114,3 +114,5 @@ v1.0.42:
     - Fix setting sort data on collection
 v1.0.43:
     - Add isBackend, isFrontend helpers
+v1.0.44:
+    - Set sort direction as null by default

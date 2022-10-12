@@ -131,7 +131,7 @@ trait ApiBaseTrait
      */
     public function getSortDirection(): ?string
     {
-        return $this->propertyExists('sortDirection') ? $this->sortDirection : 'desc';
+        return $this->propertyExists('sortDirection') ? $this->sortDirection : null;
     }
 
     /**
