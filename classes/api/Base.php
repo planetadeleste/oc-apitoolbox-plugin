@@ -266,6 +266,48 @@ class Base extends Extendable
         }
     }
 
+    public function attach($id)
+    {
+        try {
+            $this->currentUser();
+            $this->obModel = app($this->getModelClass())->where($this->getPrimaryKey(), $id)->firstOrFail();
+            $this->exists = true;
+            $message = ApiHelper::tr(static::ALERT_RECORD_NOT_UPDATED);
+            Result::setFalse();
+
+            if (!$this->obModel) {
+                throw new \RuntimeException(static::ALERT_RECORD_NOT_FOUND, 403);
+            }
+
+            if (!$this->hasPermission('update')) {
+                throw new \RuntimeException(static::ALERT_PERMISSIONS_DENIED, 403);
+            }
+
+            $this->fireSystemEvent(Plugin::EVENT_BEFORE_ATTACH, [$this->obModel, &$this->data]);
+            $this->validate();
+
+            if ($this->attachFiles(true)) {
+
+                if (!Result::status() && Result::message()) {
+                    throw new \RuntimeException(Result::message());
+                }
+
+                Result::setTrue();
+                $message = ApiHelper::tr(static::ALERT_RECORD_UPDATED);
+            }
+
+            $obItem = $this->getItem($this->obModel->id);
+            $obResourceItem = $this->getShowResource()
+                ? app($this->getShowResource(), [$obItem])
+                : $obItem;
+            return Result::setData($obResourceItem)
+                ->setMessage($message)
+                ->getJSON();
+        } catch (Exception $e) {
+            return static::exceptionResult($e);
+        }
+    }
+
     /**
      * @param int|string $id
      *
@@ -319,7 +361,7 @@ class Base extends Extendable
      */
     protected function saveAndAttach(): bool
     {
-        $bResponse = $this->attachFiles();
+        $bResponse = $this->attachFiles($this->obModel->save());
         $this->fireSystemEvent(Plugin::EVENT_AFTER_SAVE, [$this->obModel, $this->data]);
 
         return $bResponse;
@@ -328,9 +370,8 @@ class Base extends Extendable
     /**
      * Attach files related to model
      */
-    protected function attachFiles(): bool
+    protected function attachFiles(bool $bResponse = false): bool
     {
-        $bResponse = $this->obModel->save();
         $bSave = false;
 
         $arAttachOneAttrList = array_get($this->arFileList, 'attachOne');
@@ -349,6 +390,10 @@ class Base extends Extendable
             foreach ($arAttachManyAttrList as $sAttachManyKey) {
                 $this->attachMany($sAttachManyKey);
             }
+        }
+
+        if ($bSave) {
+            $this->fireSystemEvent(Plugin::EVENT_AFTER_ATTACH, [$this->obModel, $this->data]);
         }
 
         return $bSave ? $this->obModel->save() : $bResponse;

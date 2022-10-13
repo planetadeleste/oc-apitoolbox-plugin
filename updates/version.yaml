@@ -116,3 +116,5 @@ v1.0.43:
     - Add isBackend, isFrontend helpers
 v1.0.44:
     - Set sort direction as null by default
+v1.0.45:
+    - New attach method

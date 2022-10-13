@@ -43,6 +43,8 @@ class Plugin extends PluginBase
     public const EVENT_AFTER_DESTROY = 'planetadeleste.apitoolbox.controller.afterDestroy';
     public const EVENT_BEFORE_SAVE = 'planetadeleste.apitoolbox.controller.beforeSave';
     public const EVENT_AFTER_SAVE = 'planetadeleste.apitoolbox.controller.afterSave';
+    public const EVENT_BEFORE_ATTACH = 'planetadeleste.apitoolbox.controller.beforeAttach';
+    public const EVENT_AFTER_ATTACH = 'planetadeleste.apitoolbox.controller.afterAttach';
 
     // LOCAL EVENTS
     public const EVENT_LOCAL_EXTEND_INDEX = 'apitoolbox.controller.extendIndex';
@@ -57,7 +59,7 @@ class Plugin extends PluginBase
 
     public $require = ['Lovata.Toolbox', 'Lovata.Buddies'];
 
-    public function register()
+    public function register(): void
     {
         $this->registerConsoleCommand('toolbox:create.api.all', CreateApiAll::class);
         $this->registerConsoleCommand('toolbox:create.api.controller', CreateApiController::class);
