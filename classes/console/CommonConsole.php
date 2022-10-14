@@ -2,6 +2,8 @@
 
 use Lang;
 use Lovata\Toolbox\Classes\Console\CommonCreateFile;
+use PHLAK\SemVer\Version;
+use Yaml;
 
 /**
  * @property-read string $slug
@@ -116,21 +118,55 @@ class CommonConsole extends CommonCreateFile
 
     /**
      * Set model
+     *
+     * @throws \PHLAK\SemVer\Exceptions\InvalidVersionException
      */
-    protected function setVersion()
+    protected function setVersion(): void
     {
         if ($this->checkAdditionList(self::CODE_VERSION)) {
             return;
         }
 
         $this->setAdditionList(self::CODE_VERSION);
+        $sVersion = $this->getNextVersion();
         $sMessage = Lang::get('lovata.toolbox::lang.message.set', [
             'name'    => self::CODE_VERSION,
-            'example' => 'v1.0.1',
+            'example' => $sVersion ?: 'v1.0.1',
         ]);
 
-        $sModel = $this->ask($sMessage);
+        $sModel = $this->ask($sMessage, $sVersion);
         $this->setRegisterString($sModel, self::CODE_VERSION);
+    }
+
+    /**
+     * @return string|null
+     * @throws \PHLAK\SemVer\Exceptions\InvalidVersionException
+     */
+    protected function getNextVersion(): ?string
+    {
+        if (!$this->lower_author || !$this->lower_plugin) {
+            return null;
+        }
+
+        $sAuthor = strtolower($this->lower_author);
+        $sPlugin = strtolower($this->lower_plugin);
+        $sVersionPath = plugins_path($sAuthor.'/'.$sPlugin.'/updates/version.yaml');
+
+        if (!\File::exists($sVersionPath)) {
+            return null;
+        }
+
+        $arYAML = Yaml::parseFile($sVersionPath);
+        $arVersions = array_keys($arYAML);
+        if ($sVersion = array_pop($arVersions)) {
+            $sPrefix = $sVersion[0];
+            $obVersion = new Version($sVersion);
+            $obVersion->incrementPatch();
+
+            return $obVersion->prefix(is_numeric($sPrefix) ? '' : $sPrefix);
+        }
+
+        return null;
     }
 
     protected function getModelCachedAttrs()

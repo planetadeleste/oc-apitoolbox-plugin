@@ -118,3 +118,5 @@ v1.0.44:
     - Set sort direction as null by default
 v1.0.45:
     - New attach method
+v1.0.46:
+    - Suggest and increase plugin version on setVersion method

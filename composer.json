@@ -28,6 +28,7 @@
     },
     "require":{
         "php":">=7.2",
+        "phlak/semver": "^4.0",
         "ext-json":"*"
     }
 }
