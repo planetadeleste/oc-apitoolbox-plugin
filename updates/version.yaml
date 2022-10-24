@@ -120,3 +120,5 @@ v1.0.45:
     - New attach method
 v1.0.46:
     - Suggest and increase plugin version on setVersion method
+v1.0.47:
+    - New methods to clear fields cache

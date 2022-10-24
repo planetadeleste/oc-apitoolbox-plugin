@@ -8,6 +8,7 @@ use Lovata\Toolbox\Classes\Store\AbstractStoreWithParam;
 /**
  * @method void checkFieldChanges(string $sField, AbstractStoreWithParam|AbstractStoreWithoutParam $obListStore)
  * @method void clearCacheEmptyValue(string $sField, AbstractStoreWithoutParam $obListStore)
+ * @method void clearCacheNotEmptyValue(string $sField, AbstractStoreWithParam|AbstractStoreWithoutParam $obListStore)
  */
 trait ModelHandlerTrait
 {
@@ -26,7 +27,7 @@ trait ModelHandlerTrait
         }
     }
     
-    protected function checkFieldsChanges(array $arFieldList = ['active'])
+    protected function checkFieldsChanges(array $arFieldList = ['active']): void
     {
         $sClassName = $this->getStoreClass();
         foreach ($arFieldList as $sFieldName) {
@@ -34,7 +35,20 @@ trait ModelHandlerTrait
         }
     }
     
-    protected function clearCacheEmptyFields(array $arFieldList = [])
+    protected function clearCacheFields(array $arFieldList = []): void
+    {
+        if (empty($arFieldList)) {
+            return;
+        }
+    
+        $sClassName = $this->getStoreClass();
+        foreach ($arFieldList as $sFieldName) {
+            $this->clearCacheNotEmptyValue($sFieldName, $sClassName::instance()->{$sFieldName});
+        }
+    
+    }
+    
+    protected function clearCacheEmptyFields(array $arFieldList = []): void
     {
         if (empty($arFieldList)) {
             return;
