@@ -124,3 +124,5 @@ v1.0.47:
     - New methods to clear fields cache
 v1.0.48:
     - Add extendable sortBy method
+v1.0.49:
+    - Property arListFromDB only can be a non associated array

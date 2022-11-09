@@ -34,7 +34,7 @@ trait SortingListTrait
         $arListFromDB = [];
 
         if (property_exists($this, 'arListFromDB')) {
-            $arFieldList = \Arr::isAssoc($this->arListFromDB) ? array_keys($this->arListFromDB) : $this->arListFromDB;
+            $arFieldList = $this->arListFromDB;
         }
 
         foreach ($arFieldList as $sFieldName) {
@@ -62,13 +62,6 @@ trait SortingListTrait
         $sMethod = camel_case('get_'.$sColumn.'_list');
         if (method_exists($this, $sMethod)) {
             return $this->{$sMethod}($sDir);
-        }
-
-        if (property_exists($this, 'arListFromDB') &&
-            \Arr::isAssoc($this->arListFromDB) &&
-            is_callable(array_get($this->arListFromDB, $sColumn))) {
-            $sFunction = array_get($this->arListFromDB, $sColumn);
-            return $sFunction($sColumn, $sDir);
         }
 
         $sModelClass = $this->getModelClass();
