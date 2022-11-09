@@ -14,11 +14,10 @@ trait SortingListTrait
     protected function getIDListFromDB(): array
     {
         $arListFromDB = $this->getFieldList();
-        if ($arSortData = array_get($arListFromDB, $this->sValue)) {
-            if ($sField = array_get($arSortData, 'field')) {
-                $sDir = array_get($arSortData, 'dir', 'asc');
-                return $this->orderBy($sField, $sDir);
-            }
+        if (($arSortData = array_get($arListFromDB, $this->sValue)) && ($sField = array_get($arSortData, 'field'))) {
+            $sDir = array_get($arSortData, 'dir', 'asc');
+
+            return method_exists($this, 'sortBy') ? $this->sortBy($sField, $sDir) : $this->orderBy($sField, $sDir);
         }
 
         return $this->getDefaultList();
@@ -26,6 +25,7 @@ trait SortingListTrait
 
     /**
      * Construct array with dir,field keys
+     *
      * @return array
      */
     protected function getFieldList(): array
@@ -34,7 +34,7 @@ trait SortingListTrait
         $arListFromDB = [];
 
         if (property_exists($this, 'arListFromDB')) {
-            $arFieldList = $this->arListFromDB;
+            $arFieldList = \Arr::isAssoc($this->arListFromDB) ? array_keys($this->arListFromDB) : $this->arListFromDB;
         }
 
         foreach ($arFieldList as $sFieldName) {
@@ -62,6 +62,13 @@ trait SortingListTrait
         $sMethod = camel_case('get_'.$sColumn.'_list');
         if (method_exists($this, $sMethod)) {
             return $this->{$sMethod}($sDir);
+        }
+
+        if (property_exists($this, 'arListFromDB') &&
+            \Arr::isAssoc($this->arListFromDB) &&
+            is_callable(array_get($this->arListFromDB, $sColumn))) {
+            $sFunction = array_get($this->arListFromDB, $sColumn);
+            return $sFunction($sColumn, $sDir);
         }
 
         $sModelClass = $this->getModelClass();

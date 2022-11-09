@@ -122,3 +122,5 @@ v1.0.46:
     - Suggest and increase plugin version on setVersion method
 v1.0.47:
     - New methods to clear fields cache
+v1.0.48:
+    - Add extendable sortBy method
