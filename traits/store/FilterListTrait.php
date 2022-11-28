@@ -2,6 +2,9 @@
 
 namespace PlanetaDelEste\ApiToolbox\Traits\Store;
 
+/**
+ * @property array $sValue
+ */
 trait FilterListTrait
 {
     /** @var string[] */
@@ -43,18 +46,36 @@ trait FilterListTrait
         $arColumns = (new $obModelClass())->getFillable();
         $arColumns = array_diff($arColumns, $this->skip());
 
+        if (!empty($this->only())) {
+            $arColumns = array_intersect($arColumns, $this->only());
+        }
+
         return array_unique(array_merge($arColumns, $this->withColumns()));
     }
 
     /**
+     * Define wich columns to search
+     *
      * @return string[]
      */
-    protected function skip(): array
+    protected function only(): array
     {
         return [];
     }
 
     /**
+     * Define skip columns from search
+     *
+     * @return string[]
+     */
+    protected function skip(): array
+    {
+        return ['id'];
+    }
+
+    /**
+     * Add columns to search
+     *
      * @return string[]
      */
     protected function withColumns(): array
