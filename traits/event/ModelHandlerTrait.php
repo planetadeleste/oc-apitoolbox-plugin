@@ -38,8 +38,9 @@ trait ModelHandlerTrait
     }
 
     /**
-     * @param array $arFieldList Use key => value type if model property is not the same as cache field
-     * @example ['customer' => 'customer_id'] customer is the cache field and customer_id is the model property name
+     * @param array $arFieldList Use key => value type if model property is not the same as cache field or model
+     *                           property is not {$key}_id
+     * @example ['customer' => 'my_customer_id'] customer is the cache field and my_customer_id is the model property name
      *
      * @return void
      */
@@ -52,6 +53,11 @@ trait ModelHandlerTrait
         $sClassName = $this->getStoreClass();
         foreach ($arFieldList as $sKey => $sFieldName) {
             $sField = is_numeric($sKey) ? $sFieldName : $sKey;
+
+            if (is_numeric($sKey) && is_string($sFieldName) && (empty($this->obElement->$sFieldName) || is_object($this->obElement->$sFieldName))) {
+                $sFieldName .= '_id';
+            }
+
             $this->clearCacheNotEmptyValue($sFieldName, $sClassName::instance()->{$sField});
         }
 

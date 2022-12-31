@@ -50,12 +50,16 @@ abstract class Base extends Resource
         }
 
         if (!empty($arDates) && $this->addDates) {
-            $arData = $arData + $arDates;
+            $arData += $arDates;
         }
 
         if (!empty($arDataKeys)) {
             foreach ($arDataKeys as $sKey) {
                 if (array_key_exists($sKey, $arData)) {
+                    if (($fn = array_get($arData, $sKey)) && $fn instanceof \Closure) {
+                        array_set($arData, $sKey, $fn());
+                    }
+
                     continue;
                 }
                 $arData[$sKey] = $this->{$sKey};
@@ -121,6 +125,8 @@ abstract class Base extends Resource
     }
 
     /**
+     * Key => value array of mapped resource
+     * Value can be a Closure with return value
      * @return array
      */
     abstract public function getData(): array;
