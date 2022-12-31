@@ -130,6 +130,8 @@ v1.0.50:
     - Improve clearCacheFields method
     - New FilterListTrait store trait
 v1.0.51:
+    - Add method only
+v1.0.52:
     - Detect model relation column on clearCacheFields
     - getData value can be a Closure with return value
 
