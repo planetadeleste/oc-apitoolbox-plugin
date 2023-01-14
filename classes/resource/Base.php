@@ -15,14 +15,18 @@ use System\Classes\PluginManager;
  *
  * @property \October\Rain\Argon\Argon $updated_at
  * @property \October\Rain\Argon\Argon $created_at
+ * @method static self make(...$parameters)
  */
 abstract class Base extends Resource
 {
     /** @var bool Add created_at, updated_at dates */
-    public $addDates = true;
+    public bool $addDates = true;
 
     /** @var string[] Property of type Date */
-    public $arDates = ['created_at', 'updated_at'];
+    public array $arDates = ['created_at', 'updated_at'];
+
+    /** @var array Keys to exclude from array */
+    public array $arExclude = [];
 
     /**
      * @param \Illuminate\Http\Request $request
@@ -55,7 +59,7 @@ abstract class Base extends Resource
 
         if (!empty($arDataKeys)) {
             foreach ($arDataKeys as $sKey) {
-                if (array_key_exists($sKey, $arData)) {
+                if (array_key_exists($sKey, $arData) || in_array($sKey, $this->arExclude)) {
                     if (($fn = array_get($arData, $sKey)) && $fn instanceof \Closure) {
                         array_set($arData, $sKey, $fn());
                     }
@@ -103,7 +107,7 @@ abstract class Base extends Resource
             $sFormat = is_string($sKey) && !is_numeric($sKey) ? $sValue : null;
             $obDate = $this->{$sProp};
             $sDateValue = $obDate instanceof Carbon
-                ? $sFormat
+                ? !empty($sFormat)
                     ? $obDate->format($sFormat)
                     : $obDate->toDateTimeString()
                 : $obDate;
@@ -127,6 +131,7 @@ abstract class Base extends Resource
     /**
      * Key => value array of mapped resource
      * Value can be a Closure with return value
+     *
      * @return array
      */
     abstract public function getData(): array;
@@ -139,6 +144,30 @@ abstract class Base extends Resource
     public function event(): ?string
     {
         return $this->getEvent();
+    }
+
+    /**
+     * @param string[]|string $sKey
+     *
+     * @return void
+     */
+    public function exclude($sKey): void
+    {
+        $arKeyList = is_array($sKey) ? $sKey : func_get_args();
+        $arKeyList = array_merge($this->arExclude, $arKeyList);
+        $arKeyList = array_unique($arKeyList);
+
+        $this->arExclude = $arKeyList;
+    }
+
+    /**
+     * @param string $sKey
+     *
+     * @return bool
+     */
+    public function isExcluded(string $sKey): bool
+    {
+        return !empty($this->arExclude) && in_array($sKey, $this->arExclude);
     }
 
     /**

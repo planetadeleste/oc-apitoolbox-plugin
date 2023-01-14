@@ -134,4 +134,6 @@ v1.0.51:
 v1.0.52:
     - Detect model relation column on clearCacheFields
     - getData value can be a Closure with return value
+v1.0.53:
+    - '[New] Exclude keys to load api resource data'
 
