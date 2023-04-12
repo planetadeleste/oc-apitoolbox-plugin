@@ -2,6 +2,9 @@
 
 namespace PlanetaDelEste\ApiToolbox\Traits\Store;
 
+use Carbon\Carbon;
+use October\Rain\Database\Builder;
+
 /**
  * @property array $sValue
  */
@@ -28,7 +31,7 @@ trait FilterListTrait
         }
 
         $this->arFields = array_keys($this->sValue);
-        $obModelClass = $this->getModelClass();
+        $obModelClass   = $this->getModelClass();
 
         return $obModelClass::where(function ($obQuery) {
             $this->obQuery = $obQuery;
@@ -43,8 +46,8 @@ trait FilterListTrait
     {
         /** @var array $arColumns */
         $obModelClass = $this->getModelClass();
-        $arColumns = (new $obModelClass())->getFillable();
-        $arColumns = array_diff($arColumns, $this->skip());
+        $arColumns    = (new $obModelClass())->getFillable();
+        $arColumns    = array_diff($arColumns, $this->skip());
 
         if (!empty($this->only())) {
             $arColumns = array_intersect($arColumns, $this->only());
@@ -88,13 +91,13 @@ trait FilterListTrait
      */
     protected function wheres(): void
     {
-        $operator = $this->getLikeOperator();
-        $obQuery = $this->obQuery;
-        $bool = 'and';
+        $operator  = $this->getLikeOperator();
+        $obQuery   = $this->obQuery;
+        $bool      = 'and';
         $arColumns = $this->columns();
         foreach ($this->arFields as $sCol) {
             $sOperator = $operator;
-            $sValue = array_get($this->sValue, $sCol);
+            $sValue    = array_get($this->sValue, $sCol);
             if (empty($sValue)) {
                 continue;
             }
@@ -112,11 +115,11 @@ trait FilterListTrait
 
             if (is_numeric($sValue) && ends_with($sCol, '_id')) {
                 $sOperator = '=';
-                $sValue = (int)$sValue;
+                $sValue    = (int)$sValue;
             }
 
             // Find for local scope methods
-            $sScopeMethod = \Str::camel('scope_'.$sCol);
+            $sScopeMethod = \Str::camel('scope_' . $sCol);
             if (method_exists($this, $sScopeMethod)) {
                 $this->{$sScopeMethod}($sValue);
                 continue;
@@ -137,6 +140,26 @@ trait FilterListTrait
                 $bool = 'or';
             }
         }
+    }
+
+    /**
+     * @param mixed  $sValue
+     * @param string $sColumn
+     *
+     * @return \Illuminate\Database\Query\Builder|Builder
+     */
+    protected function scopeDate($sValue, string $sColumn)
+    {
+        if (is_array($sValue) && count($sValue) === 1) {
+            $sValue = array_first($sValue);
+        } elseif (is_array($sValue) && count($sValue) > 1) {
+            $sValue      = array_slice($sValue, 0, 2);
+            $obStartDate = Carbon::parse($sValue[0])->startOfDay();
+            $obEndDate   = Carbon::parse($sValue[1])->endOfDay();
+            return $this->obQuery->whereBetween($sColumn, [$obStartDate, $obEndDate]);
+        }
+
+        return $this->obQuery->whereDate($sColumn, $sValue);
     }
 
     protected function getLikeOperator(): string

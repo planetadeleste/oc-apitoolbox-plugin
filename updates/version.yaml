@@ -136,4 +136,7 @@ v1.0.52:
     - getData value can be a Closure with return value
 v1.0.53:
     - '[New] Exclude keys to load api resource data'
+v1.0.54:
+    - 'New scopeDate method on FilterListTrait'
+    - 'Read limit parameter to set itemsPerPage variable'
 
