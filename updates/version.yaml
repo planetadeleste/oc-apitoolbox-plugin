@@ -139,4 +139,6 @@ v1.0.53:
 v1.0.54:
     - 'New scopeDate method on FilterListTrait'
     - 'Read limit parameter to set itemsPerPage variable'
+v1.0.55:
+    - 'Add comma option to thousands_sep setting property'
 
