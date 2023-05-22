@@ -31,6 +31,9 @@ class Plugin extends PluginBase
     public const EVENT_API_EXTEND_LIST = 'planetadeleste.apitoolbox.controller.extendList';
     public const EVENT_API_AFTER_LIST  = 'planetadeleste.apitoolbox.controller.afterList';
 
+    public const EVENT_API_EXTEND_COUNT = 'planetadeleste.apitoolbox.controller.extendCount';
+    public const EVENT_API_AFTER_COUNT  = 'planetadeleste.apitoolbox.controller.afterCount';
+
     public const EVENT_API_EXTEND_SHOW         = 'planetadeleste.apitoolbox.controller.extendShow';
     public const EVENT_API_BEFORE_SHOW_COLLECT = 'planetadeleste.apitoolbox.controller.beforeShowCollect';
     public const EVENT_API_AFTER_SHOW          = 'planetadeleste.apitoolbox.controller.afterShow';
@@ -53,6 +56,8 @@ class Plugin extends PluginBase
     // LOCAL EVENTS
     public const EVENT_LOCAL_EXTEND_INDEX   = 'apitoolbox.controller.extendIndex';
     public const EVENT_LOCAL_AFTER_INDEX    = 'apitoolbox.controller.afterIndex';
+    public const EVENT_LOCAL_EXTEND_COUNT   = 'apitoolbox.controller.extendCount';
+    public const EVENT_LOCAL_AFTER_COUNT   = 'apitoolbox.controller.afterCount';
     public const EVENT_LOCAL_EXTEND_LIST    = 'apitoolbox.controller.extendList';
     public const EVENT_LOCAL_EXTEND_SHOW    = 'apitoolbox.controller.extendShow';
     public const EVENT_LOCAL_BEFORE_FILTER  = 'apitoolbox.controller.beforeFilter';

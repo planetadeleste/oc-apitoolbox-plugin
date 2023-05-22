@@ -35,6 +35,7 @@ use SystemException;
  *
  * @method void extendIndex()
  * @method void extendList()
+ * @method void extendCount()
  * @method void extendShow()
  * @method void extendDestroy()
  * @method void extendSave()
@@ -146,6 +147,30 @@ class Base extends Extendable
             $this->fireSystemEvent(Plugin::EVENT_API_AFTER_LIST, [$obResponse], false);
 
             return $obResponse;
+        } catch (Exception $e) {
+            return static::exceptionResult($e);
+        }
+    }
+
+    public function count()
+    {
+        try {
+            if ($this->methodExists('extendCount')) {
+                $this->extendCount();
+            }
+
+            /**
+             * Extend collection results
+             */
+            $this->fireSystemEvent(Plugin::EVENT_API_EXTEND_COUNT, [$this->collection], false);
+
+            $fValue = $this->collection->count();
+
+            $this->fireSystemEvent(Plugin::EVENT_API_AFTER_COUNT, [&$fValue], false);
+
+            Result::setData(['count' => $fValue]);
+
+            return Result::get();
         } catch (Exception $e) {
             return static::exceptionResult($e);
         }
