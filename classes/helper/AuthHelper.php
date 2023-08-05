@@ -2,14 +2,20 @@
 
 namespace PlanetaDelEste\ApiToolbox\Classes\Helper;
 
+use Illuminate\Contracts\Foundation\Application;
+use JWTAuth;
 use Lovata\Buddies\Models\Group;
 use Lovata\Buddies\Models\User;
-use Tymon\JWTAuth\Exceptions\JWTException;
+use PHPOpenSourceSaver\JWTAuth\Exceptions\JWTException;
+use ReaZzon\JWTAuth\Classes\Guards\JWTGuard;
 
 class AuthHelper
 {
     /** @var array Loaded users */
-    protected static $arUsers = [];
+    protected static array $arUsers = [];
+
+    /** @var JWTGuard|null */
+    protected static ?JWTGuard $jwt = null;
 
     /**
      * Check if logged user has group of code $sCode
@@ -17,7 +23,6 @@ class AuthHelper
      * @param string $sCode
      *
      * @return bool|null
-     * @throws \Tymon\JWTAuth\Exceptions\JWTException
      */
     public static function inGroup(string $sCode): ?bool
     {
@@ -31,7 +36,6 @@ class AuthHelper
 
     /**
      * @return User|null
-     * @throws \Tymon\JWTAuth\Exceptions\JWTException
      */
     public static function user(): ?User
     {
@@ -49,15 +53,14 @@ class AuthHelper
 
     /**
      * @return null|int
-     * @throws \Tymon\JWTAuth\Exceptions\JWTException
      */
     public static function userId(): ?int
     {
-        if (!self::check()) {
+        if (!self::check() || !self::jwt()->hasUser()) {
             return null;
         }
 
-        return \JWTAuth::parseToken()->authenticate()->id;
+        return self::jwt()->user()->getAuthIdentifier();
     }
 
     /**
@@ -66,13 +69,25 @@ class AuthHelper
     public static function check(): bool
     {
         try {
-            if (!class_exists('JWTAuth') || !\JWTAuth::getToken() || !\JWTAuth::parseToken()->authenticate()->id) {
+            if ((!$JWTGuard = self::jwt()) || !$JWTGuard->check()) {
                 return false;
             }
+
+            return true;
         } catch (JWTException $ex) {
             return false;
         }
+    }
 
-        return true;
+    /**
+     * @return Application|mixed|JWTGuard|(JWTGuard&Application)
+     */
+    public static function jwt(): mixed
+    {
+        if (!self::$jwt) {
+            self::$jwt = app('JWTGuard');
+        }
+
+        return self::$jwt;
     }
 }

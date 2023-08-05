@@ -2,7 +2,7 @@
 
 use Carbon\Carbon;
 use Event;
-use Illuminate\Http\Resources\Json\Resource;
+use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Collection;
 use Lovata\Toolbox\Classes\Collection\ElementCollection;
 use Lovata\Toolbox\Classes\Item\ElementItem;
@@ -17,7 +17,7 @@ use System\Classes\PluginManager;
  * @property \October\Rain\Argon\Argon $created_at
  * @method static self make(...$parameters)
  */
-abstract class Base extends Resource
+abstract class Base extends JsonResource
 {
     /** @var bool Add created_at, updated_at dates */
     public bool $addDates = true;

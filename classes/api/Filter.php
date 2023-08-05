@@ -8,7 +8,7 @@ class Filter
 {
     use Singleton;
 
-    protected $arFilters = [];
+    protected array $arFilters = [];
 
     public function addFilter(string $sKey, $sValue, $arParams = []): self
     {

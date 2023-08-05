@@ -25,6 +25,6 @@ if (!function_exists('has_jwtauth_plugin')) {
      */
     function has_jwtauth_plugin(): bool
     {
-        return has_plugin('PlanetaDelEste.JWTAuth');
+        return has_plugin('PlanetaDelEste.JWTAuth') || has_plugin('ReaZzon.JWTAuth');
     }
 }

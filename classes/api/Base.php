@@ -7,10 +7,11 @@ use Cms\Classes\ComponentBase;
 use Cms\Classes\ComponentManager;
 use Eloquent;
 use Exception;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Resources\Json\ResourceCollection;
 use Illuminate\Http\UploadedFile;
-use JWTAuth;
 use Kharanenka\Helper\Result;
 use Lovata\Buddies\Models\User;
 use Lovata\Toolbox\Classes\Collection\ElementCollection;
@@ -24,6 +25,7 @@ use PlanetaDelEste\ApiToolbox\Traits\Controllers\ApiBaseTrait;
 use PlanetaDelEste\ApiToolbox\Traits\Controllers\ApiCastTrait;
 use PlanetaDelEste\ApiToolbox\Traits\Controllers\ApiValidationTrait;
 use RainLab\Translate\Classes\Translator;
+use ReaZzon\JWTAuth\Classes\Guards\JWTGuard;
 use RuntimeException;
 use System\Classes\PluginManager;
 use System\Models\File;
@@ -50,17 +52,17 @@ class Base extends Extendable
     use ApiValidationTrait;
     use EventEmitter;
 
-    public const ALERT_TOKEN_NOT_FOUND    = 'token_not_found';
-    public const ALERT_USER_NOT_FOUND     = 'user_not_found';
-    public const ALERT_JWT_NOT_FOUND      = 'jwt_auth_not_found';
-    public const ALERT_ACCESS_DENIED      = 'access_denied';
+    public const ALERT_TOKEN_NOT_FOUND = 'token_not_found';
+    public const ALERT_USER_NOT_FOUND = 'user_not_found';
+    public const ALERT_JWT_NOT_FOUND = 'jwt_auth_not_found';
+    public const ALERT_ACCESS_DENIED = 'access_denied';
     public const ALERT_PERMISSIONS_DENIED = 'insufficient_permissions';
-    public const ALERT_RECORD_NOT_FOUND   = 'record_not_found';
-    public const ALERT_RECORDS_NOT_FOUND  = 'records_not_found';
-    public const ALERT_RECORD_UPDATED     = 'record_updated';
-    public const ALERT_RECORDS_UPDATED    = 'records_updated';
-    public const ALERT_RECORD_CREATED     = 'record_created';
-    public const ALERT_RECORD_DELETED     = 'record_deleted';
+    public const ALERT_RECORD_NOT_FOUND = 'record_not_found';
+    public const ALERT_RECORDS_NOT_FOUND = 'records_not_found';
+    public const ALERT_RECORD_UPDATED = 'record_updated';
+    public const ALERT_RECORDS_UPDATED = 'records_updated';
+    public const ALERT_RECORD_CREATED = 'record_created';
+    public const ALERT_RECORD_DELETED = 'record_deleted';
     public const ALERT_RECORD_NOT_DELETED = 'record_not_deleted';
     public const ALERT_RECORD_NOT_UPDATED = 'record_not_updated';
     public const ALERT_RECORD_NOT_CREATED = 'record_not_created';
@@ -71,12 +73,12 @@ class Base extends Extendable
     protected $data = [];
 
     /** @var array */
-    public static $components = [];
+    public static array $components = [];
 
     /** @var int Items per page in pagination */
-    public $itemsPerPage = 10;
+    public int $itemsPerPage = 10;
 
-    protected $arFileList = [
+    protected array $arFileList = [
         'attachOne'  => ['preview_image'],
         'attachMany' => ['images']
     ];
@@ -99,9 +101,9 @@ class Base extends Extendable
     }
 
     /**
-     * @return LengthAwarePaginator|JsonResponse
+     * @return LengthAwarePaginator|JsonResponse|ResourceCollection
      */
-    public function index()
+    public function index(): LengthAwarePaginator|JsonResponse|ResourceCollection
     {
         try {
             if ($this->methodExists('extendIndex')) {
@@ -114,8 +116,9 @@ class Base extends Extendable
             $this->fireSystemEvent(Plugin::EVENT_API_EXTEND_INDEX, [&$this->collection], false);
 
             $obModelCollection = $this->collection->paginate($this->getItemsPerPage());
-            $obResponse        = $this->getIndexResource()
-                ? app($this->getIndexResource(), [$obModelCollection])
+            $sIndexResource    = $this->getIndexResource();
+            $obResponse        = $sIndexResource
+                ? new $sIndexResource($obModelCollection)
                 : $obModelCollection;
             $this->fireSystemEvent(Plugin::EVENT_API_AFTER_INDEX, [$obResponse], false);
 
@@ -128,7 +131,7 @@ class Base extends Extendable
     /**
      * @return array|JsonResponse
      */
-    public function list()
+    public function list(): JsonResponse|array
     {
         try {
             if ($this->methodExists('extendList')) {
@@ -140,9 +143,10 @@ class Base extends Extendable
              */
             $this->fireSystemEvent(Plugin::EVENT_API_EXTEND_LIST, [&$this->collection], false);
 
-            $arListItems = $this->collection->values();
-            $obResponse  = $this->getListResource()
-                ? app($this->getListResource(), [collect($arListItems)])
+            $arListItems   = $this->collection->values();
+            $sListResource = $this->getListResource();
+            $obResponse    = $sListResource
+                ? new $sListResource(collect($arListItems))
                 : $arListItems;
             $this->fireSystemEvent(Plugin::EVENT_API_AFTER_LIST, [$obResponse], false);
 
@@ -152,7 +156,7 @@ class Base extends Extendable
         }
     }
 
-    public function count()
+    public function count(): JsonResponse|array
     {
         try {
             if ($this->methodExists('extendCount')) {
@@ -181,7 +185,7 @@ class Base extends Extendable
      *
      * @return JsonResponse|ElementItem
      */
-    public function show($value)
+    public function show(int|string $value): JsonResponse|ElementItem
     {
         try {
             /**
@@ -205,8 +209,9 @@ class Base extends Extendable
              */
             $this->fireSystemEvent(Plugin::EVENT_API_EXTEND_SHOW, [$this->item]);
 
-            $obResponse = $this->getShowResource()
-                ? app($this->getShowResource(), [$this->item])
+            $sShowResource = $this->getShowResource();
+            $obResponse    = $sShowResource
+                ? new $sShowResource($this->item)
                 : $this->item;
             $this->fireSystemEvent(Plugin::EVENT_API_AFTER_SHOW, [$obResponse], false);
 
@@ -219,7 +224,7 @@ class Base extends Extendable
     /**
      * @return JsonResponse|string
      */
-    public function store()
+    public function store(): JsonResponse|string
     {
         try {
             $this->currentUser();
@@ -249,8 +254,8 @@ class Base extends Extendable
                 : $obItem;
 
             return Result::setData($obResourceItem)
-                         ->setMessage($message)
-                         ->getJSON();
+                ->setMessage($message)
+                ->getJSON();
         } catch (Exception $e) {
             return static::exceptionResult($e);
         }
@@ -261,7 +266,7 @@ class Base extends Extendable
      *
      * @return JsonResponse|string
      */
-    public function update($id)
+    public function update(int|string $id): JsonResponse|string
     {
         try {
             $this->currentUser();
@@ -295,14 +300,18 @@ class Base extends Extendable
                 ? app($this->getShowResource(), [$obItem])
                 : $obItem;
             return Result::setData($obResourceItem)
-                         ->setMessage($message)
-                         ->getJSON();
+                ->setMessage($message)
+                ->getJSON();
         } catch (Exception $e) {
             return static::exceptionResult($e);
         }
     }
 
-    public function attach($id)
+    /**
+     * @param int|string $id
+     * @return JsonResponse|string
+     */
+    public function attach(int|string $id): JsonResponse|string
     {
         try {
             $this->currentUser();
@@ -336,8 +345,8 @@ class Base extends Extendable
                 ? app($this->getShowResource(), [$obItem])
                 : $obItem;
             return Result::setData($obResourceItem)
-                         ->setMessage($message)
-                         ->getJSON();
+                ->setMessage($message)
+                ->getJSON();
         } catch (Exception $e) {
             return static::exceptionResult($e);
         }
@@ -348,7 +357,7 @@ class Base extends Extendable
      *
      * @return JsonResponse|string
      */
-    public function destroy($id)
+    public function destroy(int|string $id): JsonResponse|string
     {
         try {
             $this->currentUser();
@@ -366,10 +375,10 @@ class Base extends Extendable
 
             if ($this->obModel->delete()) {
                 Result::setTrue()
-                      ->setMessage(ApiHelper::tr(static::ALERT_RECORD_DELETED));
+                    ->setMessage(ApiHelper::tr(static::ALERT_RECORD_DELETED));
             } else {
                 Result::setFalse()
-                      ->setMessage(ApiHelper::tr(static::ALERT_RECORD_NOT_DELETED));
+                    ->setMessage(ApiHelper::tr(static::ALERT_RECORD_NOT_DELETED));
             }
 
             return Result::getJSON();
@@ -437,11 +446,11 @@ class Base extends Extendable
     /**
      * Attach one file to model, using $arFileList array
      *
-     * @param string              $sAttachKey
-     * @param null|Model|Eloquent $obModel
-     * @param bool                $save
+     * @param string     $sAttachKey
+     * @param Model|null $obModel
+     * @param bool       $save
      */
-    protected function attachOne(string $sAttachKey, $obModel = null, bool $save = false): void
+    protected function attachOne(string $sAttachKey, Model $obModel = null, bool $save = false): void
     {
         if (!$obModel) {
             if (!$this->obModel) {
@@ -477,11 +486,11 @@ class Base extends Extendable
     /**
      * Attach many files to model, using $arFileList array
      *
-     * @param string              $sAttachKey
-     * @param null|Model|Eloquent $obModel
-     * @param bool                $save
+     * @param string     $sAttachKey
+     * @param null|Model $obModel
+     * @param bool       $save
      */
-    protected function attachMany(string $sAttachKey, $obModel = null, bool $save = false): void
+    protected function attachMany(string $sAttachKey, Model $obModel = null, bool $save = false): void
     {
         if (!$obModel) {
             if (!$this->obModel) {
@@ -603,32 +612,16 @@ class Base extends Extendable
     /**
      * @throws Exception
      */
-    protected function currentUser()
+    protected function currentUser(): Authenticatable|User|null
     {
         if ($this->user) {
             return $this->user;
         }
 
-        if (!class_exists('JWTAuth')) {
-            throw new RuntimeException(ApiHelper::tr(static::ALERT_JWT_NOT_FOUND));
-        }
+        /** @var JWTGuard $obJWTGuard */
+        $obJWTGuard = app('JWTGuard');
+        $this->user = $obJWTGuard->userOrFail();
 
-        if (!JWTAuth::getToken()) {
-            throw new RuntimeException(ApiHelper::tr(static::ALERT_TOKEN_NOT_FOUND));
-        }
-
-        if (!$userId = JWTAuth::parseToken()->authenticate()->id) {
-            throw new RuntimeException(ApiHelper::tr(static::ALERT_USER_NOT_FOUND));
-        }
-
-        /** @var User $user */
-        $user = User::active()->find($userId);
-
-        if (!$user) {
-            throw new RuntimeException(ApiHelper::tr(static::ALERT_USER_NOT_FOUND));
-        }
-
-        $this->user = $user;
         return $this->user;
     }
 
@@ -641,7 +634,7 @@ class Base extends Extendable
     {
         try {
             $this->currentUser();
-            return request()->header('X-ENV') === 'backend';
+            return ApiHelper::isBackend();
         } catch (Exception $ex) {
             return false;
         }
@@ -790,7 +783,7 @@ class Base extends Extendable
      *
      * @return mixed
      */
-    protected function getItemId($sValue)
+    protected function getItemId($sValue): mixed
     {
         return ($this->getPrimaryKey() === 'id')
             ? $sValue
@@ -824,7 +817,8 @@ class Base extends Extendable
         CmsObject $cmsObject = null,
         array     $properties = [],
         bool      $isSoftComponent = false
-    ): ComponentBase {
+    ): ComponentBase
+    {
         if (array_key_exists($sName, static::$components)) {
             return static::$components[$sName];
         }
