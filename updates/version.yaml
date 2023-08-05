@@ -143,3 +143,8 @@ v1.0.55:
     - 'Add comma option to thousands_sep setting property'
 v1.0.56:
     - 'Add count api method'
+v2.0.0:
+    - Set php version ^8.0.2
+    - Add package torann/geoip
+    - Change Tymon/JWTAuth with PHPOpenSourceSaver/JWTAuth
+    - Replace plugin PlanetaDelEste.JWTAuth with ReaZzon.JWTAuth
