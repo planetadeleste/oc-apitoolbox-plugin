@@ -372,6 +372,8 @@ class Base extends Extendable
                       ->setMessage(ApiHelper::tr(static::ALERT_RECORD_NOT_DELETED));
             }
 
+            $this->fireSystemEvent(Plugin::EVENT_AFTER_DESTROY, [$this->obModel]);
+
             return Result::getJSON();
         } catch (Exception $e) {
             return static::exceptionResult($e);

@@ -1,4 +1,6 @@
-<?php namespace PlanetaDelEste\ApiToolbox\Classes\Resource;
+<?php
+
+namespace PlanetaDelEste\ApiToolbox\Classes\Resource;
 
 use Carbon\Carbon;
 use Event;
@@ -37,16 +39,20 @@ abstract class Base extends Resource
     {
         if (empty($this->resource) ||
             (($this->resource instanceof Collection ||
-                    $this->resource instanceof ElementItem ||
-                    $this->resource instanceof ElementCollection)
-                && $this->resource->isEmpty())
+              $this->resource instanceof ElementItem ||
+              $this->resource instanceof ElementCollection)
+             && $this->resource->isEmpty())
         ) {
             return [];
         }
 
         $arDataKeys = $this->getDataKeys();
-        $arDates = $this->getDates();
-        $arData = $this->getData();
+        $arDates    = $this->getDates();
+        $arData     = $this->getData();
+
+        if (!empty($this->arExclude)) {
+            $arDataKeys = array_diff($arDataKeys, $this->arExclude);
+        }
 
         if (!empty($arData)) {
             // Filter items by getDataKeys
@@ -103,9 +109,9 @@ abstract class Base extends Resource
         }
 
         foreach ($this->arDates as $sKey => $sValue) {
-            $sProp = is_numeric($sKey) ? $sValue : $sKey;
-            $sFormat = is_string($sKey) && !is_numeric($sKey) ? $sValue : null;
-            $obDate = $this->{$sProp};
+            $sProp      = is_numeric($sKey) ? $sValue : $sKey;
+            $sFormat    = is_string($sKey) && !is_numeric($sKey) ? $sValue : null;
+            $obDate     = $this->{$sProp};
             $sDateValue = $obDate instanceof Carbon
                 ? !empty($sFormat)
                     ? $obDate->format($sFormat)
@@ -161,6 +167,17 @@ abstract class Base extends Resource
     }
 
     /**
+     * @param mixed $skey
+     * @return $this
+     */
+    public function without($skey): self
+    {
+        $this->exclude($skey);
+
+        return $this;
+    }
+
+    /**
      * @param string $sKey
      *
      * @return bool
@@ -212,7 +229,7 @@ abstract class Base extends Resource
                 continue;
             }
 
-            $sTranslatedValue = $this->resource->getAttribute($sField.'|'.$sActiveLangCode);
+            $sTranslatedValue = $this->resource->getAttribute($sField . '|' . $sActiveLangCode);
             if (!empty($sTranslatedValue)) {
                 array_set($arData, $sField, $sTranslatedValue);
             }
