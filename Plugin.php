@@ -13,6 +13,7 @@ use PlanetaDelEste\ApiToolbox\Classes\Console\CreateApiResourceShow;
 use PlanetaDelEste\ApiToolbox\Classes\Console\CreateApiRoute;
 use PlanetaDelEste\ApiToolbox\Classes\Console\CreateUpdateModel;
 use PlanetaDelEste\ApiToolbox\Classes\Event\Settings\ExtendSettingsFieldsHandler;
+use ReaZzon\JWTAuth\Http\Middlewares\ResolveUser;
 use System\Classes\PluginBase;
 
 /**
@@ -70,6 +71,8 @@ class Plugin extends PluginBase
 
     public function boot()
     {
+        $router = $this->app['router'];
+        $router->aliasMiddleware('jwt.auth', ResolveUser::class);
         Event::subscribe(ExtendSettingsFieldsHandler::class);
     }
 

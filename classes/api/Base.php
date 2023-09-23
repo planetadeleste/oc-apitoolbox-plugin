@@ -5,11 +5,11 @@ namespace PlanetaDelEste\ApiToolbox\Classes\Api;
 use Cms\Classes\CmsObject;
 use Cms\Classes\ComponentBase;
 use Cms\Classes\ComponentManager;
-use Eloquent;
 use Exception;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Http\Resources\Json\ResourceCollection;
 use Illuminate\Http\UploadedFile;
 use Kharanenka\Helper\Result;
@@ -116,10 +116,7 @@ class Base extends Extendable
             $this->fireSystemEvent(Plugin::EVENT_API_EXTEND_INDEX, [&$this->collection], false);
 
             $obModelCollection = $this->collection->paginate($this->getItemsPerPage());
-            $sIndexResource    = $this->getIndexResource();
-            $obResponse        = $sIndexResource
-                ? new $sIndexResource($obModelCollection)
-                : $obModelCollection;
+            $obResponse        = $this->makeResource($obModelCollection, $this->getIndexResource());
             $this->fireSystemEvent(Plugin::EVENT_API_AFTER_INDEX, [$obResponse], false);
 
             return $obResponse;
@@ -143,11 +140,8 @@ class Base extends Extendable
              */
             $this->fireSystemEvent(Plugin::EVENT_API_EXTEND_LIST, [&$this->collection], false);
 
-            $arListItems   = $this->collection->values();
-            $sListResource = $this->getListResource();
-            $obResponse    = $sListResource
-                ? new $sListResource(collect($arListItems))
-                : $arListItems;
+            $arListItems = $this->collection->values();
+            $obResponse  = $this->makeResource(collect($arListItems), $this->getListResource());
             $this->fireSystemEvent(Plugin::EVENT_API_AFTER_LIST, [$obResponse], false);
 
             return $obResponse;
@@ -185,7 +179,7 @@ class Base extends Extendable
      *
      * @return JsonResponse|ElementItem
      */
-    public function show(int|string $value): JsonResponse|ElementItem
+    public function show(int|string $value): JsonResponse|JsonResource
     {
         try {
             /**
@@ -209,10 +203,8 @@ class Base extends Extendable
              */
             $this->fireSystemEvent(Plugin::EVENT_API_EXTEND_SHOW, [$this->item]);
 
-            $sShowResource = $this->getShowResource();
-            $obResponse    = $sShowResource
-                ? new $sShowResource($this->item)
-                : $this->item;
+            $obResponse = $this->makeResource($this->item, $this->getShowResource());
+
             $this->fireSystemEvent(Plugin::EVENT_API_AFTER_SHOW, [$obResponse], false);
 
             return $obResponse;
@@ -249,9 +241,7 @@ class Base extends Extendable
             }
 
             $obItem         = $this->getItem($this->obModel->id);
-            $obResourceItem = $this->getShowResource()
-                ? app($this->getShowResource(), [$obItem])
-                : $obItem;
+            $obResourceItem = $this->makeResource($obItem, $this->getShowResource());
 
             return Result::setData($obResourceItem)
                 ->setMessage($message)
@@ -296,9 +286,7 @@ class Base extends Extendable
             }
 
             $obItem         = $this->getItem($this->obModel->id);
-            $obResourceItem = $this->getShowResource()
-                ? app($this->getShowResource(), [$obItem])
-                : $obItem;
+            $obResourceItem = $this->makeResource($obItem, $this->getShowResource());
             return Result::setData($obResourceItem)
                 ->setMessage($message)
                 ->getJSON();
@@ -341,9 +329,7 @@ class Base extends Extendable
             }
 
             $obItem         = $this->getItem($this->obModel->id);
-            $obResourceItem = $this->getShowResource()
-                ? app($this->getShowResource(), [$obItem])
-                : $obItem;
+            $obResourceItem = $this->makeResource($obItem, $this->getShowResource());
             return Result::setData($obResourceItem)
                 ->setMessage($message)
                 ->getJSON();

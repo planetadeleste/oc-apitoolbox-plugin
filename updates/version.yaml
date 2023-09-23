@@ -148,3 +148,7 @@ v2.0.0:
     - Add package torann/geoip
     - Change Tymon/JWTAuth with PHPOpenSourceSaver/JWTAuth
     - Replace plugin PlanetaDelEste.JWTAuth with ReaZzon.JWTAuth
+v2.0.1:
+    - 'New makeResource method on api base class'
+    - 'Add jwt.auth middleware'
+    - 'Add without method on resource base class'

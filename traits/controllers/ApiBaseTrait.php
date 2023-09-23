@@ -193,6 +193,11 @@ trait ApiBaseTrait
         return $this->modelClass;
     }
 
+    protected function makeResource($obData, string $sResource = null)
+    {
+        return $sResource ? new $sResource($obData) : $obData;
+    }
+
     /**
      * @return \Lovata\Toolbox\Classes\Collection\ElementCollection|null
      */
