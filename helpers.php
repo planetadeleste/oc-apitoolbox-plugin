@@ -28,3 +28,19 @@ if (!function_exists('has_jwtauth_plugin')) {
         return has_plugin('PlanetaDelEste.JWTAuth') || has_plugin('ReaZzon.JWTAuth');
     }
 }
+
+if (!function_exists('tr')) {
+    /**
+     * Translate $message using current locale or $locale
+     *
+     * @param string $message
+     * @param array       $options
+     * @param string|null $locale
+     *
+     * @return string
+     */
+    function tr(string $message, array $options = [], string $locale = null): string
+    {
+        return \PlanetaDelEste\ApiToolbox\Classes\Helper\ApiHelper::tr($message, $options, $locale);
+    }
+}

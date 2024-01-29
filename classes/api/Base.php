@@ -52,17 +52,17 @@ class Base extends Extendable
     use ApiValidationTrait;
     use EventEmitter;
 
-    public const ALERT_TOKEN_NOT_FOUND = 'token_not_found';
-    public const ALERT_USER_NOT_FOUND = 'user_not_found';
-    public const ALERT_JWT_NOT_FOUND = 'jwt_auth_not_found';
-    public const ALERT_ACCESS_DENIED = 'access_denied';
+    public const ALERT_TOKEN_NOT_FOUND    = 'token_not_found';
+    public const ALERT_USER_NOT_FOUND     = 'user_not_found';
+    public const ALERT_JWT_NOT_FOUND      = 'jwt_auth_not_found';
+    public const ALERT_ACCESS_DENIED      = 'access_denied';
     public const ALERT_PERMISSIONS_DENIED = 'insufficient_permissions';
-    public const ALERT_RECORD_NOT_FOUND = 'record_not_found';
-    public const ALERT_RECORDS_NOT_FOUND = 'records_not_found';
-    public const ALERT_RECORD_UPDATED = 'record_updated';
-    public const ALERT_RECORDS_UPDATED = 'records_updated';
-    public const ALERT_RECORD_CREATED = 'record_created';
-    public const ALERT_RECORD_DELETED = 'record_deleted';
+    public const ALERT_RECORD_NOT_FOUND   = 'record_not_found';
+    public const ALERT_RECORDS_NOT_FOUND  = 'records_not_found';
+    public const ALERT_RECORD_UPDATED     = 'record_updated';
+    public const ALERT_RECORDS_UPDATED    = 'records_updated';
+    public const ALERT_RECORD_CREATED     = 'record_created';
+    public const ALERT_RECORD_DELETED     = 'record_deleted';
     public const ALERT_RECORD_NOT_DELETED = 'record_not_deleted';
     public const ALERT_RECORD_NOT_UPDATED = 'record_not_updated';
     public const ALERT_RECORD_NOT_CREATED = 'record_not_created';
@@ -89,8 +89,7 @@ class Base extends Extendable
 
         $this->setLocale();
         $this->init();
-        $this->data = $this->getInputData();
-        $this->setCastData($this->data);
+        $this->setData($this->getInputData());
         $this->setResources();
         $this->makeCollection();
         $this->applyFilters();
@@ -244,8 +243,8 @@ class Base extends Extendable
             $obResourceItem = $this->makeResource($obItem, $this->getShowResource());
 
             return Result::setData($obResourceItem)
-                ->setMessage($message)
-                ->getJSON();
+                         ->setMessage($message)
+                         ->getJSON();
         } catch (Exception $e) {
             return static::exceptionResult($e);
         }
@@ -288,8 +287,8 @@ class Base extends Extendable
             $obItem         = $this->getItem($this->obModel->id);
             $obResourceItem = $this->makeResource($obItem, $this->getShowResource());
             return Result::setData($obResourceItem)
-                ->setMessage($message)
-                ->getJSON();
+                         ->setMessage($message)
+                         ->getJSON();
         } catch (Exception $e) {
             return static::exceptionResult($e);
         }
@@ -331,8 +330,8 @@ class Base extends Extendable
             $obItem         = $this->getItem($this->obModel->id);
             $obResourceItem = $this->makeResource($obItem, $this->getShowResource());
             return Result::setData($obResourceItem)
-                ->setMessage($message)
-                ->getJSON();
+                         ->setMessage($message)
+                         ->getJSON();
         } catch (Exception $e) {
             return static::exceptionResult($e);
         }
@@ -361,16 +360,28 @@ class Base extends Extendable
 
             if ($this->obModel->delete()) {
                 Result::setTrue()
-                    ->setMessage(ApiHelper::tr(static::ALERT_RECORD_DELETED));
+                      ->setMessage(ApiHelper::tr(static::ALERT_RECORD_DELETED));
             } else {
                 Result::setFalse()
-                    ->setMessage(ApiHelper::tr(static::ALERT_RECORD_NOT_DELETED));
+                      ->setMessage(ApiHelper::tr(static::ALERT_RECORD_NOT_DELETED));
             }
 
             return Result::getJSON();
         } catch (Exception $e) {
             return static::exceptionResult($e);
         }
+    }
+
+    /**
+     * @param array $arData
+     * @return $this
+     */
+    public function setData(array $arData = []): self
+    {
+        $this->setCastData($arData);
+        $this->data = $arData;
+
+        return $this;
     }
 
     /**
@@ -781,7 +792,7 @@ class Base extends Extendable
      *
      * @return ElementItem
      */
-    protected function getItem(int $iModelID): ElementItem
+    protected function getItem(int|string $iModelID): ElementItem
     {
         /** @var ElementItem $sItemClass */
         $sItemClass = $this->collection::ITEM_CLASS;
@@ -799,12 +810,11 @@ class Base extends Extendable
      * @throws Exception
      */
     public function component(
-        string    $sName,
+        string $sName,
         CmsObject $cmsObject = null,
-        array     $properties = [],
-        bool      $isSoftComponent = false
-    ): ComponentBase
-    {
+        array $properties = [],
+        bool $isSoftComponent = false
+    ): ComponentBase {
         if (array_key_exists($sName, static::$components)) {
             return static::$components[$sName];
         }
