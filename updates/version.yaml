@@ -146,4 +146,5 @@ v1.0.56:
 v1.0.57:
     - 'New without method to exclude item properties'
     - 'Fire event after delete'
-
+v1.0.58:
+    - 'Use like format on value'
