@@ -133,6 +133,10 @@ trait FilterListTrait
             if (is_array($sValue)) {
                 $obQuery->whereIn($sCol, $sValue, $bool);
             } else {
+                if ($sOperator === $this->getLikeOperator()) {
+                    $sValue = '%' . $sValue . '%';
+                }
+
                 $obQuery->where($sCol, $sOperator, $sValue, $bool);
             }
 
