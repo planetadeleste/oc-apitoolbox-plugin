@@ -152,3 +152,6 @@ v2.0.1:
     - 'New makeResource method on api base class'
     - 'Add jwt.auth middleware'
     - 'Add without method on resource base class'
+v2.0.2:
+    - 'New ElementCollection extends Lovata.Toolbox ElementCollection class'
+    - 'Remove referencing collection object'

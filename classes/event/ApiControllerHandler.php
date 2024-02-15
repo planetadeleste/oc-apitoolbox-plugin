@@ -1,4 +1,6 @@
-<?php namespace PlanetaDelEste\ApiToolbox\Classes\Event;
+<?php
+
+namespace PlanetaDelEste\ApiToolbox\Classes\Event;
 
 use Lovata\Toolbox\Classes\Collection\ElementCollection;
 use Lovata\Toolbox\Classes\Item\ElementItem;
@@ -14,8 +16,8 @@ use PlanetaDelEste\ApiToolbox\Plugin;
  * @method void beforeSave(Base $obController, \Model $obModel, array &$arData)
  * @method void afterSave(Base $obController, \Model $obModel, array $arData)
  * @method void beforeDestroy(Base $obController, \Model $obModel)
- * @method void extendIndex(Base $obController, ElementCollection &$obCollection)
- * @method void extendList(Base $obController, ElementCollection &$obCollection)
+ * @method void extendIndex(Base $obController, ElementCollection $obCollection)
+ * @method void extendList(Base $obController, ElementCollection $obCollection)
  * @method void extendShow(Base $obController, ElementItem $obItem)
  * @method void beforeShowCollect(Base $obController, mixed &$value)
  */
@@ -65,7 +67,7 @@ abstract class ApiControllerHandler
         if (method_exists($this, 'extendIndex')) {
             $obEvent->listen(
                 Plugin::EVENT_API_EXTEND_INDEX,
-                function ($obController, &$obCollection) {
+                function ($obController, $obCollection) {
                     if (!$this->valid($obController)) {
                         return;
                     }
@@ -78,7 +80,7 @@ abstract class ApiControllerHandler
         if (method_exists($this, 'extendList')) {
             $obEvent->listen(
                 Plugin::EVENT_API_EXTEND_LIST,
-                function ($obController, &$obCollection) {
+                function ($obController, $obCollection) {
                     if (!$this->valid($obController)) {
                         return;
                     }
