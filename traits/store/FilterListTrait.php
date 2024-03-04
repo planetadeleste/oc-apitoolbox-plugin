@@ -30,6 +30,7 @@ trait FilterListTrait
             return [];
         }
 
+        $this->init();
         $this->arFields = array_keys($this->sValue);
         $obModelClass   = $this->getModelClass();
 
@@ -133,6 +134,7 @@ trait FilterListTrait
             if (is_array($sValue)) {
                 $obQuery->whereIn($sCol, $sValue, $bool);
             } else {
+                $sValue = $sOperator === $this->getLikeOperator() ? "%{$sValue}%" : $sValue;
                 $obQuery->where($sCol, $sOperator, $sValue, $bool);
             }
 
