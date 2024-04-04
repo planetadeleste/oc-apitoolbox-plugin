@@ -676,7 +676,7 @@ class Base extends Extendable
             'column'    => $this->getSortColumn(),
             'direction' => $this->getSortDirection()
         ];
-        $sort        = get('sort', []);
+        $sort        = array_get($this->data, 'sort', []);
         if (is_string($sort)) {
             $json = json_decode($sort, true);
             if (!json_last_error()) {
@@ -687,9 +687,10 @@ class Base extends Extendable
         }
         $sort = array_merge($sortDefault, $sort);
 
-        if (!$filters = get('filters')) {
+        if (!$filters = array_get($this->data, 'filters')) {
             $filters = get();
         }
+
         if (is_string($filters)) {
             $json = json_decode($filters, true);
             if (!json_last_error()) {
