@@ -4,6 +4,7 @@ namespace PlanetaDelEste\ApiToolbox\Classes\Resource;
 use Carbon\Carbon;
 use Closure;
 use Event;
+use Illuminate\Database\Eloquent\Concerns\HasAttributes;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Collection;
@@ -24,6 +25,8 @@ use System\Classes\PluginManager;
  */
 abstract class Base extends JsonResource
 {
+    use HasAttributes;
+
     /** @var bool Add created_at, updated_at dates */
     public bool $addDates = true;
 
@@ -80,6 +83,7 @@ abstract class Base extends JsonResource
         }
 
         $this->translate($arData);
+        $this->castAttributes($arData);
 
         if (is_string($this->getEvent())) {
             $arResponseData = Event::fire($this->getEvent(), [$this, $arData]);
@@ -90,7 +94,11 @@ abstract class Base extends JsonResource
                     }
 
                     foreach ($arResponseItem as $sKey => $sValue) {
-                        $arData[$sKey] = $sValue;
+                        if ($sValue instanceof Closure) {
+                            array_set($arData, $sKey, $sValue());
+                        } else {
+                            array_set($arData, $sKey, $sValue);
+                        }
                     }
                 }
             }
@@ -194,6 +202,23 @@ abstract class Base extends JsonResource
      * @return string|null
      */
     abstract protected function getEvent(): ?string;
+
+    /**
+     * Add the casted attributes to the attributes array.
+     *
+     * @param array $arData
+     * @return void
+     */
+    protected function castAttributes(array &$arData): void
+    {
+        foreach (array_keys($this->getCasts()) as $sKey) {
+            if (!isset($arData[$sKey])) {
+                continue;
+            }
+
+            $arData[$sKey] = $this->castAttribute($sKey, $arData[$sKey]);
+        }
+    }
 
     /**
      * Map translated data

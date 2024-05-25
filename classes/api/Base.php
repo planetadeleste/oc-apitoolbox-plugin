@@ -11,12 +11,13 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Http\Resources\Json\ResourceCollection;
+use Illuminate\Http\Response;
 use Illuminate\Http\UploadedFile;
 use Kharanenka\Helper\Result;
 use Lovata\Buddies\Models\User;
 use Lovata\Toolbox\Classes\Collection\ElementCollection;
 use Lovata\Toolbox\Classes\Item\ElementItem;
-use Model;
+use October\Rain\Database\Model;
 use October\Rain\Extension\Extendable;
 use October\Rain\Support\Arr;
 use PlanetaDelEste\ApiToolbox\Classes\Helper\ApiHelper;
@@ -52,35 +53,39 @@ class Base extends Extendable
     use ApiValidationTrait;
     use EventEmitter;
 
-    public const ALERT_TOKEN_NOT_FOUND    = 'token_not_found';
-    public const ALERT_USER_NOT_FOUND     = 'user_not_found';
-    public const ALERT_JWT_NOT_FOUND      = 'jwt_auth_not_found';
-    public const ALERT_ACCESS_DENIED      = 'access_denied';
-    public const ALERT_PERMISSIONS_DENIED = 'insufficient_permissions';
-    public const ALERT_RECORD_NOT_FOUND   = 'record_not_found';
-    public const ALERT_RECORDS_NOT_FOUND  = 'records_not_found';
-    public const ALERT_RECORD_UPDATED     = 'record_updated';
-    public const ALERT_RECORDS_UPDATED    = 'records_updated';
-    public const ALERT_RECORD_CREATED     = 'record_created';
-    public const ALERT_RECORD_DELETED     = 'record_deleted';
-    public const ALERT_RECORD_NOT_DELETED = 'record_not_deleted';
-    public const ALERT_RECORD_NOT_UPDATED = 'record_not_updated';
-    public const ALERT_RECORD_NOT_CREATED = 'record_not_created';
+    public const string ALERT_TOKEN_NOT_FOUND    = 'token_not_found';
+    public const string ALERT_USER_NOT_FOUND     = 'user_not_found';
+    public const string ALERT_JWT_NOT_FOUND      = 'jwt_auth_not_found';
+    public const string ALERT_ACCESS_DENIED      = 'access_denied';
+    public const string ALERT_PERMISSIONS_DENIED = 'insufficient_permissions';
+    public const string ALERT_RECORD_NOT_FOUND   = 'record_not_found';
+    public const string ALERT_RECORDS_NOT_FOUND  = 'records_not_found';
+    public const string ALERT_RECORD_UPDATED     = 'record_updated';
+    public const string ALERT_RECORDS_UPDATED    = 'records_updated';
+    public const string ALERT_RECORD_CREATED     = 'record_created';
+    public const string ALERT_RECORD_DELETED     = 'record_deleted';
+    public const string ALERT_RECORD_NOT_DELETED = 'record_not_deleted';
+    public const string ALERT_RECORD_NOT_UPDATED = 'record_not_updated';
+    public const string ALERT_RECORD_NOT_CREATED = 'record_not_created';
 
     /**
      * @var array
      */
     protected $data = [];
 
-    /** @var array */
+    /**
+     * @var array
+     */
     public static array $components = [];
 
-    /** @var int Items per page in pagination */
+    /**
+     * @var int Items per page in pagination
+     */
     public int $itemsPerPage = 10;
 
     protected array $arFileList = [
         'attachOne'  => ['preview_image'],
-        'attachMany' => ['images']
+        'attachMany' => ['images'],
     ];
 
     public function __construct()
@@ -149,6 +154,13 @@ class Base extends Extendable
         }
     }
 
+    /**
+     * Retrieves the count of items in the collection and returns it as a JSON response or an array.
+     *
+     * @return JsonResponse|array Returns a JSON response containing the count of items or an array with the count.
+     *
+     * @throws Exception If an error occurs during the count retrieval or the exception handling.
+     */
     public function count(): JsonResponse|array
     {
         try {
@@ -187,6 +199,7 @@ class Base extends Extendable
             $this->fireSystemEvent(Plugin::EVENT_API_BEFORE_SHOW_COLLECT, [&$value], false);
 
             $iModelId = $this->getItemId($value);
+
             if (!$iModelId) {
                 throw new RuntimeException(static::ALERT_RECORD_NOT_FOUND, 403);
             }
@@ -243,8 +256,8 @@ class Base extends Extendable
             $obResourceItem = $this->makeResource($obItem, $this->getShowResource());
 
             return Result::setData($obResourceItem)
-                         ->setMessage($message)
-                         ->getJSON();
+                ->setMessage($message)
+                ->getJSON();
         } catch (Exception $e) {
             return static::exceptionResult($e);
         }
@@ -259,9 +272,9 @@ class Base extends Extendable
     {
         try {
             $this->currentUser();
-            $this->obModel = app($this->getModelClass())->where($this->getPrimaryKey(), $id)->firstOrFail();
-            $this->exists  = true;
-            $message       = ApiHelper::tr(static::ALERT_RECORD_NOT_UPDATED);
+            $this->setModel($id);
+            $this->exists = true;
+            $message      = ApiHelper::tr(static::ALERT_RECORD_NOT_UPDATED);
             Result::setFalse();
 
             if (!$this->obModel) {
@@ -286,9 +299,10 @@ class Base extends Extendable
 
             $obItem         = $this->getItem($this->obModel->id);
             $obResourceItem = $this->makeResource($obItem, $this->getShowResource());
+
             return Result::setData($obResourceItem)
-                         ->setMessage($message)
-                         ->getJSON();
+                ->setMessage($message)
+                ->getJSON();
         } catch (Exception $e) {
             return static::exceptionResult($e);
         }
@@ -296,27 +310,27 @@ class Base extends Extendable
 
     /**
      * @param int|string $id
+     *
      * @return JsonResponse|string
      */
     public function attach(int|string $id): JsonResponse|string
     {
         try {
             $this->currentUser();
-            $this->obModel = app($this->getModelClass())->where($this->getPrimaryKey(), $id)->firstOrFail();
-            $this->exists  = true;
-            $message       = ApiHelper::tr(static::ALERT_RECORD_NOT_UPDATED);
+            $this->setModel($id);
+            $this->exists = true;
+            $message      = ApiHelper::tr(static::ALERT_RECORD_NOT_UPDATED);
             Result::setFalse();
 
             if (!$this->obModel) {
                 throw new RuntimeException(static::ALERT_RECORD_NOT_FOUND, 403);
             }
 
-            if (!$this->hasPermission('update')) {
+            if (!$this->hasPermission('attach')) {
                 throw new RuntimeException(static::ALERT_PERMISSIONS_DENIED, 403);
             }
 
             $this->fireSystemEvent(Plugin::EVENT_BEFORE_ATTACH, [$this->obModel, &$this->data]);
-            $this->validate();
 
             if ($this->attachFiles(true)) {
                 if (!Result::status() && Result::message()) {
@@ -329,9 +343,48 @@ class Base extends Extendable
 
             $obItem         = $this->getItem($this->obModel->id);
             $obResourceItem = $this->makeResource($obItem, $this->getShowResource());
+
             return Result::setData($obResourceItem)
-                         ->setMessage($message)
-                         ->getJSON();
+                ->setMessage($message)
+                ->getJSON();
+        } catch (Exception $e) {
+            return static::exceptionResult($e);
+        }
+    }
+
+    /**
+     * Loads a file from the specified path or the default storage path.
+     *
+     * @param string      $sSource The name of the file to load.
+     * @param string|null $sPath   The path to the file. If not provided, the default storage path will be used.
+     *
+     * @throws RuntimeException If the file is not found.
+     *
+     * @return Response The file response.
+     */
+    public function loadFile(string $sSource, ?string $sPath = null): Response
+    {
+        try {
+            if (!$sPath) {
+                $sPath       = storage_path('app/uploads/public');
+                $sSourcePath = \File::name($sSource);
+                $arPathParts = array_slice(str_split($sSourcePath, 3), 0, 3);
+
+                if (count($arPathParts) < 3) {
+                    throw new RuntimeException(ApiHelper::tr('File :file not found', ['file' => $sSource]), 404);
+                }
+
+                $sPath .= '/'.implode('/', $arPathParts);
+            }
+
+            $sPath = rtrim($sPath, '/').'/'.$sSource;
+
+            if (!\File::exists($sPath)) {
+                throw new RuntimeException(ApiHelper::tr('File :file not found', ['file' => $sPath]), 404);
+            }
+
+//            $sContent = \File::get($sPath);
+            return response()->file($sPath);
         } catch (Exception $e) {
             return static::exceptionResult($e);
         }
@@ -346,7 +399,7 @@ class Base extends Extendable
     {
         try {
             $this->currentUser();
-            $this->obModel = app($this->getModelClass())->where($this->getPrimaryKey(), $id)->firstOrFail();
+            $this->setModel($id);
 
             if (!$this->obModel) {
                 throw new RuntimeException(static::ALERT_RECORD_NOT_FOUND, 403);
@@ -360,10 +413,10 @@ class Base extends Extendable
 
             if ($this->obModel->delete()) {
                 Result::setTrue()
-                      ->setMessage(ApiHelper::tr(static::ALERT_RECORD_DELETED));
+                    ->setMessage(ApiHelper::tr(static::ALERT_RECORD_DELETED));
             } else {
                 Result::setFalse()
-                      ->setMessage(ApiHelper::tr(static::ALERT_RECORD_NOT_DELETED));
+                    ->setMessage(ApiHelper::tr(static::ALERT_RECORD_NOT_DELETED));
             }
 
             return Result::getJSON();
@@ -374,6 +427,7 @@ class Base extends Extendable
 
     /**
      * @param array $arData
+     *
      * @return $this
      */
     public function setData(array $arData = []): self
@@ -390,6 +444,7 @@ class Base extends Extendable
     protected function save(): bool
     {
         $this->obModel->fill($this->data);
+
         if ($this->methodExists('extendSave')) {
             $this->extendSave();
         }
@@ -416,19 +471,31 @@ class Base extends Extendable
         $bSave = false;
 
         $arAttachOneAttrList = array_get($this->arFileList, 'attachOne');
+
         if (!empty($arAttachOneAttrList)) {
             $arAttachOneAttrList = array_wrap($arAttachOneAttrList);
             $bSave               = true;
+
             foreach ($arAttachOneAttrList as $sAttachOneKey) {
+                if (!request()->hasFile($sAttachOneKey)) {
+                    continue;
+                }
+
                 $this->attachOne($sAttachOneKey);
             }
         }
 
         $arAttachManyAttrList = array_get($this->arFileList, 'attachMany');
+
         if (!empty($arAttachManyAttrList)) {
             $arAttachManyAttrList = array_wrap($arAttachManyAttrList);
             $bSave                = true;
+
             foreach ($arAttachManyAttrList as $sAttachManyKey) {
+                if (!request()->hasFile($sAttachManyKey)) {
+                    continue;
+                }
+
                 $this->attachMany($sAttachManyKey);
             }
         }
@@ -447,47 +514,53 @@ class Base extends Extendable
      * @param Model|null $obModel
      * @param bool       $save
      */
-    protected function attachOne(string $sAttachKey, Model $obModel = null, bool $save = false): void
+    protected function attachOne(string $sAttachKey, ?Model $obModel = null, bool $save = false): void
     {
         if (!$obModel) {
             if (!$this->obModel) {
                 return;
             }
+
             $obModel = $this->obModel;
         }
 
-        if ($obModel->hasRelation($sAttachKey)) {
-            $obModel->load($sAttachKey);
+        if (!$obModel->hasRelation($sAttachKey)) {
+            return;
+        }
 
-            if (request()->hasFile($sAttachKey)) {
-                $obFile = request()->file($sAttachKey);
-                if ($obFile->isValid()) {
-                    if ($obModel->{$sAttachKey} instanceof File) {
-                        $obModel->{$sAttachKey}->delete();
-                    }
+        $obModel->load($sAttachKey);
 
-                    $this->attachFile($obModel, $obFile, $sAttachKey);
-                }
-            } elseif (!input($sAttachKey)) {
+        if (request()->hasFile($sAttachKey)) {
+            $obFile = request()->file($sAttachKey);
+
+            if ($obFile->isValid()) {
                 if ($obModel->{$sAttachKey} instanceof File) {
                     $obModel->{$sAttachKey}->delete();
                 }
-            }
 
-            if ($save) {
-                $obModel->save();
+                $this->attachFile($obModel, $obFile, $sAttachKey);
+            }
+        } elseif (!input($sAttachKey)) {
+            if ($obModel->{$sAttachKey} instanceof File) {
+                $obModel->{$sAttachKey}->delete();
             }
         }
+
+        if (!$save) {
+            return;
+        }
+
+        $obModel->save();
     }
 
     /**
      * Attach many files to model, using $arFileList array
      *
      * @param string     $sAttachKey
-     * @param null|Model $obModel
+     * @param Model|null $obModel
      * @param bool       $save
      */
-    protected function attachMany(string $sAttachKey, Model $obModel = null, bool $save = false): void
+    protected function attachMany(string $sAttachKey, ?Model $obModel = null, bool $save = false): void
     {
         if (!$obModel) {
             if (!$this->obModel) {
@@ -497,38 +570,43 @@ class Base extends Extendable
             $obModel = $this->obModel;
         }
 
-        if ($obModel->hasRelation($sAttachKey)) {
-            $obModel->load($sAttachKey);
+        if (!$obModel->hasRelation($sAttachKey)) {
+            return;
+        }
 
-            if (request()->hasFile($sAttachKey)) {
-                $arFiles = request()->file($sAttachKey);
-                if (!empty($arFiles)) {
-                    if ($obModel->{$sAttachKey}->count()) {
-                        $obModel->{$sAttachKey}->each(
-                            function ($obImage) {
-                                $obImage->delete();
-                            }
-                        );
-                    }
+        $obModel->load($sAttachKey);
 
-                    foreach ($arFiles as $obFile) {
-                        $this->attachFile($obModel, $obFile, $sAttachKey);
-                    }
-                }
-            } elseif (!input($sAttachKey)) {
-                if ($obModel->{$sAttachKey}->count()) {
-                    $obModel->{$sAttachKey}->each(
-                        function ($obImage) {
-                            $obImage->delete();
-                        }
-                    );
+        if (request()->hasFile($sAttachKey)) {
+            $arFiles = array_wrap(request()->file($sAttachKey));
+
+            if (!empty($arFiles)) {
+                //                    if ($obModel->{$sAttachKey}->count()) {
+                //                        $obModel->{$sAttachKey}->each(
+                //                            function ($obImage) {
+                //                                $obImage->delete();
+                //                            }
+                //                        );
+                //                    }
+
+                foreach ($arFiles as $obFile) {
+                    $this->attachFile($obModel, $obFile, $sAttachKey);
                 }
             }
-
-            if ($save) {
-                $obModel->save();
+        } elseif (!input($sAttachKey)) {
+            if ($obModel->{$sAttachKey}->count()) {
+                $obModel->{$sAttachKey}->each(
+                    static function ($obImage): void {
+                        $obImage->delete();
+                    }
+                );
             }
         }
+
+        if (!$save) {
+            return;
+        }
+
+        $obModel->save();
     }
 
     /**
@@ -557,7 +635,9 @@ class Base extends Extendable
             if (empty($arRelated)) {
                 continue;
             }
+
             $arRelated = array_wrap($arRelated);
+
             foreach ($arRelated as $sColumn) {
                 array_forget($arData, $sColumn);
             }
@@ -582,17 +662,16 @@ class Base extends Extendable
     public function check(): JsonResponse
     {
         try {
-            $group = null;
             if ($this->currentUser()) {
                 $group = $this->user->getGroups();
                 Result::setTrue(compact('group'));
             } else {
                 Result::setFalse();
             }
-
-            return response()->json(Result::get());
         } catch (Exception $e) {
-            return static::exceptionResult($e);
+            Result::setFalse();
+        } finally {
+            return response()->json(Result::get());
         }
     }
 
@@ -631,6 +710,7 @@ class Base extends Extendable
     {
         try {
             $this->currentUser();
+
             return ApiHelper::isBackend();
         } catch (Exception $ex) {
             return false;
@@ -642,6 +722,7 @@ class Base extends Extendable
         try {
             $this->currentUser();
             $arGroups = $this->user->groups->lists('code');
+
             return in_array($sGroupCode, $arGroups);
         } catch (Exception $e) {
             return false;
@@ -662,24 +743,25 @@ class Base extends Extendable
     {
         $sortDefault = [
             'column'    => $this->getSortColumn(),
-            'direction' => $this->getSortDirection()
+            'direction' => $this->getSortDirection(),
         ];
         $sort        = get('sort', []);
+
         if (is_string($sort)) {
             $json = json_decode($sort, true);
-            if (!json_last_error()) {
-                $sort = $json;
-            } else {
-                $sort = ['column' => $sort];
-            }
+
+            $sort = !json_last_error() ? $json : ['column' => $sort];
         }
+
         $sort = array_merge($sortDefault, $sort);
 
         if (!$filters = get('filters')) {
             $filters = get();
         }
+
         if (is_string($filters)) {
             $json = json_decode($filters, true);
+
             if (!json_last_error()) {
                 $filters = $json;
             }
@@ -692,8 +774,10 @@ class Base extends Extendable
         }
 
         $arFilters = $this->fireSystemEvent(Plugin::EVENT_BEFORE_FILTER, [$filters]);
+
         if (!empty($arFilters)) {
             $arFilters = array_wrap($arFilters);
+
             if (Arr::isAssoc($arFilters)) {
                 $arFilters = [$arFilters];
             }
@@ -702,13 +786,14 @@ class Base extends Extendable
                 if (empty($arFilter) || !is_array($arFilter)) {
                     continue;
                 }
+
                 foreach ($arFilter as $sKey => $sValue) {
                     $obFilters->addFilter($sKey, $sValue);
                 }
             }
         }
 
-        if ($sFilter = array_get($filters, "sort")) {
+        if ($sFilter = array_get($filters, 'sort')) {
             if (is_string($sFilter)) {
                 $sort['column'] = $sFilter;
             } elseif (is_array($sFilter)) {
@@ -740,7 +825,7 @@ class Base extends Extendable
 
         if ($obCollection->methodExists('sort') && ($sSort = array_get($arSort, 'column'))) {
             if (($sDir = array_get($arSort, 'direction')) && !str_contains($sSort, '|')) {
-                $sSort .= '|' . $sDir;
+                $sSort .= '|'.$sDir;
             }
 
             $obCollection->sort($sSort);
@@ -759,16 +844,21 @@ class Base extends Extendable
                 }
 
                 $sMethodName = camel_case($sFilterName);
-                if ($obCollection->methodExists($sMethodName)) {
-                    $obResult = call_user_func_array(
-                        [$obCollection, $sMethodName],
-                        $sFilterValue
-                    );
 
-                    if (is_array($obResult)) {
-                        $obCollection->intersect(array_keys($obResult));
-                    }
+                if (!$obCollection->methodExists($sMethodName)) {
+                    continue;
                 }
+
+                $obResult = call_user_func_array(
+                    [$obCollection, $sMethodName],
+                    $sFilterValue
+                );
+
+                if (!is_array($obResult)) {
+                    continue;
+                }
+
+                $obCollection->intersect(array_keys($obResult));
             }
         }
 
@@ -788,6 +878,26 @@ class Base extends Extendable
     }
 
     /**
+     * @param string|int $id
+     *
+     * @return Model
+     */
+    protected function setModel(string|int $id): Model
+    {
+        $this->obModel = app($this->getModelClass())->where($this->getPrimaryKey(), $id)->firstOrFail();
+
+        return $this->obModel;
+    }
+
+    /**
+     * @return Model
+     */
+    public function getModel(): Model
+    {
+        return $this->obModel;
+    }
+
+    /**
      * @param int $iModelID
      *
      * @return ElementItem
@@ -796,6 +906,7 @@ class Base extends Extendable
     {
         /** @var ElementItem $sItemClass */
         $sItemClass = $this->collection::ITEM_CLASS;
+
         return $sItemClass::make($iModelID);
     }
 
@@ -806,12 +917,13 @@ class Base extends Extendable
      * @param bool           $isSoftComponent
      *
      * @return ComponentBase
+     *
      * @throws SystemException
      * @throws Exception
      */
     public function component(
         string $sName,
-        CmsObject $cmsObject = null,
+        ?CmsObject $cmsObject = null,
         array $properties = [],
         bool $isSoftComponent = false
     ): ComponentBase {
@@ -820,11 +932,13 @@ class Base extends Extendable
         }
 
         $component = ComponentManager::instance()->makeComponent($sName, $cmsObject, $properties, $isSoftComponent);
+
         if (!$component) {
             throw new RuntimeException('component not found');
         }
 
         static::$components[$sName] = $component;
+
         return $component;
     }
 
@@ -863,6 +977,6 @@ class Base extends Extendable
      */
     protected function getItemsPerPage(): int
     {
-        return (int)input('limit', $this->itemsPerPage);
+        return (int) input('limit', $this->itemsPerPage);
     }
 }

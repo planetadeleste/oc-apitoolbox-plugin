@@ -155,3 +155,9 @@ v2.0.1:
 v2.0.2:
     - 'New ElementCollection extends Lovata.Toolbox ElementCollection class'
     - 'Remove referencing collection object'
+v2.0.3:
+    - 'New SearchListTrait store trait'
+    - 'Update code to newest verisons'
+v2.0.4:
+    - 'New load/{source}/{path?} api route to get a file'
+
