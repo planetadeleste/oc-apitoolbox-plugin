@@ -34,7 +34,7 @@ trait SearchListTrait
 
         $obModelClass = $this->getModelClass();
 
-        return $obModelClass::where(function ($obQuery) {
+        return $obModelClass::where(function ($obQuery): void {
             $this->obQuery = $obQuery;
             $this->wheres();
         })->lists($this->getKeyId());
@@ -52,17 +52,19 @@ trait SearchListTrait
 
         foreach ($arColumns as $sCol) {
             // Find for local scope methods
-            $sScopeMethod = Str::camel('scope_' . $sCol);
+            $sScopeMethod = Str::camel('scope_'.$sCol);
+
             if (method_exists($this, $sScopeMethod)) {
-                $this->{$sScopeMethod}($sValue);
+                $this->{$sScopeMethod}($sValue, $bool);
+            } else {
+                $this->obQuery->where($sCol, $this->getLikeOperator(), "%{$sValue}%", $bool);
+            }
+
+            if ($this->strict) {
                 continue;
             }
 
-            $this->obQuery->where($sCol, $this->getLikeOperator(), "%{$sValue}%", $bool);
-
-            if (!$this->strict) {
-                $bool = 'or';
-            }
+            $bool = 'or';
         }
     }
 
@@ -88,7 +90,7 @@ trait SearchListTrait
         }
 
         if (is_numeric($sValue)) {
-            $sValue = (int)$sValue;
+            $sValue = (int) $sValue;
         }
 
         return $sValue;

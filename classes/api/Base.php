@@ -28,6 +28,7 @@ use PlanetaDelEste\ApiToolbox\Traits\Controllers\ApiValidationTrait;
 use RainLab\Translate\Classes\Translator;
 use ReaZzon\JWTAuth\Classes\Guards\JWTGuard;
 use RuntimeException;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use System\Classes\PluginManager;
 use System\Models\File;
 use System\Traits\EventEmitter;
@@ -132,7 +133,7 @@ class Base extends Extendable
     /**
      * @return array|JsonResponse
      */
-    public function list(): JsonResponse|array
+    public function list(): JsonResponse|array|ResourceCollection
     {
         try {
             if ($this->methodExists('extendList')) {
@@ -360,9 +361,9 @@ class Base extends Extendable
      *
      * @throws RuntimeException If the file is not found.
      *
-     * @return Response The file response.
+     * @return Response | BinaryFileResponse The file response.
      */
-    public function loadFile(string $sSource, ?string $sPath = null): Response
+    public function loadFile(string $sSource, ?string $sPath = null): Response | BinaryFileResponse
     {
         try {
             if (!$sPath) {

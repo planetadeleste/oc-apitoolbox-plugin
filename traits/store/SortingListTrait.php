@@ -1,4 +1,6 @@
-<?php namespace PlanetaDelEste\ApiToolbox\Traits\Store;
+<?php
+
+namespace PlanetaDelEste\ApiToolbox\Traits\Store;
 
 /**
  * @property string $sValue
@@ -14,6 +16,7 @@ trait SortingListTrait
     protected function getIDListFromDB(): array
     {
         $arListFromDB = $this->getFieldList();
+
         if (($arSortData = array_get($arListFromDB, $this->sValue)) && ($sField = array_get($arSortData, 'field'))) {
             $sDir = array_get($arSortData, 'dir', 'asc');
 
@@ -30,7 +33,7 @@ trait SortingListTrait
      */
     protected function getFieldList(): array
     {
-        $arFieldList = ['created_at', 'name'];
+        $arFieldList  = ['created_at', 'name'];
         $arListFromDB = [];
 
         if (property_exists($this, 'arListFromDB')) {
@@ -38,7 +41,7 @@ trait SortingListTrait
         }
 
         foreach ($arFieldList as $sFieldName) {
-            $arListFromDB[$sFieldName.'|asc'] = [
+            $arListFromDB[$sFieldName.'|asc']  = [
                 'dir'   => 'asc',
                 'field' => $sFieldName,
             ];
@@ -60,11 +63,13 @@ trait SortingListTrait
     protected function orderBy(string $sColumn = 'created_at', string $sDir = 'asc'): array
     {
         $sMethod = camel_case('get_'.$sColumn.'_list');
+
         if (method_exists($this, $sMethod)) {
             return $this->{$sMethod}($sDir);
         }
 
         $sModelClass = $this->getModelClass();
+
         return $sModelClass::orderBy($sColumn, $sDir)->lists('id');
     }
 
@@ -76,7 +81,8 @@ trait SortingListTrait
     protected function getDefaultList(): array
     {
         $sModelClass = $this->getModelClass();
-        return (array)$sModelClass::lists('id');
+
+        return (array) $sModelClass::lists('id');
     }
 
     /**

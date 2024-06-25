@@ -160,4 +160,6 @@ v2.0.3:
     - 'Update code to newest verisons'
 v2.0.4:
     - 'New load/{source}/{path?} api route to get a file'
-
+v2.0.5:
+    - 'Fix returning value on list method'
+    - 'Improve search list store trait'
