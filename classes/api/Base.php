@@ -26,7 +26,6 @@ use PlanetaDelEste\ApiToolbox\Traits\Controllers\ApiBaseTrait;
 use PlanetaDelEste\ApiToolbox\Traits\Controllers\ApiCastTrait;
 use PlanetaDelEste\ApiToolbox\Traits\Controllers\ApiValidationTrait;
 use RainLab\Translate\Classes\Translator;
-use ReaZzon\JWTAuth\Classes\Guards\JWTGuard;
 use RuntimeException;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use System\Classes\PluginManager;
@@ -115,7 +114,7 @@ class Base extends Extendable
                 $this->extendIndex();
             }
 
-            /**
+            /*
              * Extend collection results
              */
             $this->fireSystemEvent(Plugin::EVENT_API_EXTEND_INDEX, [&$this->collection], false);
@@ -140,7 +139,7 @@ class Base extends Extendable
                 $this->extendList();
             }
 
-            /**
+            /*
              * Extend collection results
              */
             $this->fireSystemEvent(Plugin::EVENT_API_EXTEND_LIST, [&$this->collection], false);
@@ -169,7 +168,7 @@ class Base extends Extendable
                 $this->extendCount();
             }
 
-            /**
+            /*
              * Extend collection results
              */
             $this->fireSystemEvent(Plugin::EVENT_API_EXTEND_COUNT, [$this->collection], false);
@@ -194,7 +193,7 @@ class Base extends Extendable
     public function show(int|string $value): JsonResponse|JsonResource
     {
         try {
-            /**
+            /*
              * Fire event before show item
              */
             $this->fireSystemEvent(Plugin::EVENT_API_BEFORE_SHOW_COLLECT, [&$value], false);
@@ -211,7 +210,7 @@ class Base extends Extendable
                 $this->extendShow();
             }
 
-            /**
+            /*
              * Extend collection results
              */
             $this->fireSystemEvent(Plugin::EVENT_API_EXTEND_SHOW, [$this->item]);
@@ -384,7 +383,7 @@ class Base extends Extendable
                 throw new RuntimeException(ApiHelper::tr('File :file not found', ['file' => $sPath]), 404);
             }
 
-//            $sContent = \File::get($sPath);
+// $sContent = \File::get($sPath);
             return response()->file($sPath);
         } catch (Exception $e) {
             return static::exceptionResult($e);
@@ -513,7 +512,7 @@ class Base extends Extendable
      *
      * @param string     $sAttachKey
      * @param Model|null $obModel
-     * @param bool       $save
+     * @param boolean       $save
      */
     protected function attachOne(string $sAttachKey, ?Model $obModel = null, bool $save = false): void
     {
@@ -559,7 +558,7 @@ class Base extends Extendable
      *
      * @param string     $sAttachKey
      * @param Model|null $obModel
-     * @param bool       $save
+     * @param boolean       $save
      */
     protected function attachMany(string $sAttachKey, ?Model $obModel = null, bool $save = false): void
     {
@@ -581,13 +580,13 @@ class Base extends Extendable
             $arFiles = array_wrap(request()->file($sAttachKey));
 
             if (!empty($arFiles)) {
-                //                    if ($obModel->{$sAttachKey}->count()) {
-                //                        $obModel->{$sAttachKey}->each(
-                //                            function ($obImage) {
-                //                                $obImage->delete();
-                //                            }
-                //                        );
-                //                    }
+                // if ($obModel->{$sAttachKey}->count()) {
+                // $obModel->{$sAttachKey}->each(
+                // function ($obImage) {
+                // $obImage->delete();
+                // }
+                // );
+                // }
 
                 foreach ($arFiles as $obFile) {
                     $this->attachFile($obModel, $obFile, $sAttachKey);
@@ -915,7 +914,7 @@ class Base extends Extendable
      * @param string         $sName
      * @param CmsObject|null $cmsObject
      * @param array          $properties
-     * @param bool           $isSoftComponent
+     * @param boolean           $isSoftComponent
      *
      * @return ComponentBase
      *
