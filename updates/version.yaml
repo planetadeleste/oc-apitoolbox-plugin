@@ -165,3 +165,5 @@ v2.0.5:
     - 'Improve search list store trait'
 v2.0.6:
     - 'Fix issue reading non instantiate properties'
+v2.0.7:
+    - 'Use Illuminate\Database\Eloquent\Model as model type'

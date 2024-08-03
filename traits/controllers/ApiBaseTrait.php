@@ -9,7 +9,7 @@ use Kharanenka\Helper\Result;
 use Lovata\Buddies\Models\User;
 use Lovata\Toolbox\Classes\Collection\ElementCollection;
 use Lovata\Toolbox\Classes\Item\ElementItem;
-use Model;
+use Illuminate\Database\Eloquent\Model;
 use PlanetaDelEste\ApiToolbox\Classes\Helper\ApiHelper;
 use PlanetaDelEste\ApiToolbox\Classes\Resource\Base;
 use PlanetaDelEste\ApiToolbox\Plugin;

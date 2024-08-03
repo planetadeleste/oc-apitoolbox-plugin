@@ -17,7 +17,7 @@ use Kharanenka\Helper\Result;
 use Lovata\Buddies\Models\User;
 use Lovata\Toolbox\Classes\Collection\ElementCollection;
 use Lovata\Toolbox\Classes\Item\ElementItem;
-use October\Rain\Database\Model;
+use Illuminate\Database\Eloquent\Model;
 use October\Rain\Extension\Extendable;
 use October\Rain\Support\Arr;
 use PlanetaDelEste\ApiToolbox\Classes\Helper\ApiHelper;
@@ -512,7 +512,7 @@ class Base extends Extendable
      *
      * @param string     $sAttachKey
      * @param Model|null $obModel
-     * @param boolean       $save
+     * @param bool       $save
      */
     protected function attachOne(string $sAttachKey, ?Model $obModel = null, bool $save = false): void
     {
@@ -558,7 +558,7 @@ class Base extends Extendable
      *
      * @param string     $sAttachKey
      * @param Model|null $obModel
-     * @param boolean       $save
+     * @param bool       $save
      */
     protected function attachMany(string $sAttachKey, ?Model $obModel = null, bool $save = false): void
     {
@@ -694,7 +694,7 @@ class Base extends Extendable
             return $this->user;
         }
 
-        /** @var JWTGuard $obJWTGuard */
+        /* @var JWTGuard $obJWTGuard */
         $obJWTGuard = app('JWTGuard');
         $this->user = $obJWTGuard->userOrFail();
 
@@ -884,7 +884,10 @@ class Base extends Extendable
      */
     protected function setModel(string|int $id): Model
     {
-        $this->obModel = app($this->getModelClass())->where($this->getPrimaryKey(), $id)->firstOrFail();
+        $this->obModel = $this->getModelObject()
+            ->query()
+            ->where($this->getPrimaryKey(), $id)
+            ->firstOrFail();
 
         return $this->obModel;
     }
@@ -898,13 +901,23 @@ class Base extends Extendable
     }
 
     /**
+     * @return Model
+     */
+    public function getModelObject(): Model
+    {
+        $sClass = $this->getModelClass();
+
+        return new $sClass();
+    }
+
+    /**
      * @param int $iModelID
      *
      * @return ElementItem
      */
     protected function getItem(int|string $iModelID): ElementItem
     {
-        /** @var ElementItem $sItemClass */
+        /* @var ElementItem $sItemClass */
         $sItemClass = $this->collection::ITEM_CLASS;
 
         return $sItemClass::make($iModelID);
@@ -914,7 +927,7 @@ class Base extends Extendable
      * @param string         $sName
      * @param CmsObject|null $cmsObject
      * @param array          $properties
-     * @param boolean           $isSoftComponent
+     * @param bool           $isSoftComponent
      *
      * @return ComponentBase
      *
