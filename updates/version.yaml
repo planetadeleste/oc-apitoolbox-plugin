@@ -167,3 +167,5 @@ v2.0.6:
     - 'Fix issue reading non instantiate properties'
 v2.0.7:
     - 'Use Illuminate\Database\Eloquent\Model as model type'
+v2.0.8:
+    - 'New event on Sorting list trait'

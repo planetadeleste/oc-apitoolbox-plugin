@@ -2,6 +2,8 @@
 
 namespace PlanetaDelEste\ApiToolbox\Traits\Store;
 
+use PlanetaDelEste\ApiToolbox\Plugin;
+
 /**
  * @property string $sValue
  * @property array  $arListFromDB
@@ -39,6 +41,30 @@ trait SortingListTrait
         if (property_exists($this, 'arListFromDB')) {
             $arFieldList = $this->arListFromDB;
         }
+
+        if (($arEventFieldList = \Event::fire(Plugin::EVENT_SORT_LIST, [$this->getModelClass()])) && is_array($arEventFieldList) && !empty($arEventFieldList)) {
+            foreach ($arEventFieldList as $arEventFieldItem) {
+                if (empty($arEventFieldItem)) {
+                    continue;
+                }
+
+                if (is_array($arEventFieldItem)) {
+                    foreach ($arEventFieldItem as $sEventItem) {
+                        if (empty($sEventItem) || !is_string($sEventItem) || in_array($sEventItem, $arFieldList)) {
+                            continue;
+                        }
+
+                        $arFieldList[] = $sEventItem;
+                    }
+
+                    continue;
+                }
+
+                $arFieldList[] = $arEventFieldItem;
+            }
+        }
+
+        trace_log($arFieldList);
 
         foreach ($arFieldList as $sFieldName) {
             $arListFromDB[$sFieldName.'|asc']  = [
