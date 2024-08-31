@@ -767,6 +767,7 @@ class Base extends Extendable
             }
         }
 
+        $filters = array_except($filters, ['page', 'limit']);
         $obFilters = Filter::instance()->addFilters($filters);
 
         if ($this->methodExists('extendFilters')) {

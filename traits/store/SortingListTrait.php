@@ -64,8 +64,6 @@ trait SortingListTrait
             }
         }
 
-        trace_log($arFieldList);
-
         foreach ($arFieldList as $sFieldName) {
             $arListFromDB[$sFieldName.'|asc']  = [
                 'dir'   => 'asc',

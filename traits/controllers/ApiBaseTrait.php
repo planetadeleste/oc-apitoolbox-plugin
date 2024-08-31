@@ -262,6 +262,6 @@ trait ApiBaseTrait
             return self::$arSkipCollectionMethods;
         }
 
-        return self::$arSkipCollectionMethods = get_class_methods(ElementCollection::class);
+        return self::$arSkipCollectionMethods = array_diff(get_class_methods(ElementCollection::class), ['set', 'find']);
     }
 }
