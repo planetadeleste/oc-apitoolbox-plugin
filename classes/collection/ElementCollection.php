@@ -4,7 +4,6 @@ namespace PlanetaDelEste\ApiToolbox\Classes\Collection;
 
 use Lovata\Toolbox\Classes\Collection\ElementCollection as ToolboxElementCollection;
 use Lovata\Toolbox\Classes\Store\AbstractListStore;
-use Lovata\Toolbox\Classes\Store\AbstractStore;
 
 abstract class ElementCollection extends ToolboxElementCollection
 {
@@ -17,10 +16,15 @@ abstract class ElementCollection extends ToolboxElementCollection
      */
     protected function applyIntersect(string $sStore, mixed $arParams = null, bool $bCache = true): static
     {
-        $sMethod        = $bCache ? 'get' : 'getNoCache';
-        $obStore        = $this->getInstance()->{$sStore};
-        $arParams       = empty($arParams) ? [] : array_except(array_wrap($arParams), ['page', 'limit']);
-        $arResultIDList = empty($arParams) ? [] : call_user_func_array([$obStore, $sMethod], $arParams);
+        $sMethod  = $bCache ? 'get' : 'getNoCache';
+        $obStore  = $this->getInstance()->{$sStore};
+        $arParams = empty($arParams) ? [] : array_except(array_wrap($arParams), ['page', 'limit']);
+
+        if (($arSearch = array_get($arParams, 'search')) && is_array($arSearch)) {
+            $arParams = $arSearch;
+        }
+
+        $arResultIDList = empty($arParams) ? call_user_func([$obStore, $sMethod]) : call_user_func_array([$obStore, $sMethod], $arParams);
 
         return $this->intersect($arResultIDList);
     }

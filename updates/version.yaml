@@ -172,3 +172,7 @@ v2.0.8:
 v2.0.9:
     - 'Improve FilterListTrait store'
     - 'Prevent add page and limit to filters'
+v2.0.10:
+    - 'Improve base vars'
+    - 'Check is_array on Filter class'
+    - 'Fix applyIntersect'

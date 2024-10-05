@@ -12,7 +12,7 @@ class Filter
 
     public function addFilter(string $sKey, $sValue, $arParams = []): self
     {
-        $this->arFilters[$sKey] = array_merge([$sValue], $arParams);
+        $this->arFilters[$sKey] = is_array($sValue) ? array_merge([$sValue], $arParams) : $sValue;
 
         return $this;
     }

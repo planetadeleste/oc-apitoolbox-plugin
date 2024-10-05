@@ -753,11 +753,8 @@ class Base extends Extendable
             $sort = !json_last_error() ? $json : ['column' => $sort];
         }
 
-        $sort = array_merge($sortDefault, $sort);
-
-        if (!$filters = get('filters')) {
-            $filters = get();
-        }
+        $sort    = array_merge($sortDefault, $sort);
+        $filters = get('filters', []);
 
         if (is_string($filters)) {
             $json = json_decode($filters, true);
@@ -767,7 +764,6 @@ class Base extends Extendable
             }
         }
 
-        $filters = array_except($filters, ['page', 'limit']);
         $obFilters = Filter::instance()->addFilters($filters);
 
         if ($this->methodExists('extendFilters')) {
@@ -852,7 +848,7 @@ class Base extends Extendable
 
                 $obResult = call_user_func_array(
                     [$obCollection, $sMethodName],
-                    $sFilterValue
+                    array_wrap($sFilterValue)
                 );
 
                 if (!is_array($obResult)) {
