@@ -150,3 +150,5 @@ v1.0.58:
     - 'Use like format on value'
 v1.0.59:
     - 'Use input data for filters instead of limit only to get request'
+v1.0.60:
+    - 'New getModel, setModel, setExists, isExists public methods'

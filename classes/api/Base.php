@@ -223,10 +223,9 @@ class Base extends Extendable
     {
         try {
             $this->currentUser();
-
-            $this->obModel = app($this->getModelClass());
-            $this->exists  = false;
-            $message       = ApiHelper::tr(static::ALERT_RECORD_NOT_CREATED);
+            $this->setModel(app($this->getModelClass()));
+            $this->setExists(false);
+            $message = ApiHelper::tr(static::ALERT_RECORD_NOT_CREATED);
 
             if (!$this->hasPermission('store')) {
                 throw new RuntimeException(static::ALERT_PERMISSIONS_DENIED, 403);
@@ -265,9 +264,9 @@ class Base extends Extendable
     {
         try {
             $this->currentUser();
-            $this->obModel = app($this->getModelClass())->where($this->getPrimaryKey(), $id)->firstOrFail();
-            $this->exists  = true;
-            $message       = ApiHelper::tr(static::ALERT_RECORD_NOT_UPDATED);
+            $this->setModel(app($this->getModelClass())->where($this->getPrimaryKey(), $id)->firstOrFail());
+            $this->setExists();
+            $message = ApiHelper::tr(static::ALERT_RECORD_NOT_UPDATED);
             Result::setFalse();
 
             if (!$this->obModel) {
@@ -302,13 +301,18 @@ class Base extends Extendable
         }
     }
 
+    /**
+     * @param mixed $id
+     *
+     * @return JsonResponse|string
+     */
     public function attach($id)
     {
         try {
             $this->currentUser();
-            $this->obModel = app($this->getModelClass())->where($this->getPrimaryKey(), $id)->firstOrFail();
-            $this->exists  = true;
-            $message       = ApiHelper::tr(static::ALERT_RECORD_NOT_UPDATED);
+            $this->setModel(app($this->getModelClass())->where($this->getPrimaryKey(), $id)->firstOrFail());
+            $this->setExists();
+            $message = ApiHelper::tr(static::ALERT_RECORD_NOT_UPDATED);
             Result::setFalse();
 
             if (!$this->obModel) {
@@ -352,7 +356,7 @@ class Base extends Extendable
     {
         try {
             $this->currentUser();
-            $this->obModel = app($this->getModelClass())->where($this->getPrimaryKey(), $id)->firstOrFail();
+            $this->setModel(app($this->getModelClass())->where($this->getPrimaryKey(), $id)->firstOrFail());
 
             if (!$this->obModel) {
                 throw new RuntimeException(static::ALERT_RECORD_NOT_FOUND, 403);

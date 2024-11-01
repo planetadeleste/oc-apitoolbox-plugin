@@ -142,6 +142,40 @@ trait ApiBaseTrait
         return $this->propertyExists('primaryKey') ? $this->primaryKey : 'id';
     }
 
+    /**
+     * @return \Model
+     */
+    public function getModel(): \Model
+    {
+        return $this->obModel;
+    }
+
+    /**
+     * @param \Model $obModel
+     * @return void
+     */
+    public function setModel(\Model $obModel): void
+    {
+        $this->obModel = $obModel;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isExists(): bool
+    {
+        return $this->exists;
+    }
+
+    /**
+     * @param bool $exists
+     * @return void
+     */
+    public function setExists(bool $exists = true): void
+    {
+        $this->exists = $exists;
+    }
+
     protected function setResources(): void
     {
         if (($this->getListResource()
