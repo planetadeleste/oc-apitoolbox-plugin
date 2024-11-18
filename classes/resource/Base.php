@@ -4,10 +4,13 @@ namespace PlanetaDelEste\ApiToolbox\Classes\Resource;
 
 use Carbon\Carbon;
 use Event;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\Resource;
 use Illuminate\Support\Collection;
 use Lovata\Toolbox\Classes\Collection\ElementCollection;
 use Lovata\Toolbox\Classes\Item\ElementItem;
+use October\Rain\Argon\Argon;
+use RainLab\Translate\Classes\Translator;
 use System\Classes\PluginManager;
 
 /**
@@ -15,33 +18,40 @@ use System\Classes\PluginManager;
  *
  * @package PlanetaDelEste\ApiToolbox\Classes\Resource
  *
- * @property \October\Rain\Argon\Argon $updated_at
- * @property \October\Rain\Argon\Argon $created_at
+ * @property Argon $updated_at
+ * @property Argon $created_at
+ *
  * @method static self make(...$parameters)
  */
 abstract class Base extends Resource
 {
-    /** @var bool Add created_at, updated_at dates */
+    /**
+     * @var bool Add created_at, updated_at dates
+     */
     public bool $addDates = true;
 
-    /** @var string[] Property of type Date */
+    /**
+     * @var array<string> Property of type Date
+     */
     public array $arDates = ['created_at', 'updated_at'];
 
-    /** @var array Keys to exclude from array */
+    /**
+     * @var array Keys to exclude from array
+     */
     public array $arExclude = [];
 
     /**
-     * @param \Illuminate\Http\Request $request
+     * @param Request $request
      *
      * @return array
      */
     public function toArray($request): array
     {
-        if (empty($this->resource) ||
-            (($this->resource instanceof Collection ||
-              $this->resource instanceof ElementItem ||
-              $this->resource instanceof ElementCollection)
-             && $this->resource->isEmpty())
+        if (empty($this->resource)
+            || (($this->resource instanceof Collection
+            || $this->resource instanceof ElementItem
+            || $this->resource instanceof ElementCollection)
+            && $this->resource->isEmpty())
         ) {
             return [];
         }
@@ -49,6 +59,8 @@ abstract class Base extends Resource
         $arDataKeys = $this->getDataKeys();
         $arDates    = $this->getDates();
         $arData     = $this->getData();
+
+        $this->fire($arData, $arDataKeys);
 
         if (!empty($this->arExclude)) {
             $arDataKeys = array_diff($arDataKeys, $this->arExclude);
@@ -72,26 +84,12 @@ abstract class Base extends Resource
 
                     continue;
                 }
+
                 $arData[$sKey] = $this->{$sKey};
             }
         }
 
         $this->translate($arData);
-
-        if (is_string($this->getEvent())) {
-            $arResponseData = Event::fire($this->getEvent(), [$this, $arData]);
-            if (!empty($arResponseData)) {
-                foreach ($arResponseData as $arResponseItem) {
-                    if (empty($arResponseItem) || !is_array($arResponseItem)) {
-                        continue;
-                    }
-
-                    foreach ($arResponseItem as $sKey => $sValue) {
-                        $arData[$sKey] = $sValue;
-                    }
-                }
-            }
-        }
 
         return $arData;
     }
@@ -104,6 +102,7 @@ abstract class Base extends Resource
     public function getDates(): array
     {
         $arDates = [];
+
         if (empty($this->arDates)) {
             return $arDates;
         }
@@ -153,7 +152,7 @@ abstract class Base extends Resource
     }
 
     /**
-     * @param string[]|string $sKey
+     * @param array<string>|string $sKey
      *
      * @return void
      */
@@ -168,6 +167,7 @@ abstract class Base extends Resource
 
     /**
      * @param mixed $skey
+     *
      * @return $this
      */
     public function without($skey): self
@@ -193,6 +193,36 @@ abstract class Base extends Resource
     abstract protected function getEvent(): ?string;
 
     /**
+     * Fire event
+     * @param array $arData
+     *
+     * @return void
+     */
+    protected function fire(array &$arData, array &$arDataKeys): void
+    {
+        if (!is_string($this->getEvent())) {
+            return;
+        }
+
+        $arResponseData = Event::fire($this->getEvent(), [$this, $arData]);
+
+        if (empty($arResponseData)) {
+            return;
+        }
+
+        foreach ($arResponseData as $arResponseItem) {
+            if (empty($arResponseItem) || !is_array($arResponseItem)) {
+                continue;
+            }
+
+            foreach ($arResponseItem as $sKey => $sValue) {
+                $arData[$sKey] = $sValue;
+                $arDataKeys[]  = $sKey;
+            }
+        }
+    }
+
+    /**
      * Map translated data
      *
      * @param array $arData
@@ -204,16 +234,18 @@ abstract class Base extends Resource
         if (!$this->resource instanceof ElementItem
             || empty($this->resource->getObject())
             || !PluginManager::instance()->hasPlugin('RainLab.Translate')
-            || !$this->resource->getObject()->isClassExtendedWith('RainLab.Translate.Behaviors.TranslatableModel')) {
+            || !$this->resource->getObject()->isClassExtendedWith('RainLab.Translate.Behaviors.TranslatableModel')
+        ) {
             return;
         }
 
         $arTranslatable = $this->resource->getObject()->translatable;
+
         if (empty($arTranslatable) || !is_array($arTranslatable)) {
             return;
         }
 
-        $obTranslate = \RainLab\Translate\Classes\Translator::instance();
+        $obTranslate = Translator::instance();
 
         if (!$sActiveLangCode = request()->header('Accept-Language')) {
             $sActiveLangCode = $obTranslate->getLocale();
@@ -224,15 +256,18 @@ abstract class Base extends Resource
         }
 
         foreach ($arTranslatable as $sField) {
-            //Check field name
+            // Check field name
             if (empty($sField) || !is_string($sField) || !isset($arData[$sField])) {
                 continue;
             }
 
-            $sTranslatedValue = $this->resource->getAttribute($sField . '|' . $sActiveLangCode);
-            if (!empty($sTranslatedValue)) {
-                array_set($arData, $sField, $sTranslatedValue);
+            $sTranslatedValue = $this->resource->getAttribute($sField.'|'.$sActiveLangCode);
+
+            if (empty($sTranslatedValue)) {
+                continue;
             }
+
+            array_set($arData, $sField, $sTranslatedValue);
         }
     }
 }

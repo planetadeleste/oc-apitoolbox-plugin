@@ -152,3 +152,5 @@ v1.0.59:
     - 'Use input data for filters instead of limit only to get request'
 v1.0.60:
     - 'New getModel, setModel, setExists, isExists public methods'
+v1.0.61:
+    - 'Improve event usage'
