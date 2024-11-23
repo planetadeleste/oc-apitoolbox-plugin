@@ -1,4 +1,4 @@
-<?php namespace {{studly_author}}\{{studly_plugin}}\Controllers\Api;
+<?php namespace {{studly_author}}\{{studly_plugin}}\Classes\Api;
 
 use PlanetaDelEste\ApiToolbox\Classes\Api\Base;
 use {{studly_author}}\{{studly_plugin}}\Classes\Resource\{{studly_model}}\{{studly_model}}IndexCollection;
