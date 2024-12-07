@@ -100,34 +100,13 @@ abstract class Base extends JsonResource
     }
 
     /**
-     * Fire event
-     * @param array $arData
-     * @param array $arDataKeys
+     * Returns all used Item key attributes
      *
-     * @return void
+     * @return array
      */
-    protected function fire(array &$arData, array &$arDataKeys): void
+    public function getDataKeys(): array
     {
-        if (!is_string($this->getEvent())) {
-            return;
-        }
-
-        $arResponseData = Event::fire($this->getEvent(), [$this, $arData]);
-
-        if (empty($arResponseData)) {
-            return;
-        }
-
-        foreach ($arResponseData as $arResponseItem) {
-            if (empty($arResponseItem) || !is_array($arResponseItem)) {
-                continue;
-            }
-
-            foreach ($arResponseItem as $sKey => $sValue) {
-                $arData[$sKey] = $sValue;
-                $arDataKeys[]  = $sKey;
-            }
-        }
+        return [];
     }
 
     /**
@@ -160,16 +139,6 @@ abstract class Base extends JsonResource
     }
 
     /**
-     * Returns all used Item key attributes
-     *
-     * @return array
-     */
-    public function getDataKeys(): array
-    {
-        return [];
-    }
-
-    /**
      * Key => value array of mapped resource
      * Value can be a Closure with return value
      *
@@ -178,81 +147,40 @@ abstract class Base extends JsonResource
     abstract public function getData(): array;
 
     /**
-     * Get event name of item resource
-     *
-     * @return string|null
-     */
-    public function event(): ?string
-    {
-        return $this->getEvent();
-    }
-
-    /**
-     * @param array<string>|string $sKey
+     * Fire event
+     * @param array $arData
+     * @param array $arDataKeys
      *
      * @return void
      */
-    public function exclude($sKey): void
+    protected function fire(array &$arData, array &$arDataKeys): void
     {
-        $arKeyList = is_array($sKey) ? $sKey : func_get_args();
-        $arKeyList = array_merge($this->arExclude, $arKeyList);
-        $arKeyList = array_unique($arKeyList);
+        if (!is_string($this->getEvent())) {
+            return;
+        }
 
-        $this->arExclude = $arKeyList;
-    }
+        $arResponseData = Event::fire($this->getEvent(), [$this, $arData]);
 
-    /**
-     * @param mixed $skey
-     *
-     * @return $this
-     */
-    public function without($skey): self
-    {
-        $this->exclude($skey);
+        if (empty($arResponseData)) {
+            return;
+        }
 
-        return $this;
-    }
+        foreach ($arResponseData as $arResponseItem) {
+            if (empty($arResponseItem) || !is_array($arResponseItem)) {
+                continue;
+            }
 
-    /**
-     * @param string $sKey
-     *
-     * @return bool
-     */
-    public function isExcluded(string $sKey): bool
-    {
-        return !empty($this->arExclude) && in_array($sKey, $this->arExclude);
-    }
-
-    /**
-     * @return array
-     */
-    public function getColumns(): array
-    {
-        return [];
+            foreach ($arResponseItem as $sKey => $sValue) {
+                $arData[$sKey] = $sValue;
+                $arDataKeys[]  = $sKey;
+            }
+        }
     }
 
     /**
      * @return string|null
      */
     abstract protected function getEvent(): ?string;
-
-    /**
-     * Add the casted attributes to the attributes array.
-     *
-     * @param array $arData
-     *
-     * @return void
-     */
-    protected function castAttributes(array &$arData): void
-    {
-        foreach (array_keys($this->getCasts()) as $sKey) {
-            if (!isset($arData[$sKey])) {
-                continue;
-            }
-
-            $arData[$sKey] = $this->castAttribute($sKey, $arData[$sKey]);
-        }
-    }
 
     /**
      * Map translated data
@@ -301,5 +229,69 @@ abstract class Base extends JsonResource
 
             array_set($arData, $sField, $sTranslatedValue);
         }
+    }
+
+    /**
+     * Add the casted attributes to the attributes array.
+     *
+     * @param array $arData
+     *
+     * @return void
+     */
+    protected function castAttributes(array &$arData): void
+    {
+        foreach (array_keys($this->getCasts()) as $sKey) {
+            if (!isset($arData[$sKey])) {
+                continue;
+            }
+
+            $arData[$sKey] = $this->castAttribute($sKey, $arData[$sKey]);
+        }
+    }
+
+    /**
+     * Get event name of item resource
+     *
+     * @return string|null
+     */
+    public function event(): ?string
+    {
+        return $this->getEvent();
+    }
+
+    /**
+     * @param mixed $skey
+     *
+     * @return $this
+     */
+    public function without(mixed $skey): self
+    {
+        $this->exclude($skey);
+
+        return $this;
+    }
+
+    /**
+     * @param string|array<string> $sKey
+     *
+     * @return void
+     */
+    public function exclude(array|string $sKey): void
+    {
+        $arKeyList = is_array($sKey) ? $sKey : func_get_args();
+        $arKeyList = array_merge($this->arExclude, $arKeyList);
+        $arKeyList = array_unique($arKeyList);
+
+        $this->arExclude = $arKeyList;
+    }
+
+    /**
+     * @param string $sKey
+     *
+     * @return bool
+     */
+    public function isExcluded(string $sKey): bool
+    {
+        return !empty($this->arExclude) && in_array($sKey, $this->arExclude);
     }
 }

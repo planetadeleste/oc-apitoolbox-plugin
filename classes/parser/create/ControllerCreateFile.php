@@ -7,7 +7,7 @@ class ControllerCreateFile extends CommonCreateFile
     /** @var string */
     protected $sFile = '{{studly_controller}}.php';
     /** @var string */
-    protected $sFolderPath = '/{{lower_author}}/{{lower_plugin}}/controllers/api/';
+    protected $sFolderPath = '/{{lower_author}}/{{lower_plugin}}/classes/api/';
     /** @var string */
     protected $sTemplatePath = '/planetadeleste/apitoolbox/classes/parser/templates/controller.stub';
 }
