@@ -3,7 +3,6 @@
 namespace PlanetaDelEste\ApiToolbox\Classes\Helper;
 
 use Illuminate\Contracts\Foundation\Application;
-use JWTAuth;
 use Lovata\Buddies\Models\Group;
 use Lovata\Buddies\Models\User;
 use PHPOpenSourceSaver\JWTAuth\Exceptions\JWTException;

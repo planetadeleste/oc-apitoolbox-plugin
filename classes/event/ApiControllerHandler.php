@@ -20,15 +20,16 @@ use PlanetaDelEste\ApiToolbox\Plugin;
  * @method void extendList(Base $obController, ElementCollection $obCollection)
  * @method void extendShow(Base $obController, ElementItem $obItem)
  * @method void beforeShowCollect(Base $obController, mixed &$value)
+ * @method void beforeFilter(Base $obController, mixed $filters)
  */
 abstract class ApiControllerHandler
 {
-    public function subscribe(Dispatcher $obEvent)
+    public function subscribe(Dispatcher $obEvent): void
     {
         if (method_exists($this, 'beforeSave')) {
             $obEvent->listen(
                 Plugin::EVENT_BEFORE_SAVE,
-                function ($obController, $obModel, &$arData) {
+                function ($obController, $obModel, &$arData): void {
                     if (!$this->valid($obController, $obModel)) {
                         return;
                     }
@@ -41,7 +42,7 @@ abstract class ApiControllerHandler
         if (method_exists($this, 'afterSave')) {
             $obEvent->listen(
                 Plugin::EVENT_AFTER_SAVE,
-                function ($obController, $obModel, $arData) {
+                function ($obController, $obModel, $arData): void {
                     if (!$this->valid($obController, $obModel)) {
                         return;
                     }
@@ -54,7 +55,7 @@ abstract class ApiControllerHandler
         if (method_exists($this, 'beforeDestroy')) {
             $obEvent->listen(
                 Plugin::EVENT_BEFORE_DESTROY,
-                function ($obController, $obModel) {
+                function ($obController, $obModel): void {
                     if (!$this->valid($obController, $obModel)) {
                         return;
                     }
@@ -67,7 +68,7 @@ abstract class ApiControllerHandler
         if (method_exists($this, 'extendIndex')) {
             $obEvent->listen(
                 Plugin::EVENT_API_EXTEND_INDEX,
-                function ($obController, $obCollection) {
+                function ($obController, $obCollection): void {
                     if (!$this->valid($obController)) {
                         return;
                     }
@@ -80,7 +81,7 @@ abstract class ApiControllerHandler
         if (method_exists($this, 'extendList')) {
             $obEvent->listen(
                 Plugin::EVENT_API_EXTEND_LIST,
-                function ($obController, $obCollection) {
+                function ($obController, $obCollection): void {
                     if (!$this->valid($obController)) {
                         return;
                     }
@@ -93,7 +94,7 @@ abstract class ApiControllerHandler
         if (method_exists($this, 'extendShow')) {
             $obEvent->listen(
                 Plugin::EVENT_API_EXTEND_SHOW,
-                function ($obController, $obItem) {
+                function ($obController, $obItem): void {
                     if (!$this->valid($obController)) {
                         return;
                     }
@@ -106,7 +107,7 @@ abstract class ApiControllerHandler
         if (method_exists($this, 'beforeShowCollect')) {
             $obEvent->listen(
                 Plugin::EVENT_API_EXTEND_SHOW,
-                function ($obController, &$value) {
+                function ($obController, &$value): void {
                     if (!$this->valid($obController)) {
                         return;
                     }
@@ -115,6 +116,21 @@ abstract class ApiControllerHandler
                 }
             );
         }
+
+        if (!method_exists($this, 'beforeFilter')) {
+            return;
+        }
+
+        $obEvent->listen(
+            Plugin::EVENT_BEFORE_FILTER,
+            function ($obController, $filters): void {
+                if (!$this->valid($obController)) {
+                    return;
+                }
+
+                $this->beforeFilter($obController, $filters);
+            }
+        );
     }
 
     /**
@@ -133,7 +149,7 @@ abstract class ApiControllerHandler
 
     protected function valid($obController, $obModel = null): bool
     {
-        if (get_class($obController) !== $this->getControllerClass()) {
+        if ($obController::class !== $this->getControllerClass()) {
             return false;
         }
 
@@ -141,7 +157,7 @@ abstract class ApiControllerHandler
             return true;
         }
 
-        if (get_class($obModel) !== $this->getModelClass()) {
+        if ($obModel::class !== $this->getModelClass()) {
             return false;
         }
 

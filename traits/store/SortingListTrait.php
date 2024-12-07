@@ -2,6 +2,9 @@
 
 namespace PlanetaDelEste\ApiToolbox\Traits\Store;
 
+use Db;
+use Illuminate\Database\Query\Builder;
+use October\Rain\Database\Builder as EloquentBuilder;
 use PlanetaDelEste\ApiToolbox\Plugin;
 
 /**
@@ -11,6 +14,16 @@ use PlanetaDelEste\ApiToolbox\Plugin;
 trait SortingListTrait
 {
     /**
+     * @var bool Set true to use DB instead of Model
+     */
+    protected bool $db = false;
+
+    /**
+     * @var array
+     */
+    protected array $arItems = [];
+
+    /**
      * Get ID list from database
      *
      * @return array
@@ -18,8 +31,14 @@ trait SortingListTrait
     protected function getIDListFromDB(): array
     {
         $arListFromDB = $this->getFieldList();
+        $sValue       = $this->sValue;
 
-        if (($arSortData = array_get($arListFromDB, $this->sValue)) && ($sField = array_get($arSortData, 'field'))) {
+        if (str_contains($sValue, '|')) {
+            $this->arItems = explode('|', $sValue);
+            $sValue        = count($this->arItems) >= 2 ? implode('|', [$this->arItems[0], $this->arItems[1]]) : $this->arItems[0];
+        }
+
+        if (($arSortData = array_get($arListFromDB, $sValue)) && ($sField = array_get($arSortData, 'field'))) {
             $sDir = array_get($arSortData, 'dir', 'asc');
 
             return method_exists($this, 'sortBy') ? $this->sortBy($sField, $sDir) : $this->orderBy($sField, $sDir);
@@ -93,8 +112,33 @@ trait SortingListTrait
         }
 
         $sModelClass = $this->getModelClass();
+        $obQuery     = $this->db ? Db::table($this->getTable()) : (new $sModelClass())->query();
 
-        return $sModelClass::orderBy($sColumn, $sDir)->lists('id');
+        $obQuery->orderBy($sColumn, $sDir);
+        $this->wheres($obQuery);
+
+        return $obQuery->pluck('id')->all();
+    }
+
+    /**
+     * @param Builder|EloquentBuilder $obQuery
+     *
+     * @return void
+     */
+    protected function wheres(Builder | EloquentBuilder $obQuery): void
+    {
+        if (!count($this->arItems) > 2) {
+            return;
+        }
+
+        foreach ($this->arItems as $sItem) {
+            if (!str_contains($sItem, ':')) {
+                continue;
+            }
+
+            [$sColumn, $sValue] = explode(':', $sItem);
+            $obQuery->where($sColumn, $sValue);
+        }
     }
 
     /**
@@ -105,8 +149,16 @@ trait SortingListTrait
     protected function getDefaultList(): array
     {
         $sModelClass = $this->getModelClass();
+        $obQuery     = $this->db ? Db::table($this->getTable()) : (new $sModelClass())->query();
 
-        return (array) $sModelClass::lists('id');
+        return $obQuery->pluck('id')->all();
+    }
+
+    protected function getTable()
+    {
+        $sModelClass = $this->getModelClass();
+
+        return (new $sModelClass())->getTable();
     }
 
     /**

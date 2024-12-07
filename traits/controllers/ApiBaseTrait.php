@@ -3,13 +3,13 @@
 namespace PlanetaDelEste\ApiToolbox\Traits\Controllers;
 
 use Event;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\ResourceCollection;
 use Kharanenka\Helper\Result;
 use Lovata\Buddies\Models\User;
 use Lovata\Toolbox\Classes\Collection\ElementCollection;
 use Lovata\Toolbox\Classes\Item\ElementItem;
-use Illuminate\Database\Eloquent\Model;
 use PlanetaDelEste\ApiToolbox\Classes\Helper\ApiHelper;
 use PlanetaDelEste\ApiToolbox\Classes\Resource\Base;
 use PlanetaDelEste\ApiToolbox\Plugin;
@@ -18,8 +18,6 @@ use PlanetaDelEste\ApiToolbox\Plugin;
  * Trait ApiBaseTrait
  *
  * @property string $primaryKey
- * @property string $sortColumn
- * @property string $sortDirection
  */
 trait ApiBaseTrait
 {
@@ -70,7 +68,7 @@ trait ApiBaseTrait
     protected ?string $showResource = null;
 
     /**
-     * @var boolean
+     * @var bool
      */
     protected bool $exists = false;
 
@@ -78,6 +76,21 @@ trait ApiBaseTrait
      * @var array Name of methods to skip on filter collection
      */
     protected static array $arSkipCollectionMethods = [];
+
+    /**
+     * @var string|null Column to sort by
+     */
+    protected ?string $sortColumn = null;
+
+    /**
+     * @var string|null Sort direction
+     */
+    protected ?string $sortDirection = null;
+
+    /**
+     * @var string Sort method name
+     */
+    protected string $sortMethod = 'sort';
 
     /**
      * @param string      $message
@@ -95,7 +108,7 @@ trait ApiBaseTrait
 
     /**
      * @param \Exception $obException
-     * @param integer    $iStatus
+     * @param int        $iStatus
      *
      * @return JsonResponse
      */
@@ -112,7 +125,7 @@ trait ApiBaseTrait
     }
 
     /**
-     * @return boolean
+     * @return bool
      */
     public function exists(): bool
     {
@@ -128,11 +141,19 @@ trait ApiBaseTrait
     }
 
     /**
+     * @return string
+     */
+    public function getSortMethod(): string
+    {
+        return $this->sortMethod;
+    }
+
+    /**
      * @return string|null
      */
     public function getSortColumn(): ?string
     {
-        return $this->propertyExists('sortColumn') ? $this->sortColumn : null;
+        return $this->sortColumn;
     }
 
     /**
@@ -140,7 +161,7 @@ trait ApiBaseTrait
      */
     public function getSortDirection(): ?string
     {
-        return $this->propertyExists('sortDirection') ? $this->sortDirection : null;
+        return $this->sortDirection;
     }
 
     /**
@@ -154,7 +175,43 @@ trait ApiBaseTrait
     public function setCollection(ElementCollection $collection): self
     {
         $this->collection = $collection;
-        
+
+        return $this;
+    }
+
+    /**
+     * @param string $sortMethod
+     *
+     * @return ApiBaseTrait|\PlanetaDelEste\ApiToolbox\Classes\Api\Base
+     */
+    public function setSortMethod(string $sortMethod): self
+    {
+        $this->sortMethod = $sortMethod;
+
+        return $this;
+    }
+
+    /**
+     * @param string|null $sortColumn
+     *
+     * @return ApiBaseTrait|\PlanetaDelEste\ApiToolbox\Classes\Api\Base
+     */
+    public function setSortColumn(?string $sortColumn): self
+    {
+        $this->sortColumn = $sortColumn;
+
+        return $this;
+    }
+
+    /**
+     * @param string|null $sortDirection
+     *
+     * @return ApiBaseTrait|\PlanetaDelEste\ApiToolbox\Classes\Api\Base
+     */
+    public function setSortDirection(?string $sortDirection): self
+    {
+        $this->sortDirection = $sortDirection;
+
         return $this;
     }
 
@@ -214,7 +271,7 @@ trait ApiBaseTrait
     }
 
     /**
-     * @param             $obData
+     * @param $obData
      * @param string|null $sResource
      *
      * @return Base|ResourceCollection
@@ -254,6 +311,23 @@ trait ApiBaseTrait
         }
 
         return null;
+    }
+
+    /**
+     * Provides a flexible and organized way to extend functionality based on different actions
+     * @param string $action
+     *
+     * @return void
+     */
+    protected function extendAction(string $action): void
+    {
+        $sMethod = 'extend'.ucfirst($action);
+
+        if (!$this->methodExists($sMethod)) {
+            return;
+        }
+
+        $this->$sMethod();
     }
 
     protected function getSkipMethods(): array

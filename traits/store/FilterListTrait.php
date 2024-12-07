@@ -3,8 +3,8 @@
 namespace PlanetaDelEste\ApiToolbox\Traits\Store;
 
 use Carbon\Carbon;
+use Db;
 use Eloquent;
-use Lovata\OrdersShopaholic\Models\Order;
 use Model;
 use October\Rain\Database\Builder;
 use Str;
@@ -24,6 +24,11 @@ trait FilterListTrait
     protected $obQuery;
 
     /**
+     * @var bool Set true to use DB instead of Model
+     */
+    protected bool $db = false;
+
+    /**
      * Get ID list from database
      *
      * @return array
@@ -37,60 +42,30 @@ trait FilterListTrait
         $this->init();
         $this->sValue   = array_except($this->sValue, ['page', 'limit']);
         $this->arFields = array_keys($this->sValue);
-        $obModelClass   = $this->getModelClass();
+        $sModelClass    = $this->getModelClass();
 
-        return $obModelClass::where(function ($obQuery): void {
+        $obQuery = $this->db ? Db::table((new $sModelClass())->getTable()) : (new $sModelClass())->query();
+
+        return $obQuery->where(function ($obQuery): void {
             $this->obQuery = $obQuery;
             $this->startScope();
             $this->wheres();
-        })->lists($this->getKeyId());
+        })->pluck($this->getKeyId())
+          ->all();
     }
 
     /**
-     * @return array<string>
-     */
-    protected function columns(): array
-    {
-        /** @var array $arColumns */
-        $obModelClass = $this->getModelClass();
-        $arColumns    = (new $obModelClass())->getFillable();
-        $arColumns    = array_diff($arColumns, $this->skip());
-
-        if (!empty($this->only())) {
-            $arColumns = array_intersect($arColumns, $this->only());
-        }
-
-        return array_unique(array_merge($arColumns, $this->withColumns()));
-    }
-
-    /**
-     * Define wich columns to search
+     * Get model class name
      *
-     * @return array<string>
+     * @return string
      */
-    protected function only(): array
-    {
-        return [];
-    }
+    abstract protected function getModelClass(): string;
 
     /**
-     * Define skip columns from search
-     *
-     * @return array<string>
+     * @return void
      */
-    protected function skip(): array
+    protected function startScope(): void
     {
-        return ['id'];
-    }
-
-    /**
-     * Add columns to search
-     *
-     * @return array<string>
-     */
-    protected function withColumns(): array
-    {
-        return [];
     }
 
     /**
@@ -156,6 +131,69 @@ trait FilterListTrait
     }
 
     /**
+     * @return string
+     */
+    protected function getLikeOperator(): string
+    {
+        return config('database.default') === 'pgsql' ? 'ILIKE' : 'LIKE';
+    }
+
+    /**
+     * @return array<string>
+     */
+    protected function columns(): array
+    {
+        /** @var array $arColumns */
+        $obModelClass = $this->getModelClass();
+        $arColumns    = (new $obModelClass())->getFillable();
+        $arColumns    = array_diff($arColumns, $this->skip());
+
+        if (!empty($this->only())) {
+            $arColumns = array_intersect($arColumns, $this->only());
+        }
+
+        return array_unique(array_merge($arColumns, $this->withColumns()));
+    }
+
+    /**
+     * Define skip columns from search
+     *
+     * @return array<string>
+     */
+    protected function skip(): array
+    {
+        return ['id'];
+    }
+
+    /**
+     * Define wich columns to search
+     *
+     * @return array<string>
+     */
+    protected function only(): array
+    {
+        return [];
+    }
+
+    /**
+     * Add columns to search
+     *
+     * @return array<string>
+     */
+    protected function withColumns(): array
+    {
+        return [];
+    }
+
+    /**
+     * @return string
+     */
+    protected function getKeyId(): string
+    {
+        return 'id';
+    }
+
+    /**
      * @param mixed  $sValue
      * @param string $sColumn
      *
@@ -175,34 +213,4 @@ trait FilterListTrait
 
         return $this->obQuery->whereDate($sColumn, $sValue);
     }
-
-    /**
-     * @return void
-     */
-    protected function startScope(): void
-    {
-    }
-
-    /**
-     * @return string
-     */
-    protected function getLikeOperator(): string
-    {
-        return config('database.default') === 'pgsql' ? 'ILIKE' : 'LIKE';
-    }
-
-    /**
-     * @return string
-     */
-    protected function getKeyId(): string
-    {
-        return 'id';
-    }
-
-    /**
-     * Get model class name
-     *
-     * @return string
-     */
-    abstract protected function getModelClass(): string;
 }

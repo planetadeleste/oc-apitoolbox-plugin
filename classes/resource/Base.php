@@ -1,4 +1,5 @@
 <?php
+
 namespace PlanetaDelEste\ApiToolbox\Classes\Resource;
 
 use Carbon\Carbon;
@@ -21,19 +22,26 @@ use System\Classes\PluginManager;
  *
  * @property Argon $updated_at
  * @property Argon $created_at
+ *
  * @method static self make(...$parameters)
  */
 abstract class Base extends JsonResource
 {
     use HasAttributes;
 
-    /** @var bool Add created_at, updated_at dates */
+    /**
+     * @var bool Add created_at, updated_at dates
+     */
     public bool $addDates = true;
 
-    /** @var string[] Property of type Date */
+    /**
+     * @var array<string> Property of type Date
+     */
     public array $arDates = ['created_at', 'updated_at'];
 
-    /** @var array Keys to exclude from array */
+    /**
+     * @var array Keys to exclude from array
+     */
     public array $arExclude = [];
 
     /**
@@ -41,13 +49,13 @@ abstract class Base extends JsonResource
      *
      * @return array
      */
-    public function toArray($request = null): array
+    public function toArray(?Request $request = null): array
     {
-        if (empty($this->resource) ||
-            (($this->resource instanceof Collection ||
-              $this->resource instanceof ElementItem ||
-              $this->resource instanceof ElementCollection)
-             && $this->resource->isEmpty())
+        if (empty($this->resource)
+            || (($this->resource instanceof Collection
+            || $this->resource instanceof ElementItem
+            || $this->resource instanceof ElementCollection)
+            && $this->resource->isEmpty())
         ) {
             return [];
         }
@@ -55,6 +63,8 @@ abstract class Base extends JsonResource
         $arDataKeys = $this->getDataKeys();
         $arDates    = $this->getDates();
         $arData     = $this->getData();
+
+        $this->fire($arData, $arDataKeys);
 
         if (!empty($this->arExclude)) {
             $arDataKeys = array_diff($arDataKeys, $this->arExclude);
@@ -78,6 +88,7 @@ abstract class Base extends JsonResource
 
                     continue;
                 }
+
                 $arData[$sKey] = $this->{$sKey};
             }
         }
@@ -85,26 +96,38 @@ abstract class Base extends JsonResource
         $this->translate($arData);
         $this->castAttributes($arData);
 
-        if (is_string($this->getEvent())) {
-            $arResponseData = Event::fire($this->getEvent(), [$this, $arData]);
-            if (!empty($arResponseData)) {
-                foreach ($arResponseData as $arResponseItem) {
-                    if (empty($arResponseItem) || !is_array($arResponseItem)) {
-                        continue;
-                    }
+        return $arData;
+    }
 
-                    foreach ($arResponseItem as $sKey => $sValue) {
-                        if ($sValue instanceof Closure) {
-                            array_set($arData, $sKey, $sValue());
-                        } else {
-                            array_set($arData, $sKey, $sValue);
-                        }
-                    }
-                }
-            }
+    /**
+     * Fire event
+     * @param array $arData
+     * @param array $arDataKeys
+     *
+     * @return void
+     */
+    protected function fire(array &$arData, array &$arDataKeys): void
+    {
+        if (!is_string($this->getEvent())) {
+            return;
         }
 
-        return $arData;
+        $arResponseData = Event::fire($this->getEvent(), [$this, $arData]);
+
+        if (empty($arResponseData)) {
+            return;
+        }
+
+        foreach ($arResponseData as $arResponseItem) {
+            if (empty($arResponseItem) || !is_array($arResponseItem)) {
+                continue;
+            }
+
+            foreach ($arResponseItem as $sKey => $sValue) {
+                $arData[$sKey] = $sValue;
+                $arDataKeys[]  = $sKey;
+            }
+        }
     }
 
     /**
@@ -115,6 +138,7 @@ abstract class Base extends JsonResource
     public function getDates(): array
     {
         $arDates = [];
+
         if (empty($this->arDates)) {
             return $arDates;
         }
@@ -164,7 +188,7 @@ abstract class Base extends JsonResource
     }
 
     /**
-     * @param string[]|string $sKey
+     * @param array<string>|string $sKey
      *
      * @return void
      */
@@ -179,6 +203,7 @@ abstract class Base extends JsonResource
 
     /**
      * @param mixed $skey
+     *
      * @return $this
      */
     public function without($skey): self
@@ -199,6 +224,14 @@ abstract class Base extends JsonResource
     }
 
     /**
+     * @return array
+     */
+    public function getColumns(): array
+    {
+        return [];
+    }
+
+    /**
      * @return string|null
      */
     abstract protected function getEvent(): ?string;
@@ -207,6 +240,7 @@ abstract class Base extends JsonResource
      * Add the casted attributes to the attributes array.
      *
      * @param array $arData
+     *
      * @return void
      */
     protected function castAttributes(array &$arData): void
@@ -232,11 +266,13 @@ abstract class Base extends JsonResource
         if (!$this->resource instanceof ElementItem
             || empty($this->resource->getObject())
             || !PluginManager::instance()->hasPlugin('RainLab.Translate')
-            || !$this->resource->getObject()->isClassExtendedWith('RainLab.Translate.Behaviors.TranslatableModel')) {
+            || !$this->resource->getObject()->isClassExtendedWith('RainLab.Translate.Behaviors.TranslatableModel')
+        ) {
             return;
         }
 
         $arTranslatable = $this->resource->getObject()->translatable;
+
         if (empty($arTranslatable) || !is_array($arTranslatable)) {
             return;
         }
@@ -252,15 +288,18 @@ abstract class Base extends JsonResource
         }
 
         foreach ($arTranslatable as $sField) {
-            //Check field name
+            // Check field name
             if (empty($sField) || !is_string($sField) || !isset($arData[$sField])) {
                 continue;
             }
 
-            $sTranslatedValue = $this->resource->getAttribute($sField . '|' . $sActiveLangCode);
-            if (!empty($sTranslatedValue)) {
-                array_set($arData, $sField, $sTranslatedValue);
+            $sTranslatedValue = $this->resource->getAttribute($sField.'|'.$sActiveLangCode);
+
+            if (empty($sTranslatedValue)) {
+                continue;
             }
+
+            array_set($arData, $sField, $sTranslatedValue);
         }
     }
 }
