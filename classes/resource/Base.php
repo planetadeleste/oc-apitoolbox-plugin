@@ -45,6 +45,22 @@ abstract class Base extends JsonResource
     public array $arExclude = [];
 
     /**
+     * @param mixed $resource
+     */
+    public function __construct($resource)
+    {
+        $this->resource = $resource;
+        $this->init();
+    }
+
+    /**
+     * @return void
+     */
+    public function init(): void
+    {
+    }
+
+    /**
      * @param Request $request
      *
      * @return array
