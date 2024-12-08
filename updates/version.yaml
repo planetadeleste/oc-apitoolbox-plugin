@@ -176,3 +176,6 @@ v2.0.10:
     - 'Improve base vars'
     - 'Check is_array on Filter class'
     - 'Fix applyIntersect'
+v2.0.11:
+    - 'Add missing MeasureHelper class'
+    - 'Add missing getColumns method'

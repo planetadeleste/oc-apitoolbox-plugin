@@ -294,4 +294,12 @@ abstract class Base extends JsonResource
     {
         return !empty($this->arExclude) && in_array($sKey, $this->arExclude);
     }
+
+    /**
+     * @return array
+     */
+    public function getColumns(): array
+    {
+        return [];
+    }
 }
