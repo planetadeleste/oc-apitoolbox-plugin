@@ -181,3 +181,5 @@ v2.0.11:
     - 'Add missing getColumns method'
 v2.0.12:
     - 'Override construct and add init method'
+v2.0.13:
+    - 'New ResourceCollection extends from json resource collection class'
