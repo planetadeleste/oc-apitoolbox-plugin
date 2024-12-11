@@ -22,6 +22,11 @@ use PlanetaDelEste\ApiToolbox\Plugin;
 trait ApiBaseTrait
 {
     /**
+     * @var array Name of methods to skip on filter collection
+     */
+    protected static array $arSkipCollectionMethods = [];
+
+    /**
      * @var ElementCollection
      */
     public ?ElementCollection $collection = null;
@@ -71,11 +76,6 @@ trait ApiBaseTrait
      * @var bool
      */
     protected bool $exists = false;
-
-    /**
-     * @var array Name of methods to skip on filter collection
-     */
-    protected static array $arSkipCollectionMethods = [];
 
     /**
      * @var string|null Column to sort by
@@ -149,37 +149,6 @@ trait ApiBaseTrait
     }
 
     /**
-     * @return string|null
-     */
-    public function getSortColumn(): ?string
-    {
-        return $this->sortColumn;
-    }
-
-    /**
-     * @return string|null
-     */
-    public function getSortDirection(): ?string
-    {
-        return $this->sortDirection;
-    }
-
-    /**
-     * @return string
-     */
-    public function getPrimaryKey(): string
-    {
-        return $this->propertyExists('primaryKey') ? $this->primaryKey : 'id';
-    }
-
-    public function setCollection(ElementCollection $collection): self
-    {
-        $this->collection = $collection;
-
-        return $this;
-    }
-
-    /**
      * @param string $sortMethod
      *
      * @return ApiBaseTrait|\PlanetaDelEste\ApiToolbox\Classes\Api\Base
@@ -189,6 +158,14 @@ trait ApiBaseTrait
         $this->sortMethod = $sortMethod;
 
         return $this;
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getSortColumn(): ?string
+    {
+        return $this->sortColumn;
     }
 
     /**
@@ -204,6 +181,14 @@ trait ApiBaseTrait
     }
 
     /**
+     * @return string|null
+     */
+    public function getSortDirection(): ?string
+    {
+        return $this->sortDirection;
+    }
+
+    /**
      * @param string|null $sortDirection
      *
      * @return ApiBaseTrait|\PlanetaDelEste\ApiToolbox\Classes\Api\Base
@@ -211,6 +196,26 @@ trait ApiBaseTrait
     public function setSortDirection(?string $sortDirection): self
     {
         $this->sortDirection = $sortDirection;
+
+        return $this;
+    }
+
+    /**
+     * @return string
+     */
+    public function getPrimaryKey(): string
+    {
+        return $this->propertyExists('primaryKey') ? $this->primaryKey : 'id';
+    }
+
+    /**
+     * @param ElementCollection $collection
+     *
+     * @return ApiBaseTrait|\PlanetaDelEste\ApiToolbox\Classes\Api\Base
+     */
+    public function setCollection(ElementCollection $collection): self
+    {
+        $this->collection = $collection;
 
         return $this;
     }
@@ -230,12 +235,12 @@ trait ApiBaseTrait
 
         $classname           = ltrim(static::class, '\\');
         $arPath              = explode('\\', $this->getModelClass());
-        $name                = array_pop($arPath);
+        $sModelClass         = array_pop($arPath);
         [$author, $plugin]   = explode('\\', $classname);
-        $resourceClassBase   = implode('\\', [$author, $plugin, 'Classes', 'Resource', $name]);
-        $this->showResource  = $resourceClassBase.'\\ShowResource';
-        $this->listResource  = $resourceClassBase.'\\ListCollection';
-        $this->indexResource = $resourceClassBase.'\\IndexCollection';
+        $sNamespace          = implode('\\', [$author, $plugin, 'Classes', 'Resource', $sModelClass]);
+        $this->showResource  = $this->parseResourceClass($sNamespace, 'ShowResource', $sModelClass);
+        $this->listResource  = $this->parseResourceClass($sNamespace, 'ListCollection', $sModelClass);
+        $this->indexResource = $this->parseResourceClass($sNamespace, 'IndexCollection', $sModelClass);
     }
 
     /**
@@ -268,6 +273,24 @@ trait ApiBaseTrait
     public function getModelClass(): ?string
     {
         return $this->modelClass;
+    }
+
+    /**
+     * @param string $namespace
+     * @param string $resourceClass
+     * @param string $modelClass
+     *
+     * @return string
+     */
+    protected function parseResourceClass(string $namespace, string $resourceClass, string $modelClass): string
+    {
+        $sClass = sprintf('%s\\%s%s', $namespace, $modelClass, $resourceClass);
+
+        if (!class_exists($sClass)) {
+            $sClass = sprintf('%s\\%s', $namespace, $resourceClass);
+        }
+
+        return $sClass;
     }
 
     /**

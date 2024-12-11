@@ -183,3 +183,7 @@ v2.0.12:
     - 'Override construct and add init method'
 v2.0.13:
     - 'New ResourceCollection extends from json resource collection class'
+v2.0.14:
+    - 'Use SoftResolveUser on jwt.auth middleware'
+    - 'New DbQueryTrait eloquent trait class'
+    - 'Improve getting resource classes'
