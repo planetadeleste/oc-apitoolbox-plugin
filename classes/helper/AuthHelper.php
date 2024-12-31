@@ -17,10 +17,14 @@ use ReaZzon\JWTAuth\Classes\Guards\JWTGuard;
 
 class AuthHelper
 {
-    /** @var array Loaded users */
+    /**
+     * @var array Loaded users
+     */
     protected static array $arUsers = [];
 
-    /** @var JWTGuard|null */
+    /**
+     * @var JWTGuard|null
+     */
     protected static ?JWTGuard $jwt = null;
 
     /**
@@ -35,6 +39,7 @@ class AuthHelper
         if (!$obUser = self::user()) {
             return null;
         }
+
         $obGroup = Group::getByCode($sCode)->first();
 
         return $obGroup ? $obUser->inGroup($obGroup) : null;
@@ -49,6 +54,7 @@ class AuthHelper
             if (isset(self::$arUsers[$iUserID])) {
                 return self::$arUsers[$iUserID];
             }
+
             self::$arUsers[$iUserID] = User::find($iUserID);
 
             return self::$arUsers[$iUserID];
@@ -58,7 +64,7 @@ class AuthHelper
     }
 
     /**
-     * @return null|int
+     * @return int|null
      */
     public static function userId(): ?int
     {

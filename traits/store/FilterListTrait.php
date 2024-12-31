@@ -4,9 +4,8 @@ namespace PlanetaDelEste\ApiToolbox\Traits\Store;
 
 use Carbon\Carbon;
 use Db;
-use Eloquent;
-use Model;
-use October\Rain\Database\Builder;
+use Illuminate\Database\Query\Builder;
+use October\Rain\Database\Builder as EloquentBuilder;
 use Str;
 
 /**
@@ -20,7 +19,7 @@ trait FilterListTrait
     /** @var bool Set true to strict all filters, using "and" on each where, otherwise use "or" */
     protected bool $strict = true;
 
-    /** @var Builder|Model|Eloquent */
+    /** @var Builder | EloquentBuilder */
     protected $obQuery;
 
     /**
@@ -197,9 +196,9 @@ trait FilterListTrait
      * @param mixed  $sValue
      * @param string $sColumn
      *
-     * @return \Illuminate\Database\Query\Builder|Builder
+     * @return Builder | EloquentBuilder
      */
-    protected function scopeDate($sValue, string $sColumn)
+    protected function scopeDate(mixed $sValue, string $sColumn): Builder | EloquentBuilder
     {
         if (is_array($sValue) && count($sValue) === 1) {
             $sValue = array_first($sValue);
@@ -212,5 +211,36 @@ trait FilterListTrait
         }
 
         return $this->obQuery->whereDate($sColumn, $sValue);
+    }
+
+    /**
+     * @param string $sCol
+     *
+     * @return array|int|mixed
+     */
+    public function getValue(string $sCol): mixed
+    {
+        $sValue = array_get($this->sValue, $sCol);
+
+        if (empty($sValue)) {
+            return $sValue;
+        }
+
+
+        if (is_array($sValue)) {
+            if (is_array($sValue[0])) {
+                $sValue = $sValue[0];
+            }
+
+            if (count($sValue) === 1) {
+                $sValue = $sValue[0];
+            }
+        }
+
+        if (is_numeric($sValue) && ends_with($sCol, '_id')) {
+            $sValue = (int)$sValue;
+        }
+
+        return $sValue;
     }
 }

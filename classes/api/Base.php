@@ -387,7 +387,7 @@ class Base extends Extendable
     }
 
     /**
-     * @return array|JsonResponse
+     * @return JsonResponse|array|ResourceCollection
      */
     public function list(): JsonResponse|array|ResourceCollection
     {
