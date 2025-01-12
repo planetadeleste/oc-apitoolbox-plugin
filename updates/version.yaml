@@ -187,3 +187,5 @@ v2.0.14:
     - 'Use SoftResolveUser on jwt.auth middleware'
     - 'New DbQueryTrait eloquent trait class'
     - 'Improve getting resource classes'
+v2.0.15:
+    - 'New method detach'

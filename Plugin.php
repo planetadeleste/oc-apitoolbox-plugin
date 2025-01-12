@@ -50,6 +50,7 @@ class Plugin extends PluginBase
     public const string EVENT_BEFORE_SAVE    = 'planetadeleste.apitoolbox.controller.beforeSave';
     public const string EVENT_AFTER_SAVE     = 'planetadeleste.apitoolbox.controller.afterSave';
     public const string EVENT_BEFORE_ATTACH  = 'planetadeleste.apitoolbox.controller.beforeAttach';
+    public const string EVENT_BEFORE_DETACH  = 'planetadeleste.apitoolbox.controller.beforeDetach';
     public const string EVENT_AFTER_ATTACH   = 'planetadeleste.apitoolbox.controller.afterAttach';
 
     public const string EVENT_SORT_LIST = 'planetadeleste.apitoolbox.sort.list';

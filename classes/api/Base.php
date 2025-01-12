@@ -459,14 +459,19 @@ class Base extends Extendable
     }
 
     /**
-     * @param int $iModelID
+     * @param int|string $iModelID
+     * @param bool       $clear
      *
      * @return ElementItem
      */
-    protected function getItem(int|string $iModelID): ElementItem
+    protected function getItem(int|string $iModelID, bool $clear = false): ElementItem
     {
         /** @var ElementItem $sItemClass */
         $sItemClass = $this->collection::ITEM_CLASS;
+
+        if ($clear) {
+            $sItemClass::clearCache($iModelID);
+        }
 
         return $sItemClass::make($iModelID);
     }
@@ -505,6 +510,52 @@ class Base extends Extendable
             return Result::setData($obResourceItem)
                 ->setMessage($message)
                 ->getJSON();
+        } catch (Exception $e) {
+            return static::exceptionResult($e);
+        }
+    }
+
+    public function detach(mixed $id): JsonResponse|string
+    {
+        try {
+            $this->currentUser();
+            $this->setModel($id);
+            $this->exists = true;
+            $message      = ApiHelper::tr(static::ALERT_RECORD_NOT_DELETED);
+            Result::setFalse();
+
+            if (!$this->obModel || !array_get($this->data, 'file')) {
+                throw new RuntimeException(static::ALERT_RECORD_NOT_FOUND, 403);
+            }
+
+            if (!$this->hasPermission('detach')) {
+                throw new RuntimeException(static::ALERT_PERMISSIONS_DENIED, 403);
+            }
+
+            // Get model relation name
+            $obFile = File::where('disk_name', array_get($this->data, 'file'))
+                          ->where('attachment_type', $this->getModelClass())
+                          ->where('attachment_id', $id)
+                          ->first();
+
+            if (!$obFile) {
+                throw new RuntimeException(static::ALERT_RECORD_NOT_FOUND, 403);
+            }
+
+            $this->extendAction('detach');
+            $this->fireSystemEvent(Plugin::EVENT_BEFORE_DETACH, [$this->obModel, $obFile, $this->data]);
+            $this->validate();
+
+            $obFile->delete();
+            Result::setTrue();
+
+            $message        = ApiHelper::tr(static::ALERT_RECORD_DELETED);
+            $obItem         = $this->getItem($id, true);
+            $obResourceItem = $this->makeResource($obItem, $this->getShowResource());
+
+            return Result::setData($obResourceItem)
+                         ->setMessage($message)
+                         ->getJSON();
         } catch (Exception $e) {
             return static::exceptionResult($e);
         }
