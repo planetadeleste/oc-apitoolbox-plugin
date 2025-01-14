@@ -101,15 +101,15 @@ class Base extends Extendable
 
     public function __construct()
     {
+        parent::__construct();
+        $this->setLocale();
+        $this->init();
+
         if ($this->measure && env('APP_MEASURE', false)) {
             $this->obMeasure = MeasureHelper::instance();
             $this->obMeasure->start();
         }
 
-        parent::__construct();
-
-        $this->setLocale();
-        $this->init();
         $this->setData($this->getInputData());
         $this->setResources();
         $this->makeCollection();
@@ -264,7 +264,7 @@ class Base extends Extendable
             'column'    => $this->getSortColumn(),
             'direction' => $this->getSortDirection(),
         ];
-        $sort        = get('sort', []);
+        $sort        = input('sort', []);
 
         if (is_string($sort)) {
             $json = json_decode($sort, true);
@@ -273,7 +273,7 @@ class Base extends Extendable
         }
 
         $sort    = array_merge($sortDefault, $sort);
-        $filters = get('filters', []);
+        $filters = input('filters', []);
 
         if (is_string($filters)) {
             $json = json_decode($filters, true);

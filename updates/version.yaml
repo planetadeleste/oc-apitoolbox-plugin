@@ -189,3 +189,6 @@ v2.0.14:
     - 'Improve getting resource classes'
 v2.0.15:
     - 'New method detach'
+v2.0.16:
+    - 'Use input instead of get for getting filters and sort params'
+    - 'Prevent filter scope with empty value, retuning a "0 = 1" query request'

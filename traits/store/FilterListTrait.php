@@ -42,15 +42,17 @@ trait FilterListTrait
         $this->sValue   = array_except($this->sValue, ['page', 'limit']);
         $this->arFields = array_keys($this->sValue);
         $sModelClass    = $this->getModelClass();
+        $obQuery        = $this->db ? Db::table((new $sModelClass())->getTable()) : (new $sModelClass())->query();
 
-        $obQuery = $this->db ? Db::table((new $sModelClass())->getTable()) : (new $sModelClass())->query();
+        if ($this->valid()) {
+            $obQuery->where(function ($obQuery): void {
+                $this->obQuery = $obQuery;
+                $this->startScope();
+                $this->wheres();
+            });
+        }
 
-        return $obQuery->where(function ($obQuery): void {
-            $this->obQuery = $obQuery;
-            $this->startScope();
-            $this->wheres();
-        })->pluck($this->getKeyId())
-          ->all();
+        return $obQuery->pluck($this->getKeyId())->all();
     }
 
     /**
@@ -104,7 +106,9 @@ trait FilterListTrait
             $sScopeMethod = Str::camel('scope_'.$sCol);
 
             if (method_exists($this, $sScopeMethod)) {
-                $this->{$sScopeMethod}($sValue);
+                if (!empty($sValue)) {
+                    $this->{$sScopeMethod}($sValue);
+                }
 
                 continue;
             }
@@ -127,6 +131,39 @@ trait FilterListTrait
 
             $bool = 'or';
         }
+    }
+
+    /**
+     * @return bool
+     */
+    protected function valid(): bool
+    {
+        $valid     = false;
+        $arColumns = $this->columns();
+
+        foreach ($this->arFields as $sCol) {
+            $sValue = array_get($this->sValue, $sCol);
+
+            if ($valid || empty($sValue)) {
+                continue;
+            }
+
+            // Find for local scope methods
+            $sScopeMethod = Str::camel('scope_'.$sCol);
+
+            if (method_exists($this, $sScopeMethod)) {
+                $valid = true;
+
+                continue;
+            }
+
+            // Check for valid column
+            if (!in_array($sCol, $arColumns)) {
+                continue;
+            }
+        }
+
+        return $valid;
     }
 
     /**
@@ -226,7 +263,6 @@ trait FilterListTrait
             return $sValue;
         }
 
-
         if (is_array($sValue)) {
             if (is_array($sValue[0])) {
                 $sValue = $sValue[0];
@@ -238,7 +274,7 @@ trait FilterListTrait
         }
 
         if (is_numeric($sValue) && ends_with($sCol, '_id')) {
-            $sValue = (int)$sValue;
+            $sValue = (int) $sValue;
         }
 
         return $sValue;
