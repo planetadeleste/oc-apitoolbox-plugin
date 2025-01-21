@@ -192,3 +192,6 @@ v2.0.15:
 v2.0.16:
     - 'Use input instead of get for getting filters and sort params'
     - 'Prevent filter scope with empty value, retuning a "0 = 1" query request'
+v2.0.17:
+    - 'New modelExists method'
+    - 'Add safety delete method on models with softdelete'

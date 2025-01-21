@@ -864,6 +864,19 @@ class Base extends Extendable
     }
 
     /**
+     * @param string|int $id
+     *
+     * @return bool
+     */
+    protected function modelExists(string | int $id): bool
+    {
+        return $this->getModelObject()
+                    ->query()
+                    ->where($this->getPrimaryKey(), $id)
+                    ->exists();
+    }
+
+    /**
      * @param int|string $id
      *
      * @return JsonResponse|string
@@ -966,7 +979,7 @@ class Base extends Extendable
 
             $this->fireSystemEvent(Plugin::EVENT_BEFORE_DESTROY, [$this->obModel]);
 
-            if ($this->obModel->delete()) {
+            if ($this->deleteModel($id)) {
                 Result::setTrue()
                     ->setMessage(ApiHelper::tr(static::ALERT_RECORD_DELETED));
             } else {
@@ -978,6 +991,20 @@ class Base extends Extendable
         } catch (Exception $e) {
             return static::exceptionResult($e);
         }
+    }
+
+    /**
+     * Delete the model from the database.
+     *
+     * @param string|int $id
+     *
+     * @return bool|null
+     */
+    protected function deleteModel(string|int $id): ?bool
+    {
+        $this->obModel->methodExists('isSoftDelete') && $this->obModel->isSoftDelete() ? $this->obModel->forceDelete() : $this->obModel->delete();
+
+        return !$this->modelExists($id);
     }
 
     /**
