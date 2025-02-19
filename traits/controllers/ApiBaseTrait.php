@@ -10,6 +10,7 @@ use Kharanenka\Helper\Result;
 use Lovata\Buddies\Models\User;
 use Lovata\Toolbox\Classes\Collection\ElementCollection;
 use Lovata\Toolbox\Classes\Item\ElementItem;
+use October\Rain\Database\Builder as EloquentBuilder;
 use PlanetaDelEste\ApiToolbox\Classes\Helper\ApiHelper;
 use PlanetaDelEste\ApiToolbox\Classes\Resource\Base;
 use PlanetaDelEste\ApiToolbox\Plugin;
@@ -42,9 +43,9 @@ trait ApiBaseTrait
     protected ?User $user = null;
 
     /**
-     * @var \Model
+     * @var Model | EloquentBuilder | null
      */
-    protected ?Model $obModel = null;
+    protected Model | EloquentBuilder | null $obModel = null;
 
     /**
      * @var string
