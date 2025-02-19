@@ -195,3 +195,5 @@ v2.0.16:
 v2.0.17:
     - 'New modelExists method'
     - 'Add safety delete method on models with softdelete'
+v2.0.18:
+    - 'Add validate method'
