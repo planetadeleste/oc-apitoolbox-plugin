@@ -39,10 +39,9 @@ trait FilterListTrait
         }
 
         $this->init();
-        $this->sValue   = array_except($this->sValue, ['page', 'limit']);
-        $this->arFields = array_keys($this->sValue);
-        $sModelClass    = $this->getModelClass();
-        $obQuery        = $this->db ? Db::table((new $sModelClass())->getTable()) : (new $sModelClass())->query();
+        $this->setValueAndFields();
+        $sModelClass = $this->getModelClass();
+        $obQuery     = $this->db ? Db::table((new $sModelClass())->getTable()) : (new $sModelClass())->query();
 
         if ($this->valid()) {
             $obQuery->where(function ($obQuery): void {
@@ -131,6 +130,33 @@ trait FilterListTrait
 
             $bool = 'or';
         }
+    }
+
+    /**
+     * @return void
+     */
+    public function setValueAndFields(): void
+    {
+        $this->sValue   = array_except($this->sValue, ['page', 'limit']);
+        $this->arFields = array_keys($this->sValue);
+    }
+
+    /**
+     * @param mixed $sValue
+     *
+     * @return bool
+     */
+    public function validate(mixed $sValue): bool
+    {
+        $this->sValue = $sValue;
+
+        if (empty($this->sValue) || !is_array($this->sValue)) {
+            return false;
+        }
+
+        $this->setValueAndFields();
+
+        return $this->valid();
     }
 
     /**
