@@ -197,3 +197,5 @@ v2.0.17:
     - 'Add safety delete method on models with softdelete'
 v2.0.18:
     - 'Add validate method'
+v2.0.19:
+    - 'Prevent null instance field'

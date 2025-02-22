@@ -25,7 +25,7 @@ trait ModelHandlerTrait
         }
 
         foreach ($arSortingFieldList as $sSortingFieldName) {
-            $sClassName::instance()->{$sFieldName}->clear($sSortingFieldName);
+            $sClassName::instance()->{$sFieldName}?->clear($sSortingFieldName);
         }
     }
 
