@@ -1077,6 +1077,14 @@ class Base extends Extendable
     }
 
     /**
+     * @return MeasureHelper|null
+     */
+    public function getMeasure(): ?MeasureHelper
+    {
+        return $this->obMeasure;
+    }
+
+    /**
      * Check if api request get from backend or frontend
      *
      * @return bool
@@ -1110,7 +1118,7 @@ class Base extends Extendable
      *
      * @return void
      */
-    protected function log(string $sTitle, ...$params): void
+    public function log(string $sTitle, ...$params): void
     {
         if (!$this->obMeasure) {
             return;

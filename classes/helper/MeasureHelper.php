@@ -57,16 +57,29 @@ class MeasureHelper
      */
     public function log(string $sTitle = 'Log', ...$params): void
     {
-        if (!env('APP_MEASURE') || !env('APP_DEBUG') || app()->environment('production')) {
+        if (!$sLog = $this->msg($sTitle, ...$params)) {
             return;
+        }
+
+        trace_log($sLog);
+    }
+
+    /**
+     * @param string $sTitle
+     * @param        ...$params
+     *
+     * @return string|null
+     */
+    public function msg(string $sTitle = 'Log', ...$params): ?string
+    {
+        if (!env('APP_MEASURE') || !env('APP_DEBUG') || app()->environment('production')) {
+            return null;
         }
 
         $fSecs  = $this->stop();
         $sTitle = vsprintf($sTitle, array_wrap($params));
-        $sTitle = sprintf('%s - call #%s in %s secs', $sTitle, $this->calls, $fSecs);
-        trace_log($sTitle);
-//        $sPath  = storage_path('logs/measure.log');
-//        File::append($sPath, $sTitle.PHP_EOL);
+
+        return sprintf('%s - call #%s in %s secs', $sTitle, $this->calls, $fSecs);
     }
 
     /**
