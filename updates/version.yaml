@@ -199,3 +199,6 @@ v2.0.18:
     - 'Add validate method'
 v2.0.19:
     - 'Prevent null instance field'
+v2.0.20:
+    - 'New measure getter on base api controller'
+    - 'Improve measure usage'
