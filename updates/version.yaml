@@ -202,3 +202,6 @@ v2.0.19:
 v2.0.20:
     - 'New measure getter on base api controller'
     - 'Improve measure usage'
+v2.0.21:
+    - 'New collection interface'
+    - 'Fix issues on applyIntersect method'
