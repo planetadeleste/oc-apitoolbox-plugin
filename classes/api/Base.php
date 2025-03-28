@@ -283,12 +283,11 @@ class Base extends Extendable
             }
         }
 
-        $obFilters = Filter::instance()->addFilters($filters);
-
         if ($this->methodExists('extendFilters')) {
             $this->extendFilters($filters);
         }
 
+        $obFilters = Filter::instance()->addFilters($filters);
         $arFilters = $this->fireSystemEvent(Plugin::EVENT_BEFORE_FILTER, [$filters]);
 
         if (!empty($arFilters)) {
@@ -853,7 +852,7 @@ class Base extends Extendable
      *
      * @return Model
      */
-    protected function setModel(string|int $id): Model
+    public function setModel(string|int $id): Model
     {
         $this->obModel = $this->getModelObject()
             ->query()

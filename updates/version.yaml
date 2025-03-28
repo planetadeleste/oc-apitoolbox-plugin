@@ -205,3 +205,6 @@ v2.0.20:
 v2.0.21:
     - 'New collection interface'
     - 'Fix issues on applyIntersect method'
+v2.0.22:
+    - 'Fix missing changing filters on extendFilters method'
+    - 'Add exists setter'

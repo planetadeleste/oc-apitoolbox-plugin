@@ -221,6 +221,13 @@ trait ApiBaseTrait
         return $this;
     }
 
+    public function setExists(bool $exists = true): self
+    {
+        $this->exists = $exists;
+
+        return $this;
+    }
+
     /**
      * @return void
      */
