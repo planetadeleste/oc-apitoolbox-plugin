@@ -287,6 +287,10 @@ class Base extends Extendable
             $this->extendFilters($filters);
         }
 
+        if (empty($filters)) {
+            $filters = [];
+        }
+
         $obFilters = Filter::instance()->addFilters($filters);
         $arFilters = $this->fireSystemEvent(Plugin::EVENT_BEFORE_FILTER, [$filters]);
 
