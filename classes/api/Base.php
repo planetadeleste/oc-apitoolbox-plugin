@@ -498,8 +498,10 @@ class Base extends Extendable
             $this->extendAction('store');
             $this->fireSystemEvent(Plugin::EVENT_BEFORE_SAVE, [$this->obModel, &$this->data]);
             $this->validate();
+            $this->log('after validate store');
 
             if ($this->save()) {
+                $this->log('after save store');
                 $message = ApiHelper::tr(static::ALERT_RECORD_CREATED);
             }
 
