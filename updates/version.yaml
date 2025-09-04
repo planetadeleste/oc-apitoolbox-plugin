@@ -208,3 +208,5 @@ v2.0.21:
 v2.0.22:
     - 'Fix missing changing filters on extendFilters method'
     - 'Add exists setter'
+v2.0.23:
+    - 'Refactor data retrieval in Base class to use resource getAttribute method'

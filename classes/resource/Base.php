@@ -105,7 +105,7 @@ abstract class Base extends JsonResource
                     continue;
                 }
 
-                $arData[$sKey] = $this->{$sKey};
+                $arData[$sKey] = $this->resource->getAttribute($sKey);
             }
         }
 
@@ -134,18 +134,18 @@ abstract class Base extends JsonResource
     {
         $arDates = [];
 
-        if (empty($this->arDates)) {
+        if (empty($this->arDates) || !$this->resource instanceof ElementItem || empty($this->resource->getObject())) {
             return $arDates;
         }
 
         foreach ($this->arDates as $sKey => $sValue) {
             $sProp      = is_numeric($sKey) ? $sValue : $sKey;
             $sFormat    = is_string($sKey) && !is_numeric($sKey) ? $sValue : null;
-            $obDate     = $this->{$sProp};
+            $obDate     = $this->resource->getAttribute($sProp) ?? null;
             $sDateValue = $obDate instanceof Carbon
-                ? !empty($sFormat)
+                ? (!empty($sFormat)
                     ? $obDate->format($sFormat)
-                    : $obDate->toDateTimeString()
+                    : $obDate->toDateTimeString())
                 : $obDate;
 
             $arDates[$sProp] = $sDateValue;
