@@ -187,6 +187,8 @@ trait FilterListTrait
             if (!in_array($sCol, $arColumns)) {
                 continue;
             }
+
+            $valid = true;
         }
 
         return $valid;

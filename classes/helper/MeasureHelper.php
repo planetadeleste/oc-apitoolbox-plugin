@@ -72,7 +72,7 @@ class MeasureHelper
      */
     public function msg(string $sTitle = 'Log', ...$params): ?string
     {
-        if (!env('APP_MEASURE') || !env('APP_DEBUG') || app()->environment('production')) {
+        if (!env('APP_MEASURE') || !env('APP_DEBUG')) {
             return null;
         }
 
