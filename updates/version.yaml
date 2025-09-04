@@ -212,3 +212,5 @@ v2.0.23:
     - 'Fix validation on filter list trait'
 v2.0.24:
     - 'Fix issue on empty or null filters var'
+v2.0.25:
+    - 'Refactor data retrieval in Base class to use resource getAttribute method'
