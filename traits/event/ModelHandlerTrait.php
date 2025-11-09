@@ -2,8 +2,8 @@
 
 namespace PlanetaDelEste\ApiToolbox\Traits\Event;
 
-use Lovata\Toolbox\Classes\Store\AbstractStoreWithoutParam;
 use Lovata\Toolbox\Classes\Store\AbstractStoreWithParam;
+use Lovata\Toolbox\Classes\Store\AbstractStoreWithoutParam;
 
 /**
  * @property \Model|\Eloquent $obElement
@@ -16,7 +16,7 @@ trait ModelHandlerTrait
 {
     protected function clearSorting(array $arFieldList = ['created_at', 'name'], string $sFieldName = 'sorting'): void
     {
-        $sClassName = $this->getStoreClass();
+        $sClassName         = $this->getStoreClass();
         $arSortingFieldList = [];
 
         foreach ($arFieldList as $sFieldItemName) {
@@ -32,14 +32,15 @@ trait ModelHandlerTrait
     protected function checkFieldsChanges(array $arFieldList = ['active']): void
     {
         $sClassName = $this->getStoreClass();
+
         foreach ($arFieldList as $sFieldName) {
             $this->checkFieldChanges($sFieldName, $sClassName::instance()->{$sFieldName});
         }
     }
 
     /**
-     * @param array $arFieldList Use key => value type if model property is not the same as cache field or model
-     *                           property is not {$key}_id
+     * @param   array $arFieldList Use key => value type if model property is not the same as cache field or model
+     *                             property is not {$key}_id
      * @example ['customer' => 'my_customer_id'] customer is the cache field and my_customer_id is the model property name
      *
      * @return void
@@ -51,6 +52,7 @@ trait ModelHandlerTrait
         }
 
         $sClassName = $this->getStoreClass();
+
         foreach ($arFieldList as $sKey => $sFieldName) {
             $sField = is_numeric($sKey) ? $sFieldName : $sKey;
 
@@ -60,7 +62,6 @@ trait ModelHandlerTrait
 
             $this->clearCacheNotEmptyValue($sFieldName, $sClassName::instance()->{$sField});
         }
-
     }
 
     protected function clearCacheEmptyFields(array $arFieldList = []): void
@@ -70,6 +71,7 @@ trait ModelHandlerTrait
         }
 
         $sClassName = $this->getStoreClass();
+
         foreach ($arFieldList as $sFieldName) {
             $this->clearCacheEmptyValue($sFieldName, $sClassName::instance()->{$sFieldName});
         }
