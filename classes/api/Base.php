@@ -44,8 +44,6 @@ use SystemException;
  * @method void extendDestroy()
  * @method void extendSave()
  * @method void extendFilters(array &$filters)
- *
- * @package PlanetaDelEste\ApiToolbox\Classes\Api
  */
 class Base extends Extendable
 {
@@ -84,6 +82,9 @@ class Base extends Extendable
      */
     protected $data = [];
 
+    /**
+     * @var array
+     */
     protected array $arFileList = [
         'attachOne'  => ['preview_image'],
         'attachMany' => ['images'],
@@ -99,6 +100,14 @@ class Base extends Extendable
      */
     protected ?MeasureHelper $obMeasure = null;
 
+    /**
+     * Constructor - Initializes the API base class
+     *
+     * Sets up locale, initializes measurement if enabled, processes input data,
+     * sets up resources, creates collection and applies filters.
+     *
+     * @return void
+     */
     public function __construct()
     {
         parent::__construct();
@@ -114,6 +123,527 @@ class Base extends Extendable
         $this->setResources();
         $this->makeCollection();
         $this->applyFilters();
+    }
+
+    /**
+     * @param string $sNamespace
+     *
+     * @return bool
+     */
+    public function hasPlugin(string $sNamespace): bool
+    {
+        return PluginManager::instance()->hasPlugin($sNamespace);
+    }
+
+    /**
+     * @return LengthAwarePaginator|JsonResponse|ResourceCollection
+     */
+    public function index(): LengthAwarePaginator|JsonResponse|ResourceCollection
+    {
+        try {
+            $this->log('before extend index');
+            $this->extendAction('index');
+            $this->log('after extend index');
+
+            /*
+             * Extend collection results
+             */
+
+            $this->log('before extend index event');
+            $this->fireSystemEvent(Plugin::EVENT_API_EXTEND_INDEX, [&$this->collection], false);
+            $this->log('after extend index event');
+
+            /** @var \PlanetaDelEste\ApiToolbox\Classes\Resource\Base $obResource */
+            $obIndexResource = $this->makeResource([], $this->getIndexResource());
+            $sItemResource   = $obIndexResource->collects;
+            $obResource      = $this->makeResource([], $sItemResource);
+            $arColumns       = $obResource->getColumns();
+
+            if (!empty($arColumns) && $this->collection->isNotEmpty()) {
+                $obModel    = $this->getModelObject();
+                $arData     = $obModel->query()->select($arColumns)
+                                 ->whereIn('id', $this->collection->getIDList())
+                                 ->get();
+                $obResponse = $this->makeResource($sItemResource::collection($arData), $this->getIndexResource());
+            } else {
+                $obModelCollection = $this->collection->paginate($this->getItemsPerPage());
+                $obResponse        = $this->makeResource($obModelCollection, $this->getIndexResource());
+            }
+
+// $this->log('before index event');
+// $this->fireSystemEvent(Plugin::EVENT_API_AFTER_INDEX, [$obResponse], false);
+            $this->log('after index event');
+
+            return $obResponse;
+        } catch (Exception $e) {
+            return static::exceptionResult($e);
+        }
+    }
+
+    /**
+     * @return Model
+     */
+    public function getModelObject(): Model
+    {
+        $sClass = $this->getModelClass();
+
+        return new $sClass();
+    }
+
+    /**
+     * @return JsonResponse|array|ResourceCollection
+     */
+    public function list(): JsonResponse|array|ResourceCollection
+    {
+        try {
+            $this->extendAction('list');
+
+            /*
+             * Extend collection results
+             */
+
+            $this->fireSystemEvent(Plugin::EVENT_API_EXTEND_LIST, [&$this->collection], false);
+
+            $arListItems = $this->collection->values();
+            $obResponse  = $this->makeResource(collect($arListItems), $this->getListResource());
+            $this->fireSystemEvent(Plugin::EVENT_API_AFTER_LIST, [$obResponse], false);
+
+            return $obResponse;
+        } catch (Exception $e) {
+            return static::exceptionResult($e);
+        }
+    }
+
+    /**
+     * @param int|string $value
+     *
+     * @return JsonResponse|ElementItem
+     */
+    public function show(int|string $value): JsonResponse|JsonResource
+    {
+        try {
+            /*
+             * Fire event before show item
+             */
+
+            $this->fireSystemEvent(Plugin::EVENT_API_BEFORE_SHOW_COLLECT, [&$value], false);
+
+            $iModelId = $this->getItemId($value);
+
+            if (!$iModelId) {
+                throw new RuntimeException(static::ALERT_RECORD_NOT_FOUND, 403);
+            }
+
+            $this->item = $this->getItem($iModelId);
+            $this->extendAction('show');
+
+            /*
+             * Extend collection results
+             */
+
+            $this->fireSystemEvent(Plugin::EVENT_API_EXTEND_SHOW, [$this->item]);
+
+            $obResponse = $this->makeResource($this->item, $this->getShowResource());
+
+            $this->fireSystemEvent(Plugin::EVENT_API_AFTER_SHOW, [$obResponse], false);
+
+            return $obResponse;
+        } catch (Exception $e) {
+            return static::exceptionResult($e);
+        }
+    }
+
+    /**
+     * @return JsonResponse|string
+     */
+    public function store(): JsonResponse|string
+    {
+        try {
+            $this->currentUser();
+
+            $this->obModel = app($this->getModelClass());
+            $this->exists  = false;
+            $message       = ApiHelper::tr(static::ALERT_RECORD_NOT_CREATED);
+
+            if (!$this->hasPermission('store')) {
+                throw new RuntimeException(static::ALERT_PERMISSIONS_DENIED, 403);
+            }
+
+            $this->extendAction('store');
+            $this->fireSystemEvent(Plugin::EVENT_BEFORE_SAVE, [$this->obModel, &$this->data]);
+            $this->validate();
+            $this->log('after validate store');
+
+            if ($this->save()) {
+                $this->log('after save store');
+                $message = ApiHelper::tr(static::ALERT_RECORD_CREATED);
+            }
+
+            if (!Result::status() && Result::message()) {
+                throw new RuntimeException(Result::message());
+            }
+
+            $obItem         = $this->getItem($this->obModel->id);
+            $obResourceItem = $this->makeResource($obItem, $this->getShowResource());
+
+            return Result::setData($obResourceItem)
+                ->setMessage($message)
+                ->getJSON();
+        } catch (Exception $e) {
+            return static::exceptionResult($e);
+        }
+    }
+
+    /**
+     * Detach a file from the model
+     *
+     * @param mixed $id The model ID
+     *
+     * @return JsonResponse|string JSON response with the result or error message
+     */
+    public function detach(mixed $id): JsonResponse|string
+    {
+        try {
+            $this->currentUser();
+            $this->setModel($id);
+            $this->exists = true;
+            $message      = ApiHelper::tr(static::ALERT_RECORD_NOT_DELETED);
+            Result::setFalse();
+
+            if (!$this->obModel || !array_get($this->data, 'file')) {
+                throw new RuntimeException(static::ALERT_RECORD_NOT_FOUND, 403);
+            }
+
+            if (!$this->hasPermission('detach')) {
+                throw new RuntimeException(static::ALERT_PERMISSIONS_DENIED, 403);
+            }
+
+            // Get model relation name
+            $obFile = File::where('disk_name', array_get($this->data, 'file'))
+                          ->where('attachment_type', $this->getModelClass())
+                          ->where('attachment_id', $id)
+                          ->first();
+
+            if (!$obFile) {
+                throw new RuntimeException(static::ALERT_RECORD_NOT_FOUND, 403);
+            }
+
+            $this->extendAction('detach');
+            $this->fireSystemEvent(Plugin::EVENT_BEFORE_DETACH, [$this->obModel, $obFile, $this->data]);
+            $this->validate();
+
+            $obFile->delete();
+            Result::setTrue();
+
+            $message        = ApiHelper::tr(static::ALERT_RECORD_DELETED);
+            $obItem         = $this->getItem($id, true);
+            $obResourceItem = $this->makeResource($obItem, $this->getShowResource());
+
+            return Result::setData($obResourceItem)
+                         ->setMessage($message)
+                         ->getJSON();
+        } catch (Exception $e) {
+            return static::exceptionResult($e);
+        }
+    }
+
+    /**
+     * Retrieves the count of items in the collection and returns it as a JSON response or an array.
+     *
+     * @return JsonResponse|array Returns a JSON response containing the count of items or an array with the count.
+     *
+     * @throws Exception If an error occurs during the count retrieval or the exception handling.
+     */
+    public function count(): JsonResponse|array
+    {
+        try {
+            $this->extendAction('count');
+
+            /*
+             * Extend collection results
+             */
+
+            $this->fireSystemEvent(Plugin::EVENT_API_EXTEND_COUNT, [$this->collection], false);
+
+            $fValue = $this->collection->count();
+
+            $this->fireSystemEvent(Plugin::EVENT_API_AFTER_COUNT, [&$fValue], false);
+
+            Result::setData(['count' => $fValue]);
+
+            return Result::get();
+        } catch (Exception $e) {
+            return static::exceptionResult($e);
+        }
+    }
+
+    /**
+     * @param int|string $id
+     *
+     * @return JsonResponse|string
+     */
+    public function update(int|string $id): JsonResponse|string
+    {
+        try {
+            $this->currentUser();
+            $this->setModel($id);
+            $this->exists = true;
+            $message      = ApiHelper::tr(static::ALERT_RECORD_NOT_UPDATED);
+            Result::setFalse();
+
+            if (!$this->obModel) {
+                throw new RuntimeException(static::ALERT_RECORD_NOT_FOUND, 403);
+            }
+
+            if (!$this->hasPermission('update')) {
+                throw new RuntimeException(static::ALERT_PERMISSIONS_DENIED, 403);
+            }
+
+            $this->extendAction('update');
+            $this->fireSystemEvent(Plugin::EVENT_BEFORE_SAVE, [$this->obModel, &$this->data]);
+            $this->validate();
+
+            if ($this->save()) {
+                if (!Result::status() && Result::message()) {
+                    throw new RuntimeException(Result::message());
+                }
+
+                Result::setTrue();
+                $message = ApiHelper::tr(static::ALERT_RECORD_UPDATED);
+            }
+
+            $obItem         = $this->getItem($this->obModel->id);
+            $obResourceItem = $this->makeResource($obItem, $this->getShowResource());
+
+            return Result::setData($obResourceItem)
+                ->setMessage($message)
+                ->getJSON();
+        } catch (Exception $e) {
+            return static::exceptionResult($e);
+        }
+    }
+
+    /**
+     * @param string|int $id
+     *
+     * @return Model
+     */
+    public function setModel(string|int $id): Model
+    {
+        $this->obModel = $this->getModelObject()
+            ->query()
+            ->where($this->getPrimaryKey(), $id)
+            ->firstOrFail();
+
+        return $this->obModel;
+    }
+
+    /**
+     * @param int|string $id
+     *
+     * @return JsonResponse|string
+     */
+    public function attach(int|string $id): JsonResponse|string
+    {
+        try {
+            $this->currentUser();
+            $this->setModel($id);
+            $this->exists = true;
+            $message      = ApiHelper::tr(static::ALERT_RECORD_NOT_UPDATED);
+            Result::setFalse();
+
+            if (!$this->obModel) {
+                throw new RuntimeException(static::ALERT_RECORD_NOT_FOUND, 403);
+            }
+
+            if (!$this->hasPermission('attach')) {
+                throw new RuntimeException(static::ALERT_PERMISSIONS_DENIED, 403);
+            }
+
+            $this->fireSystemEvent(Plugin::EVENT_BEFORE_ATTACH, [$this->obModel, &$this->data]);
+
+            if ($this->attachFiles(true)) {
+                if (!Result::status() && Result::message()) {
+                    throw new RuntimeException(Result::message());
+                }
+
+                Result::setTrue();
+                $message = ApiHelper::tr(static::ALERT_RECORD_UPDATED);
+            }
+
+            $obItem         = $this->getItem($this->obModel->id);
+            $obResourceItem = $this->makeResource($obItem, $this->getShowResource());
+
+            return Result::setData($obResourceItem)
+                ->setMessage($message)
+                ->getJSON();
+        } catch (Exception $e) {
+            return static::exceptionResult($e);
+        }
+    }
+
+    /**
+     * Loads a file from the specified path or the default storage path.
+     *
+     * @param string      $sSource The name of the file to load.
+     * @param string|null $sPath   The path to the file. If not provided, the default storage path will be used.
+     *
+     * @throws RuntimeException If the file is not found.
+     *
+     * @return Response | BinaryFileResponse The file response.
+     */
+    public function loadFile(string $sSource, ?string $sPath = null): Response | BinaryFileResponse | JsonResponse
+    {
+        try {
+            if (!$sPath) {
+                $sPath       = storage_path('app/uploads/public');
+                $sSourcePath = \File::name($sSource);
+                $arPathParts = array_slice(str_split($sSourcePath, 3), 0, 3);
+
+                if (count($arPathParts) < 3) {
+                    throw new RuntimeException(ApiHelper::tr('File :file not found', ['file' => $sSource]), 404);
+                }
+
+                $sPath .= '/'.implode('/', $arPathParts);
+            }
+
+            $sPath = rtrim($sPath, '/').'/'.$sSource;
+
+            if (!\File::exists($sPath)) {
+                throw new RuntimeException(ApiHelper::tr('File :file not found', ['file' => $sPath]), 404);
+            }
+
+            return response()->file($sPath);
+        } catch (Exception $e) {
+            return static::exceptionResult($e);
+        }
+    }
+
+    /**
+     * @param int|string $id
+     *
+     * @return JsonResponse|string
+     */
+    public function destroy(int|string $id): JsonResponse|string
+    {
+        try {
+            $this->currentUser();
+            $this->setModel($id);
+
+            if (!$this->obModel) {
+                throw new RuntimeException(static::ALERT_RECORD_NOT_FOUND, 403);
+            }
+
+            if (!$this->hasPermission('destroy')) {
+                throw new RuntimeException(static::ALERT_PERMISSIONS_DENIED, 403);
+            }
+
+            $this->fireSystemEvent(Plugin::EVENT_BEFORE_DESTROY, [$this->obModel]);
+
+            if ($this->deleteModel($id)) {
+                Result::setTrue()
+                    ->setMessage(ApiHelper::tr(static::ALERT_RECORD_DELETED));
+            } else {
+                Result::setFalse()
+                    ->setMessage(ApiHelper::tr(static::ALERT_RECORD_NOT_DELETED));
+            }
+
+            return Result::getJSON();
+        } catch (Exception $e) {
+            return static::exceptionResult($e);
+        }
+    }
+
+    /**
+     * @return JsonResponse
+     */
+    public function check(): JsonResponse
+    {
+        try {
+            if ($this->currentUser()) {
+                $group = $this->user->getGroups();
+                Result::setTrue(compact('group'));
+            } else {
+                Result::setFalse();
+            }
+        } catch (Exception $e) {
+            Result::setFalse();
+        } finally {
+            return response()->json(Result::get());
+        }
+    }
+
+    /**
+     * @return JsonResponse
+     */
+    public function csrfToken(): JsonResponse
+    {
+        Result::setData(['token' => csrf_token()]);
+
+        return response()->json(Result::get());
+    }
+
+    /**
+     * @return Model
+     */
+    public function getModel(): Model
+    {
+        return $this->obModel;
+    }
+
+    /**
+     * @param string         $sName
+     * @param CmsObject|null $cmsObject
+     * @param array          $properties
+     * @param bool           $isSoftComponent
+     *
+     * @return ComponentBase
+     *
+     * @throws SystemException
+     * @throws Exception
+     */
+    public function component(
+        string $sName,
+        ?CmsObject $cmsObject = null,
+        array $properties = [],
+        bool $isSoftComponent = false
+    ): ComponentBase {
+        if (array_key_exists($sName, static::$components)) {
+            return static::$components[$sName];
+        }
+
+        $component = ComponentManager::instance()->makeComponent($sName, $cmsObject, $properties, $isSoftComponent);
+
+        if (!$component) {
+            throw new RuntimeException('component not found');
+        }
+
+        static::$components[$sName] = $component;
+
+        return $component;
+    }
+
+    /**
+     * @return MeasureHelper|null
+     */
+    public function getMeasure(): ?MeasureHelper
+    {
+        return $this->obMeasure;
+    }
+
+    /**
+     * @param string $sTitle
+     * @param ...$params
+     *
+     * @return void
+     */
+    public function log(string $sTitle, ...$params): void
+    {
+        if (!$this->obMeasure) {
+            return;
+        }
+
+        call_user_func_array([$this->obMeasure, 'log'], array_merge([$sTitle], array_wrap($params)));
     }
 
     /**
@@ -137,16 +667,11 @@ class Base extends Extendable
     }
 
     /**
-     * @param string $sNamespace
+     * Initialize the API class
      *
-     * @return bool
+     * @return void
      */
-    public function hasPlugin(string $sNamespace): bool
-    {
-        return PluginManager::instance()->hasPlugin($sNamespace);
-    }
-
-    public function init(): void
+    protected function init(): void
     {
     }
 
@@ -155,7 +680,7 @@ class Base extends Extendable
      *
      * @return $this
      */
-    public function setData(array $arData = []): self
+    protected function setData(array $arData = []): self
     {
         $this->setCastData($arData);
         $this->data = $arData;
@@ -328,125 +853,11 @@ class Base extends Extendable
     }
 
     /**
-     * @return LengthAwarePaginator|JsonResponse|ResourceCollection
-     */
-    public function index(): LengthAwarePaginator|JsonResponse|ResourceCollection
-    {
-        try {
-            $this->log('before extend index');
-            $this->extendAction('index');
-            $this->log('after extend index');
-
-            /*
-             * Extend collection results
-             */
-            $this->log('before extend index event');
-            $this->fireSystemEvent(Plugin::EVENT_API_EXTEND_INDEX, [&$this->collection], false);
-            $this->log('after extend index event');
-
-            /** @var \PlanetaDelEste\ApiToolbox\Classes\Resource\Base $obResource */
-            $obIndexResource = $this->makeResource([], $this->getIndexResource());
-            $sItemResource   = $obIndexResource->collects;
-            $obResource      = $this->makeResource([], $sItemResource);
-            $arColumns       = $obResource->getColumns();
-
-            if (!empty($arColumns) && $this->collection->isNotEmpty()) {
-                $obModel    = $this->getModelObject();
-                $arData     = $obModel->query()->select($arColumns)
-                                 ->whereIn('id', $this->collection->getIDList())
-                                 ->get();
-                $obResponse = $this->makeResource($sItemResource::collection($arData), $this->getIndexResource());
-            } else {
-                $obModelCollection = $this->collection->paginate($this->getItemsPerPage());
-                $obResponse        = $this->makeResource($obModelCollection, $this->getIndexResource());
-            }
-
-//            $this->log('before index event');
-//            $this->fireSystemEvent(Plugin::EVENT_API_AFTER_INDEX, [$obResponse], false);
-            $this->log('after index event');
-
-            return $obResponse;
-        } catch (Exception $e) {
-            return static::exceptionResult($e);
-        }
-    }
-
-    /**
-     * @return Model
-     */
-    public function getModelObject(): Model
-    {
-        $sClass = $this->getModelClass();
-
-        return new $sClass();
-    }
-
-    /**
      * @return int
      */
     protected function getItemsPerPage(): int
     {
         return (int) input('limit', $this->itemsPerPage);
-    }
-
-    /**
-     * @return JsonResponse|array|ResourceCollection
-     */
-    public function list(): JsonResponse|array|ResourceCollection
-    {
-        try {
-            $this->extendAction('list');
-
-            /*
-             * Extend collection results
-             */
-            $this->fireSystemEvent(Plugin::EVENT_API_EXTEND_LIST, [&$this->collection], false);
-
-            $arListItems = $this->collection->values();
-            $obResponse  = $this->makeResource(collect($arListItems), $this->getListResource());
-            $this->fireSystemEvent(Plugin::EVENT_API_AFTER_LIST, [$obResponse], false);
-
-            return $obResponse;
-        } catch (Exception $e) {
-            return static::exceptionResult($e);
-        }
-    }
-
-    /**
-     * @param int|string $value
-     *
-     * @return JsonResponse|ElementItem
-     */
-    public function show(int|string $value): JsonResponse|JsonResource
-    {
-        try {
-            /*
-             * Fire event before show item
-             */
-            $this->fireSystemEvent(Plugin::EVENT_API_BEFORE_SHOW_COLLECT, [&$value], false);
-
-            $iModelId = $this->getItemId($value);
-
-            if (!$iModelId) {
-                throw new RuntimeException(static::ALERT_RECORD_NOT_FOUND, 403);
-            }
-
-            $this->item = $this->getItem($iModelId);
-            $this->extendAction('show');
-
-            /*
-             * Extend collection results
-             */
-            $this->fireSystemEvent(Plugin::EVENT_API_EXTEND_SHOW, [$this->item]);
-
-            $obResponse = $this->makeResource($this->item, $this->getShowResource());
-
-            $this->fireSystemEvent(Plugin::EVENT_API_AFTER_SHOW, [$obResponse], false);
-
-            return $obResponse;
-        } catch (Exception $e) {
-            return static::exceptionResult($e);
-        }
     }
 
     /**
@@ -477,93 +888,6 @@ class Base extends Extendable
         }
 
         return $sItemClass::make($iModelID);
-    }
-
-    /**
-     * @return JsonResponse|string
-     */
-    public function store(): JsonResponse|string
-    {
-        try {
-            $this->currentUser();
-
-            $this->obModel = app($this->getModelClass());
-            $this->exists  = false;
-            $message       = ApiHelper::tr(static::ALERT_RECORD_NOT_CREATED);
-
-            if (!$this->hasPermission('store')) {
-                throw new RuntimeException(static::ALERT_PERMISSIONS_DENIED, 403);
-            }
-
-            $this->extendAction('store');
-            $this->fireSystemEvent(Plugin::EVENT_BEFORE_SAVE, [$this->obModel, &$this->data]);
-            $this->validate();
-            $this->log('after validate store');
-
-            if ($this->save()) {
-                $this->log('after save store');
-                $message = ApiHelper::tr(static::ALERT_RECORD_CREATED);
-            }
-
-            if (!Result::status() && Result::message()) {
-                throw new RuntimeException(Result::message());
-            }
-
-            $obItem         = $this->getItem($this->obModel->id);
-            $obResourceItem = $this->makeResource($obItem, $this->getShowResource());
-
-            return Result::setData($obResourceItem)
-                ->setMessage($message)
-                ->getJSON();
-        } catch (Exception $e) {
-            return static::exceptionResult($e);
-        }
-    }
-
-    public function detach(mixed $id): JsonResponse|string
-    {
-        try {
-            $this->currentUser();
-            $this->setModel($id);
-            $this->exists = true;
-            $message      = ApiHelper::tr(static::ALERT_RECORD_NOT_DELETED);
-            Result::setFalse();
-
-            if (!$this->obModel || !array_get($this->data, 'file')) {
-                throw new RuntimeException(static::ALERT_RECORD_NOT_FOUND, 403);
-            }
-
-            if (!$this->hasPermission('detach')) {
-                throw new RuntimeException(static::ALERT_PERMISSIONS_DENIED, 403);
-            }
-
-            // Get model relation name
-            $obFile = File::where('disk_name', array_get($this->data, 'file'))
-                          ->where('attachment_type', $this->getModelClass())
-                          ->where('attachment_id', $id)
-                          ->first();
-
-            if (!$obFile) {
-                throw new RuntimeException(static::ALERT_RECORD_NOT_FOUND, 403);
-            }
-
-            $this->extendAction('detach');
-            $this->fireSystemEvent(Plugin::EVENT_BEFORE_DETACH, [$this->obModel, $obFile, $this->data]);
-            $this->validate();
-
-            $obFile->delete();
-            Result::setTrue();
-
-            $message        = ApiHelper::tr(static::ALERT_RECORD_DELETED);
-            $obItem         = $this->getItem($id, true);
-            $obResourceItem = $this->makeResource($obItem, $this->getShowResource());
-
-            return Result::setData($obResourceItem)
-                         ->setMessage($message)
-                         ->getJSON();
-        } catch (Exception $e) {
-            return static::exceptionResult($e);
-        }
     }
 
     /**
@@ -779,96 +1103,6 @@ class Base extends Extendable
     }
 
     /**
-     * Retrieves the count of items in the collection and returns it as a JSON response or an array.
-     *
-     * @return JsonResponse|array Returns a JSON response containing the count of items or an array with the count.
-     *
-     * @throws Exception If an error occurs during the count retrieval or the exception handling.
-     */
-    public function count(): JsonResponse|array
-    {
-        try {
-            $this->extendAction('count');
-
-            /*
-             * Extend collection results
-             */
-            $this->fireSystemEvent(Plugin::EVENT_API_EXTEND_COUNT, [$this->collection], false);
-
-            $fValue = $this->collection->count();
-
-            $this->fireSystemEvent(Plugin::EVENT_API_AFTER_COUNT, [&$fValue], false);
-
-            Result::setData(['count' => $fValue]);
-
-            return Result::get();
-        } catch (Exception $e) {
-            return static::exceptionResult($e);
-        }
-    }
-
-    /**
-     * @param int|string $id
-     *
-     * @return JsonResponse|string
-     */
-    public function update(int|string $id): JsonResponse|string
-    {
-        try {
-            $this->currentUser();
-            $this->setModel($id);
-            $this->exists = true;
-            $message      = ApiHelper::tr(static::ALERT_RECORD_NOT_UPDATED);
-            Result::setFalse();
-
-            if (!$this->obModel) {
-                throw new RuntimeException(static::ALERT_RECORD_NOT_FOUND, 403);
-            }
-
-            if (!$this->hasPermission('update')) {
-                throw new RuntimeException(static::ALERT_PERMISSIONS_DENIED, 403);
-            }
-
-            $this->extendAction('update');
-            $this->fireSystemEvent(Plugin::EVENT_BEFORE_SAVE, [$this->obModel, &$this->data]);
-            $this->validate();
-
-            if ($this->save()) {
-                if (!Result::status() && Result::message()) {
-                    throw new RuntimeException(Result::message());
-                }
-
-                Result::setTrue();
-                $message = ApiHelper::tr(static::ALERT_RECORD_UPDATED);
-            }
-
-            $obItem         = $this->getItem($this->obModel->id);
-            $obResourceItem = $this->makeResource($obItem, $this->getShowResource());
-
-            return Result::setData($obResourceItem)
-                ->setMessage($message)
-                ->getJSON();
-        } catch (Exception $e) {
-            return static::exceptionResult($e);
-        }
-    }
-
-    /**
-     * @param string|int $id
-     *
-     * @return Model
-     */
-    public function setModel(string|int $id): Model
-    {
-        $this->obModel = $this->getModelObject()
-            ->query()
-            ->where($this->getPrimaryKey(), $id)
-            ->firstOrFail();
-
-        return $this->obModel;
-    }
-
-    /**
      * @param string|int $id
      *
      * @return bool
@@ -879,123 +1113,6 @@ class Base extends Extendable
                     ->query()
                     ->where($this->getPrimaryKey(), $id)
                     ->exists();
-    }
-
-    /**
-     * @param int|string $id
-     *
-     * @return JsonResponse|string
-     */
-    public function attach(int|string $id): JsonResponse|string
-    {
-        try {
-            $this->currentUser();
-            $this->setModel($id);
-            $this->exists = true;
-            $message      = ApiHelper::tr(static::ALERT_RECORD_NOT_UPDATED);
-            Result::setFalse();
-
-            if (!$this->obModel) {
-                throw new RuntimeException(static::ALERT_RECORD_NOT_FOUND, 403);
-            }
-
-            if (!$this->hasPermission('attach')) {
-                throw new RuntimeException(static::ALERT_PERMISSIONS_DENIED, 403);
-            }
-
-            $this->fireSystemEvent(Plugin::EVENT_BEFORE_ATTACH, [$this->obModel, &$this->data]);
-
-            if ($this->attachFiles(true)) {
-                if (!Result::status() && Result::message()) {
-                    throw new RuntimeException(Result::message());
-                }
-
-                Result::setTrue();
-                $message = ApiHelper::tr(static::ALERT_RECORD_UPDATED);
-            }
-
-            $obItem         = $this->getItem($this->obModel->id);
-            $obResourceItem = $this->makeResource($obItem, $this->getShowResource());
-
-            return Result::setData($obResourceItem)
-                ->setMessage($message)
-                ->getJSON();
-        } catch (Exception $e) {
-            return static::exceptionResult($e);
-        }
-    }
-
-    /**
-     * Loads a file from the specified path or the default storage path.
-     *
-     * @param string      $sSource The name of the file to load.
-     * @param string|null $sPath   The path to the file. If not provided, the default storage path will be used.
-     *
-     * @throws RuntimeException If the file is not found.
-     *
-     * @return Response | BinaryFileResponse The file response.
-     */
-    public function loadFile(string $sSource, ?string $sPath = null): Response | BinaryFileResponse
-    {
-        try {
-            if (!$sPath) {
-                $sPath       = storage_path('app/uploads/public');
-                $sSourcePath = \File::name($sSource);
-                $arPathParts = array_slice(str_split($sSourcePath, 3), 0, 3);
-
-                if (count($arPathParts) < 3) {
-                    throw new RuntimeException(ApiHelper::tr('File :file not found', ['file' => $sSource]), 404);
-                }
-
-                $sPath .= '/'.implode('/', $arPathParts);
-            }
-
-            $sPath = rtrim($sPath, '/').'/'.$sSource;
-
-            if (!\File::exists($sPath)) {
-                throw new RuntimeException(ApiHelper::tr('File :file not found', ['file' => $sPath]), 404);
-            }
-
-// $sContent = \File::get($sPath);
-            return response()->file($sPath);
-        } catch (Exception $e) {
-            return static::exceptionResult($e);
-        }
-    }
-
-    /**
-     * @param int|string $id
-     *
-     * @return JsonResponse|string
-     */
-    public function destroy(int|string $id): JsonResponse|string
-    {
-        try {
-            $this->currentUser();
-            $this->setModel($id);
-
-            if (!$this->obModel) {
-                throw new RuntimeException(static::ALERT_RECORD_NOT_FOUND, 403);
-            }
-
-            if (!$this->hasPermission('destroy')) {
-                throw new RuntimeException(static::ALERT_PERMISSIONS_DENIED, 403);
-            }
-
-            $this->fireSystemEvent(Plugin::EVENT_BEFORE_DESTROY, [$this->obModel]);
-
-            if ($this->deleteModel($id)) {
-                Result::setTrue()
-                    ->setMessage(ApiHelper::tr(static::ALERT_RECORD_DELETED));
-            } else {
-                Result::setFalse()
-                    ->setMessage(ApiHelper::tr(static::ALERT_RECORD_NOT_DELETED));
-            }
-
-            return Result::getJSON();
-        } catch (Exception $e) {
-            return static::exceptionResult($e);
-        }
     }
 
     /**
@@ -1010,83 +1127,6 @@ class Base extends Extendable
         $this->obModel->methodExists('isSoftDelete') && $this->obModel->isSoftDelete() ? $this->obModel->forceDelete() : $this->obModel->delete();
 
         return !$this->modelExists($id);
-    }
-
-    /**
-     * @return JsonResponse
-     */
-    public function check(): JsonResponse
-    {
-        try {
-            if ($this->currentUser()) {
-                $group = $this->user->getGroups();
-                Result::setTrue(compact('group'));
-            } else {
-                Result::setFalse();
-            }
-        } catch (Exception $e) {
-            Result::setFalse();
-        } finally {
-            return response()->json(Result::get());
-        }
-    }
-
-    /**
-     * @return JsonResponse
-     */
-    public function csrfToken(): JsonResponse
-    {
-        Result::setData(['token' => csrf_token()]);
-
-        return response()->json(Result::get());
-    }
-
-    /**
-     * @return Model
-     */
-    public function getModel(): Model
-    {
-        return $this->obModel;
-    }
-
-    /**
-     * @param string         $sName
-     * @param CmsObject|null $cmsObject
-     * @param array          $properties
-     * @param bool           $isSoftComponent
-     *
-     * @return ComponentBase
-     *
-     * @throws SystemException
-     * @throws Exception
-     */
-    public function component(
-        string $sName,
-        ?CmsObject $cmsObject = null,
-        array $properties = [],
-        bool $isSoftComponent = false
-    ): ComponentBase {
-        if (array_key_exists($sName, static::$components)) {
-            return static::$components[$sName];
-        }
-
-        $component = ComponentManager::instance()->makeComponent($sName, $cmsObject, $properties, $isSoftComponent);
-
-        if (!$component) {
-            throw new RuntimeException('component not found');
-        }
-
-        static::$components[$sName] = $component;
-
-        return $component;
-    }
-
-    /**
-     * @return MeasureHelper|null
-     */
-    public function getMeasure(): ?MeasureHelper
-    {
-        return $this->obMeasure;
     }
 
     /**
@@ -1115,20 +1155,5 @@ class Base extends Extendable
         } catch (Exception $e) {
             return false;
         }
-    }
-
-    /**
-     * @param string $sTitle
-     * @param        ...$params
-     *
-     * @return void
-     */
-    public function log(string $sTitle, ...$params): void
-    {
-        if (!$this->obMeasure) {
-            return;
-        }
-
-        call_user_func_array([$this->obMeasure, 'log'], array_merge([$sTitle], array_wrap($params)));
     }
 }
