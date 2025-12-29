@@ -302,7 +302,7 @@ trait ApiBaseTrait
     }
 
     /**
-     * @param $obData
+     * @param mixed       $obData
      * @param string|null $sResource
      *
      * @return Base|ResourceCollection

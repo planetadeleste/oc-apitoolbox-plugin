@@ -1,0 +1,30 @@
+<?php
+
+use {{domainNamespace}}\Http\Controllers\{{modelName}}Controller;
+
+Route::controller({{modelName}}Controller::class)
+    ->group(static function (): void {
+        $sPrefix = '{{prefix}}';
+
+        // Rutas públicas (sin autenticación)
+        Route::prefix($sPrefix)->name("{$sPrefix}.")->group(static function (): void {
+            Route::get('{id}', 'show')->name('show');
+        });
+
+        // Rutas protegidas (requieren JWT)
+        Route::middleware(['jwt.auth'])->group(static function () use ($sPrefix): void {
+
+            // CRUD básico de compañías
+            Route::apiResource($sPrefix, {{modelName}}Controller::class)
+                ->except(['show']);
+
+            Route::prefix($sPrefix)->name("{$sPrefix}.")->group(static function (): void {
+                Route::get('list', 'index')->name('list');
+                // Gestión de avatares
+                Route::prefix('{id}')->group(static function (): void {
+                    Route::post('upload', 'attachFile')->name('upload');
+                    Route::post('detach', 'detachFile')->name('detach');
+                });
+            });
+        });
+    });

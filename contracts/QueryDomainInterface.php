@@ -1,0 +1,59 @@
+<?php
+
+namespace PlanetaDelEste\ApiToolbox\Contracts;
+
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Model;
+use October\Rain\Database\Builder;
+use October\Rain\Database\Collection;
+
+/**
+ * Interface QueryDomainInterface
+ *
+ * @template TKey of array-key
+ * @template TModel of Model
+ */
+interface QueryDomainInterface
+{
+    public function getQuery(): Builder;
+
+    public function applyFilters(array $filters): self;
+
+    public function applySorting(string $field, string $direction = 'asc'): self;
+
+    public function applyPagination(int $perPage = 15, int $page = 1): self;
+
+    public function withRelations(array $arRelations = []): self;
+
+    /**
+     * @return Collection<Tkey, TModel>
+     */
+    public function get(): Collection;
+
+    /**
+     * Get the first result
+     *
+     * @return TModel|null
+     */
+    public function first(): ?Model;
+
+    /**
+     * Encontrar
+     *
+     * @param int $iId
+     *
+     * @return TModel|null
+     */
+    public function find(int $iId): ?Model;
+
+    /**
+     * Encontrar o fallar
+     *
+     * @param int $iId
+     *
+     * @return TModel
+     */
+    public function findOrFail(int $iId): Model;
+
+    public function paginate(int $perPage = 15): LengthAwarePaginator;
+}

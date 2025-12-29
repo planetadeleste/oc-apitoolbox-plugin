@@ -1,0 +1,47 @@
+<?php
+
+namespace {{namespace}};
+
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Routing\Controller;
+use {{domainNamespace}}\Actions\Create{{modelName}}Action;
+use {{domainNamespace}}\Actions\Update{{modelName}}Action;
+use {{domainNamespace}}\Dtos\{{modelName}}Data;
+use {{domainNamespace}}\Http\Requests\Store{{modelName}}Request;
+use {{domainNamespace}}\Http\Requests\Update{{modelName}}Request;
+use {{domainNamespace}}\Http\Resources\{{modelName}}Collection;
+use {{domainNamespace}}\Http\Resources\{{modelName}}Resource;
+use {{domainNamespace}}\Queries\{{modelName}}Query;
+use PlanetaDelEste\ApiToolbox\Classes\Domain\AbstractControllerDomain;
+
+/**
+ * Controlador principal para el dominio {{modelName}}
+ *
+ * @extends AbstractControllerDomain<{{modelName}}, {{modelName}}Service, {{modelName}}Resource, {{modelName}}Data, Store{{modelName}}Request, Update{{modelName}}Request, Create{{modelName}}Action, Update{{modelName}}Action>
+ */
+class {{modelName}}Controller extends AbstractControllerDomain
+{
+    /**
+     * @param {{modelName}}Service $service
+     * @param {{modelName}}Query   $query
+     */
+    public function __construct(protected readonly {{modelName}}Service $service, protected readonly {{modelName}}Query $query)
+    {
+    }
+
+    public function getCollectionClass(): string
+    {
+        return {{modelName}}Collection::class;
+    }
+
+    public function getDtoClass(): string
+    {
+        return {{modelName}}Data::class;
+    }
+
+    public function getResourceClass(): string
+    {
+        return {{modelName}}Resource::class;
+    }
+}

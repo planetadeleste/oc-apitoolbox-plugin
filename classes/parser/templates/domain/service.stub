@@ -1,0 +1,11 @@
+<?php
+
+namespace {{namespace}};
+
+/**
+ * Service para lógica de negocio de {{modelName}}
+ */
+class {{modelName}}Service
+{
+    // Agregar métodos de lógica de negocio aquí
+}

@@ -1,0 +1,37 @@
+<?php
+
+namespace {{namespace}};
+
+/**
+ * Data Transfer Object para {{modelName}}
+ */
+class {{modelName}}Data
+{
+    public function __construct(
+{{properties}}
+    ) {
+    }
+
+    public static function fromRequest(array $arData): self
+    {
+        return new self(
+            id: $arData['id'] ?? null,
+{{fromRequest}}
+        );
+    }
+
+    public static function from($obModel): self
+    {
+        return new self(
+            id: $obModel->id,
+{{fromModel}}
+        );
+    }
+
+    public function toArray(): array
+    {
+        return [
+{{toArray}}
+        ];
+    }
+}

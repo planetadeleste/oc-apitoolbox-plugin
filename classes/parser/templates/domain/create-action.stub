@@ -1,0 +1,20 @@
+<?php
+
+namespace {{namespace}};
+
+use Illuminate\Support\Facades\DB;
+use {{dtoNamespace}}\{{modelName}}Data;
+use {{modelNamespace}}\{{modelName}};
+
+/**
+ * Action para crear {{modelName}}
+ */
+class Create{{modelName}}Action
+{
+    public function execute({{modelName}}Data $data): {{modelName}}
+    {
+        return DB::transaction(function () use ($data) {
+            return {{modelName}}::create($data->toArray());
+        });
+    }
+}
