@@ -2,14 +2,9 @@
 
 namespace {{namespace}};
 
-use Illuminate\Http\Resources\Json\ResourceCollection;
+use PlanetaDelEste\ApiToolbox\Classes\Domain\AbstractResourceCollectionDomain;
 
-class {{modelName}}Collection extends ResourceCollection
+class {{modelName}}Collection extends AbstractResourceCollectionDomain
 {
     public $collects = {{modelName}}Resource::class;
-
-    public function toArray($request): array
-    {
-        return parent::toArray($request);
-    }
 }

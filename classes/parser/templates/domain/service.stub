@@ -2,10 +2,18 @@
 
 namespace {{namespace}};
 
+use {{modelNamespace}}\{{modelName}};
+use PlanetaDelEste\ApiToolbox\Classes\Domain\AbstractServiceDomain;
+
 /**
  * Service para lógica de negocio de {{modelName}}
+ *
+ * @extends AbstractServiceDomain<{{modelName}}>
  */
-class {{modelName}}Service
+class {{modelName}}Service extends AbstractServiceDomain
 {
-    // Agregar métodos de lógica de negocio aquí
+    public function getModelClass(): string
+    {
+        return {{modelName}}::class;
+    }
 }

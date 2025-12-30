@@ -557,14 +557,16 @@ class MakeDomainCommand extends Command
 
     protected function getDtoTemplate(): string
     {
-        $sNamespace = $this->namespace.'\\App\\Domain\\'.Str::studly(Str::lower($this->modelName)).'\\Dtos';
-        $sTemplate  = $this->loadStub('dto');
+        $sNamespace      = $this->namespace.'\\App\\Domain\\'.Str::studly(Str::lower($this->modelName)).'\\Dtos';
+        $sModelNamespace = $this->modelNamespace.'\\Models';
+        $sTemplate       = $this->loadStub('dto');
 
         return str_replace(
-            ['{{namespace}}', '{{modelName}}', '{{properties}}', '{{fromRequest}}', '{{fromModel}}', '{{toArray}}'],
+            ['{{namespace}}', '{{modelName}}', '{{modelNamespace}}', '{{properties}}', '{{fromRequest}}', '{{fromModel}}', '{{toArray}}'],
             [
                 $sNamespace,
                 $this->modelName,
+                $sModelNamespace,
                 $this->buildDtoProperties(),
                 $this->buildDtoFromRequest(),
                 $this->buildDtoFromModel(),

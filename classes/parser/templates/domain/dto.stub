@@ -2,10 +2,15 @@
 
 namespace {{namespace}};
 
+use {{modelNamespace}}\{{modelName}};
+use PlanetaDelEste\ApiToolbox\Contracts\DtoDomainInterface;
+
 /**
  * Data Transfer Object para {{modelName}}
+ *
+ * @implements DtoDomainInterface<{{modelName}}>
  */
-class {{modelName}}Data
+class {{modelName}}Data implements DtoDomainInterface
 {
     public function __construct(
 {{properties}}
