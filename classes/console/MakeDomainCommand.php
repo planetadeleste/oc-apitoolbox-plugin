@@ -557,22 +557,16 @@ class MakeDomainCommand extends Command
 
     protected function getDtoTemplate(): string
     {
-        $sNamespace      = $this->namespace.'\\App\\Domain\\'.Str::studly(Str::lower($this->modelName)).'\\Dtos';
-        $sModelNamespace = $this->modelNamespace.'\\Models';
-        $sTemplate       = $this->loadStub('dto');
-
-        return str_replace(
-            ['{{namespace}}', '{{modelName}}', '{{modelNamespace}}', '{{properties}}', '{{fromRequest}}', '{{fromModel}}', '{{toArray}}'],
+        return $this->parse(
+            'dto',
+            '\\Dtos',
+            ['{{properties}}', '{{fromRequest}}', '{{fromModel}}', '{{toArray}}'],
             [
-                $sNamespace,
-                $this->modelName,
-                $sModelNamespace,
                 $this->buildDtoProperties(),
                 $this->buildDtoFromRequest(),
                 $this->buildDtoFromModel(),
                 $this->buildDtoToArray(),
-            ],
-            $sTemplate
+            ]
         );
     }
 
@@ -628,91 +622,62 @@ class MakeDomainCommand extends Command
 
     protected function getCreateActionTemplate(): string
     {
-        $sNamespace      = $this->namespace.'\\App\\Domain\\'.Str::studly(Str::lower($this->modelName)).'\\Actions';
-        $sModelNamespace = $this->modelNamespace.'\\Models';
-        $sDtoNamespace   = $this->namespace.'\\App\\Domain\\'.Str::studly(Str::lower($this->modelName)).'\\Dtos';
-        $sTemplate       = $this->loadStub('create-action');
+        $sDtoNamespace = $this->namespace.'\\App\\Domain\\'.Str::studly(Str::lower($this->modelName)).'\\Dtos';
 
-        return str_replace(
-            ['{{namespace}}', '{{modelName}}', '{{modelNamespace}}', '{{dtoNamespace}}'],
-            [$sNamespace, $this->modelName, $sModelNamespace, $sDtoNamespace],
-            $sTemplate
+        return $this->parse(
+            'create-action',
+            '\\Actions',
+            ['{{dtoNamespace}}'],
+            [$sDtoNamespace]
         );
     }
 
     protected function getUpdateActionTemplate(): string
     {
-        $sNamespace      = $this->namespace.'\\App\\Domain\\'.Str::studly(Str::lower($this->modelName)).'\\Actions';
-        $sModelNamespace = $this->modelNamespace.'\\Models';
-        $sDtoNamespace   = $this->namespace.'\\App\\Domain\\'.Str::studly(Str::lower($this->modelName)).'\\Dtos';
-        $sTemplate       = $this->loadStub('update-action');
+        $sDtoNamespace = $this->namespace.'\\App\\Domain\\'.Str::studly(Str::lower($this->modelName)).'\\Dtos';
 
-        return str_replace(
-            ['{{namespace}}', '{{modelName}}', '{{modelNamespace}}', '{{dtoNamespace}}'],
-            [$sNamespace, $this->modelName, $sModelNamespace, $sDtoNamespace],
-            $sTemplate
-        );
+        return $this->parse('update-action', '\\Actions', ['{{dtoNamespace}}'], [$sDtoNamespace]);
     }
 
     protected function getServiceTemplate(): string
     {
-        $sNamespace = $this->namespace.'\\App\\Domain\\'.Str::studly(Str::lower($this->modelName)).'\\Services';
-        $sTemplate  = $this->loadStub('service');
-
-        return str_replace(
-            ['{{namespace}}', '{{modelName}}'],
-            [$sNamespace, $this->modelName],
-            $sTemplate
-        );
+        return $this->parse('service', '\\Services');
     }
 
     protected function getQueryTemplate(): string
     {
-        $sNamespace      = $this->namespace.'\\App\\Domain\\'.Str::studly(Str::lower($this->modelName)).'\\Queries';
-        $sModelNamespace = $this->modelNamespace.'\\Models';
-        $sTemplate       = $this->loadStub('query');
-
-        return str_replace(
-            ['{{namespace}}', '{{modelName}}', '{{modelNamespace}}'],
-            [$sNamespace, $this->modelName, $sModelNamespace],
-            $sTemplate
-        );
+        return $this->parse('query', '\\Queries');
     }
 
     protected function getControllerTemplate(): string
     {
-        $sNamespace       = $this->namespace.'\\App\\Domain\\'.Str::studly(Str::lower($this->modelName)).'\\Http\\Controllers';
         $sDomainNamespace = $this->namespace.'\\App\\Domain\\'.Str::studly(Str::lower($this->modelName));
-        $sTemplate        = $this->loadStub('controller');
 
-        return str_replace(
-            ['{{namespace}}', '{{modelName}}', '{{domainNamespace}}'],
-            [$sNamespace, $this->modelName, $sDomainNamespace],
-            $sTemplate
+        return $this->parse(
+            'controller',
+            '\\Http\\Controllers',
+            ['{{domainNamespace}}'],
+            [$sDomainNamespace]
         );
     }
 
     protected function getStoreRequestTemplate(): string
     {
-        $sNamespace = $this->namespace.'\\App\\Domain\\'.Str::studly(Str::lower($this->modelName)).'\\Http\\Requests';
-        $sTemplate  = $this->loadStub('store-request');
-
-        return str_replace(
-            ['{{namespace}}', '{{modelName}}', '{{rules}}'],
-            [$sNamespace, $this->modelName, $this->buildValidationRules(true)],
-            $sTemplate
+        return $this->parse(
+            'store-request',
+            '\\Http\\Requests',
+            ['{{rules}}'],
+            [$this->buildValidationRules(true)]
         );
     }
 
     protected function getUpdateRequestTemplate(): string
     {
-        $sNamespace = $this->namespace.'\\App\\Domain\\'.Str::studly(Str::lower($this->modelName)).'\\Http\\Requests';
-        $sTemplate  = $this->loadStub('update-request');
-
-        return str_replace(
-            ['{{namespace}}', '{{modelName}}', '{{rules}}'],
-            [$sNamespace, $this->modelName, $this->buildValidationRules(false)],
-            $sTemplate
+        return $this->parse(
+            'update-request',
+            '\\Http\\Requests',
+            ['{{rules}}'],
+            [$this->buildValidationRules(false)]
         );
     }
 
@@ -737,13 +702,11 @@ class MakeDomainCommand extends Command
 
     protected function getResourceTemplate(): string
     {
-        $sNamespace = $this->namespace.'\\App\\Domain\\'.Str::studly(Str::lower($this->modelName)).'\\Http\\Resources';
-        $sTemplate  = $this->loadStub('resource');
-
-        return str_replace(
-            ['{{namespace}}', '{{modelName}}', '{{toArray}}'],
-            [$sNamespace, $this->modelName, $this->buildResourceToArray()],
-            $sTemplate
+        return $this->parse(
+            'resource',
+            '\\Http\\Resources',
+            ['{{toArray}}'],
+            [$this->buildResourceToArray()]
         );
     }
 
@@ -764,14 +727,7 @@ class MakeDomainCommand extends Command
 
     protected function getCollectionTemplate(): string
     {
-        $sNamespace = $this->namespace.'\\App\\Domain\\'.Str::studly(Str::lower($this->modelName)).'\\Http\\Resources';
-        $sTemplate  = $this->loadStub('collection');
-
-        return str_replace(
-            ['{{namespace}}', '{{modelName}}'],
-            [$sNamespace, $this->modelName],
-            $sTemplate
-        );
+        return $this->parse('collection', '\\Http\\Resources');
     }
 
     protected function generateRoutes(): void
@@ -791,13 +747,33 @@ class MakeDomainCommand extends Command
 
     protected function getRoutesTemplate(): string
     {
-        $sDomainNamespace = $this->namespace.'\\App\\Domain\\'.Str::studly(Str::lower($this->modelName));
-        $sTemplate        = $this->loadStub('routes');
-        $sPrefix          = Str::plural(Str::snake($this->modelName));
+        $sPrefix = Str::plural(Str::snake($this->modelName));
+
+        return $this->parse(
+            'routes',
+            '',
+            ['{{prefix}}'],
+            [$sPrefix]
+        );
+    }
+
+    /**
+     * @param string $sStub
+     * @param string $sNamespacePart
+     * @param array  $arKeys
+     * @param array  $arValues
+     *
+     * @return string
+     */
+    protected function parse(string $sStub, string $sNamespacePart = '', array $arKeys = [], array $arValues = []): string
+    {
+        $sNamespace      = sprintf('%s\\App\\Domain\\%s%s', $this->namespace, Str::studly(Str::lower($this->modelName)), $sNamespacePart);
+        $sModelNamespace = $this->modelNamespace.'\\Models';
+        $sTemplate       = $this->loadStub($sStub);
 
         return str_replace(
-            ['{{domainNamespace}}', '{{modelName}}', '{{prefix}}'],
-            [$sDomainNamespace, $this->modelName, $sPrefix],
+            array_merge(['{{namespace}}', '{{modelName}}', '{{modelNamespace}}'], $arKeys),
+            array_merge([$sNamespace, $this->modelName, $sModelNamespace], $arValues),
             $sTemplate
         );
     }

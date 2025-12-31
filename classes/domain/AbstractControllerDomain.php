@@ -2,6 +2,7 @@
 
 namespace PlanetaDelEste\ApiToolbox\Classes\Domain;
 
+use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -82,13 +83,7 @@ abstract class AbstractControllerDomain extends Controller
 
         $this->attachFiles($request, $obCompany);
 
-        return response()->json(
-            [
-                'message' => __('alvis::api.company.created'),
-                'data'    => new $sResourceClass($obCompany)
-            ],
-            201
-        );
+        return $this->success('record.created', new $sResourceClass($obCompany), 201);
     }
 
     /**
@@ -108,10 +103,7 @@ abstract class AbstractControllerDomain extends Controller
 
         $this->attachFiles($request, $obModel);
 
-        return response()->json([
-            'message' => __('alvis::api.company.updated'),
-            'data'    => new $sResourceClass($obModel)
-        ]);
+        return $this->success('record.updated', new $sResourceClass($obModel));
     }
 
     /**
@@ -125,9 +117,7 @@ abstract class AbstractControllerDomain extends Controller
 
         $this->service->delete($obCompany);
 
-        return response()->json([
-            'message' => __('alvis::api.company.deleted')
-        ]);
+        return $this->message('record.deleted');
     }
 
     /**
@@ -149,25 +139,19 @@ abstract class AbstractControllerDomain extends Controller
             ->contains($sAttribute);
 
         if (!$bIsValidAttribute) {
-            return response()->json([
-                'message' => __('alvis::api.file.invalid_attribute')
-            ], 400);
+            return $this->message('file.invalid_attribute', 400);
         }
 
         // Buscar y eliminar el archivo
         $obFile = $obModel->{$sAttribute}()->find($iFileId);
 
         if (!$obFile) {
-            return response()->json([
-                'message' => __('alvis::api.file.not_found')
-            ], 404);
+            return $this->message('file.not_found', 404);
         }
 
         $obFile->delete();
 
-        return response()->json([
-            'message' => __('alvis::api.file.deleted')
-        ]);
+        return $this->message('file.deleted');
     }
 
     /**
@@ -181,9 +165,7 @@ abstract class AbstractControllerDomain extends Controller
         $obModel = $this->query->findOrFail($iId);
         $this->attachFiles($request, $obModel);
 
-        return response()->json([
-            'message' => __('alvis::api.file.attached')
-        ]);
+        return $this->message('file.attached');
     }
 
     /**
@@ -263,5 +245,63 @@ abstract class AbstractControllerDomain extends Controller
         foreach ($arFiles as $obFile) {
             $obModel->{$sAttribute}()->create(['data' => $obFile]);
         }
+    }
+
+    /**
+     * Handles an error and sends a JSON response
+     *
+     * @param Exception $ex
+     * @param int       $iStatus
+     *
+     * @return JsonResponse
+     */
+    protected function error(Exception $ex, int $iStatus = 403): JsonResponse
+    {
+        return response()->json([
+            'success' => false,
+            'message' => $ex->getMessage(),
+            'code'    => $ex->getCode() ?: $iStatus,
+        ], $ex->getCode() ?: $iStatus);
+    }
+
+    /**
+     * Sends a JSON success response
+     *
+     * @param mixed $sMessage
+     * @param mixed $arData
+     * @param int   $iStatus
+     *
+     * @return JsonResponse
+     */
+    protected function success(?string $sMessage, mixed $arData = [], int $iStatus = 200): JsonResponse
+    {
+        $arJsonData = ['success' => true];
+
+        if (null !== $sMessage) {
+            $arJsonData['message'] = $sMessage;
+        }
+
+        if (!empty($arData)) {
+            if ($arData instanceof JsonResource) {
+                $arData = $arData->toArray(request());
+            }
+
+            $arJsonData['data'] = array_wrap($arData);
+        }
+
+        return response()->json($arJsonData, $iStatus);
+    }
+
+    /**
+     * Sends a JSON message response
+     *
+     * @param string $sValue
+     * @param int    $status
+     *
+     * @return JsonResponse
+     */
+    protected function message(string $sValue, int $status = 200): JsonResponse
+    {
+        return response()->json(['message' => tr($sValue)], $status);
     }
 }
