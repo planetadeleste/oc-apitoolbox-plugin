@@ -3,6 +3,7 @@
 namespace PlanetaDelEste\ApiToolbox\Classes\Domain;
 
 use Exception;
+use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -36,70 +37,100 @@ abstract class AbstractControllerDomain extends Controller
     ];
 
     /**
+     * @var array
+     */
+    protected array $arRelations = [];
+
+    /**
      * @param TStoreRequest|TUpdateRequest|Request $request
      *
      * @return ResourceCollection<TResource>
      */
     public function index(Request $request): ResourceCollection
     {
-        $obQuery = $this->query
-            ->applyFilters($request->only(['filter']))
-            ->applySorting($request->get('sort', 'name'))
-            ->withRelations(['office', 'company_type', 'preview_image']);
+        [$sSort, $sDir] = explode('|', $this->getSortColumn() ?: 'id|asc');
+        $obQuery        = $this->query
+            ->applyFilters($request->get('filters', []))
+            ->applySorting($request->get('sort', $sSort), $sDir);
 
-        $obCompanies      = $obQuery->paginate($request->get('per_page', 15));
+        if ($arRelations = array_get($this->arRelations, 'index')) {
+            $obQuery->withRelations($arRelations);
+        }
+
+        $obCollection     = $obQuery->paginate($request->get('per_page', 15));
         $sCollectionClass = $this->getCollectionClass();
 
-        return new $sCollectionClass($obCompanies);
+        return new $sCollectionClass($obCollection);
     }
 
-    /**
-     * @param mixed $iId
-     *
-     * @return TResource
-     */
+      /**
+       * @param mixed $iId
+       *
+       * @return TResource
+       */
     public function show(mixed $iId): JsonResource
     {
         $sResourceClass = $this->getResourceClass();
-        $obCompany      = $this->query
-            ->withRelations(['office', 'users', 'company_type', 'config', 'contract'])
-            ->findOrFail($iId);
+        $obQuery        = $this->query;
 
-        return new $sResourceClass($obCompany);
+        if ($arRelations = array_get($this->arRelations, 'show')) {
+            $obQuery->withRelations($arRelations);
+        }
+
+        $obModel = $obQuery->findOrFail($iId);
+
+        return new $sResourceClass($obModel);
     }
 
     /**
      * @param TStoreRequest $request
-     * @param TCreateAction $action
      *
      * @return JsonResponse
      */
-    public function store(Request $request, object $action): JsonResponse
+    public function store(FormRequest $request): JsonResponse
     {
         $sResourceClass = $this->getResourceClass();
         $sDtoClass      = $this->getDtoClass();
-        $data           = $sDtoClass::fromRequest($request->validated());
-        $obCompany      = $action->execute($data);
+        $sActionClass   = $this->getCreateActionClass();
 
-        $this->attachFiles($request, $obCompany);
+        // Filtrar campos excluidos
+        $arData = array_diff_key(
+            $request->all(),
+            array_flip($this->getExcludedFields())
+        );
 
-        return $this->success('record.created', new $sResourceClass($obCompany), 201);
+        $data    = $sDtoClass::fromArray($arData);
+        $action  = app($sActionClass);
+        $obModel = $action->execute($data);
+
+        $this->attachFiles($request, $obModel);
+
+        return $this->success('record.created', new $sResourceClass($obModel), 201);
     }
 
     /**
      * @param TUpdateRequest $request
-     * @param int            $iId
-     * @param TUpdateAction  $action
+     * @param mixed          $iId
      *
      * @return JsonResponse
      */
-    public function update(Request $request, mixed $iId, object $action): JsonResponse
+    public function update(FormRequest $request, mixed $iId): JsonResponse
     {
         $sResourceClass = $this->getResourceClass();
         $sDtoClass      = $this->getDtoClass();
-        $obModel        = $this->query->findOrFail($iId);
-        $data           = $sDtoClass::fromRequest($request->validated());
-        $obModel        = $action->execute($obModel, $data);
+        $sActionClass   = $this->getUpdateActionClass();
+
+        $obModel = $this->query->findOrFail($iId);
+
+        // Filtrar campos excluidos
+        $arData = array_diff_key(
+            $request->all(),
+            array_flip($this->getExcludedFields())
+        );
+
+        $data    = $sDtoClass::fromArray($arData);
+        $action  = app($sActionClass);
+        $obModel = $action->execute($obModel, $data);
 
         $this->attachFiles($request, $obModel);
 
@@ -182,6 +213,21 @@ abstract class AbstractControllerDomain extends Controller
      * @return class-string<ResourceCollection<TModel>>
      */
     abstract public function getCollectionClass(): string;
+
+    /**
+     * @return class-string<TCreateAction>
+     */
+    abstract public function getCreateActionClass(): string;
+
+    /**
+     * @return class-string<TUpdateAction>
+     */
+    abstract public function getUpdateActionClass(): string;
+
+    /**
+     * @return string
+     */
+    abstract public function getSortColumn(): string;
 
     /**
      * Adjunta archivos al modelo basándose en el request y la configuración de $arFileList
@@ -303,5 +349,31 @@ abstract class AbstractControllerDomain extends Controller
     protected function message(string $sValue, int $status = 200): JsonResponse
     {
         return response()->json(['message' => tr($sValue)], $status);
+    }
+
+    /**
+     * Retorna los campos que deben excluirse al crear/actualizar
+     * Por defecto excluye campos de fecha y archivos (manejados por attachFiles)
+     * Puede ser sobrescrito por las clases hijas para agregar más campos
+     *
+     * @return array
+     */
+    protected function getExcludedFields(): array
+    {
+        // Excluir campos de fecha automáticos
+        $arExcluded = [
+            'created_at',
+            'updated_at',
+            'deleted_at',
+            'subscribed_at',
+            'subscription_expires_at',
+        ];
+
+        // Agregar archivos de $arFileList (manejados por attachFiles)
+        foreach ($this->arFileList as $arAttributes) {
+            $arExcluded = array_merge($arExcluded, $arAttributes);
+        }
+
+        return $arExcluded;
     }
 }

@@ -7,6 +7,7 @@ use Model;
 use October\Rain\Exception\ApplicationException;
 use October\Rain\Support\Traits\Emitter;
 use PlanetaDelEste\ApiToolbox\Contracts\ServiceDomainInterface;
+use PlanetaDelEste\ApiToolbox\Traits\EmitterTrait;
 
 /**
  * Class AbstractServiceDomain
@@ -26,7 +27,9 @@ use PlanetaDelEste\ApiToolbox\Contracts\ServiceDomainInterface;
  */
 abstract class AbstractServiceDomain implements ServiceDomainInterface
 {
-    use Emitter;
+    use EmitterTrait;
+
+    protected ?string $mainEvent = 'service';
 
     /**
      * @var array Validation rules
@@ -47,18 +50,6 @@ abstract class AbstractServiceDomain implements ServiceDomainInterface
      * @return class-string<TModel>
      */
     abstract public function getModelClass(): string;
-
-    /**
-     * Get the domain name from the model class
-     *
-     * @return string
-     */
-    public function getDomainName(): string
-    {
-        $sModelClass = $this->getModelClass();
-
-        return strtolower(class_basename($sModelClass));
-    }
 
     /**
      * @param TModel $obModel
@@ -135,43 +126,5 @@ abstract class AbstractServiceDomain implements ServiceDomainInterface
         }
 
         return true;
-    }
-
-    /**
-     * Fire an event before execution
-     *
-     * @param string $event
-     * @param array  $params
-     *
-     * @return void
-     */
-    protected function fireBeforeEvent(string $event, array $params = []): void
-    {
-        $this->fireServiceEvent($event, 'before', $params);
-    }
-
-    /**
-     * Fire an event after execution
-     *
-     * @param string $event
-     * @param array  $params
-     *
-     * @return void
-     */
-    protected function fireAfterEvent(string $event, array $params = []): void
-    {
-        $this->fireServiceEvent($event, 'after', $params);
-    }
-
-    protected function fireServiceEvent(string $event, string $sTiming, array $params = []): void
-    {
-        $sMethod = 'on'.ucfirst($sTiming).ucfirst($event);
-
-        if (method_exists($this, $sMethod)) {
-            $this->{$sMethod}($params);
-        }
-
-        $sDomain = $this->getDomainName();
-        $this->fireEvent("service.{$sDomain}.{$event}.{$sTiming}", $params);
     }
 }

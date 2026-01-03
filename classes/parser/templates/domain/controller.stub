@@ -13,6 +13,8 @@ use {{domainNamespace}}\Http\Requests\Update{{modelName}}Request;
 use {{domainNamespace}}\Http\Resources\{{modelName}}Collection;
 use {{domainNamespace}}\Http\Resources\{{modelName}}Resource;
 use {{domainNamespace}}\Queries\{{modelName}}Query;
+use {{domainNamespace}}\Services\{{modelName}}Service;
+use {{modelNamespace}}\{{modelName}};
 use PlanetaDelEste\ApiToolbox\Classes\Domain\AbstractControllerDomain;
 
 /**
@@ -43,5 +45,10 @@ class {{modelName}}Controller extends AbstractControllerDomain
     public function getResourceClass(): string
     {
         return {{modelName}}Resource::class;
+    }
+
+    public function getSortColumn(): string
+    {
+        return 'created_at|asc';
     }
 }

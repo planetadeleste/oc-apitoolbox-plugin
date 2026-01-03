@@ -7,15 +7,25 @@ use Model;
 use October\Rain\Database\Builder;
 use October\Rain\Database\Collection;
 use PlanetaDelEste\ApiToolbox\Contracts\QueryDomainInterface;
+use PlanetaDelEste\ApiToolbox\Traits\EmitterTrait;
 use Str;
 
 /**
  * Class AbstractQueryDomain
  *
  * @template TModel of Model
+ *
+ * @implements QueryDomainInterface<TModel>
+ *
+ * @method void onBeforeFilters(array &$filters)
+ * @method void onBeforeSorting(string &$field, string &$direction)
  */
 abstract class AbstractQueryDomain implements QueryDomainInterface
 {
+    use EmitterTrait;
+
+    protected ?string $mainEvent = 'query';
+
     /**
      * @var Builder
      */
@@ -47,8 +57,11 @@ abstract class AbstractQueryDomain implements QueryDomainInterface
      *
      * @return $this
      */
-    public function applyFilters(array $filters): self
+    public function applyFilters(array $filters = []): self
     {
+        $this->withEvents();
+        $this->fireBeforeEvent('filters', [&$filters]);
+
         foreach ($filters as $field => $value) {
             if (empty($value)) {
                 continue;
@@ -77,6 +90,8 @@ abstract class AbstractQueryDomain implements QueryDomainInterface
      */
     public function applySorting(string $field, string $direction = 'asc'): self
     {
+        $this->withEvents();
+        $this->fireBeforeEvent('sorting', [&$field, &$direction]);
         $this->query->orderBy($field, $direction);
 
         return $this;
@@ -113,6 +128,15 @@ abstract class AbstractQueryDomain implements QueryDomainInterface
     }
 
     /**
+     * Register event listeners
+     *
+     * @return void
+     */
+    public function withEvents(): void
+    {
+    }
+
+    /**
      * Execute the query and get results
      *
      * @return Collection
@@ -135,11 +159,11 @@ abstract class AbstractQueryDomain implements QueryDomainInterface
     /**
      * Encontrar
      *
-     * @param int $iId
+     * @param mixed $iId
      *
      * @return TModel|null
      */
-    public function find(int $iId): ?Model
+    public function find(mixed $iId): ?Model
     {
         return $this->query->find($iId);
     }
@@ -147,11 +171,11 @@ abstract class AbstractQueryDomain implements QueryDomainInterface
     /**
      * Encontrar o fallar
      *
-     * @param int $iId
+     * @param mixed $iId
      *
      * @return TModel
      */
-    public function findOrFail(int $iId): Model
+    public function findOrFail(mixed $iId): Model
     {
         return $this->query->findOrFail($iId);
     }

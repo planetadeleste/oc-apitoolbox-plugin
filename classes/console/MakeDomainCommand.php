@@ -188,19 +188,24 @@ class MakeDomainCommand extends Command
         $obModel      = new $this->modelClass();
         $obReflection = new ReflectionClass($obModel);
 
-        // Obtener propiedades fillable/guarded
-        $arFillable = $obModel->getFillable();
-        $arCasts    = $obModel->getCasts();
+        // Obtener tabla del modelo
+        $sTable  = $obModel->getTable();
+        $arCasts = $obModel->getCasts();
 
-        // Si usa fillable
-        if (!empty($arFillable)) {
-            foreach ($arFillable as $sField) {
-                $this->properties[$sField] = [
-                    'type'     => $this->inferType($sField, $arCasts),
-                    'nullable' => true,
-                    'cast'     => $arCasts[$sField] ?? null,
-                ];
-            }
+        // Obtener columnas desde la base de datos
+        $obSchema  = \Schema::connection($obModel->getConnectionName());
+        $arColumns = $obSchema->getColumnListing($sTable);
+
+        foreach ($arColumns as $sColumn) {
+            // Obtener tipo de columna desde DB
+            $sDbType = $obSchema->getColumnType($sTable, $sColumn);
+
+            $this->properties[$sColumn] = [
+                'type'     => $this->inferTypeFromDb($sColumn, $sDbType, $arCasts),
+                'nullable' => true,
+                'cast'     => $arCasts[$sColumn] ?? null,
+                'db_type'  => $sDbType,
+            ];
         }
 
         // Detectar relaciones
@@ -217,25 +222,36 @@ class MakeDomainCommand extends Command
      */
     protected function detectRelations(ReflectionClass $obReflection): void
     {
-        $arMethods = $obReflection->getMethods(ReflectionMethod::IS_PUBLIC);
+        $obModel = new $this->modelClass();
 
-        foreach ($arMethods as $obMethod) {
-            if ($obMethod->class !== $this->modelClass) {
+        // October CMS define las relaciones en propiedades de clase
+        $arRelationTypes = [
+            'hasOne',
+            'hasMany',
+            'belongsTo',
+            'belongsToMany',
+            'morphOne',
+            'morphMany',
+            'morphToMany',
+            'morphTo',
+            'attachOne',
+            'attachMany',
+            'hasManyThrough',
+        ];
+
+        foreach ($arRelationTypes as $sRelationType) {
+            if (!property_exists($obModel, $sRelationType)) {
                 continue;
             }
 
-            $sMethodName = $obMethod->getName();
-            $sContent    = $this->getMethodContent($obMethod);
+            $arRelations = $obModel->{$sRelationType};
 
-            // Detectar tipo de relación
-            if (str_contains($sContent, 'hasMany')) {
-                $this->relations[$sMethodName] = 'hasMany';
-            } elseif (str_contains($sContent, 'belongsTo')) {
-                $this->relations[$sMethodName] = 'belongsTo';
-            } elseif (str_contains($sContent, 'hasOne')) {
-                $this->relations[$sMethodName] = 'hasOne';
-            } elseif (str_contains($sContent, 'belongsToMany')) {
-                $this->relations[$sMethodName] = 'belongsToMany';
+            if (empty($arRelations)) {
+                continue;
+            }
+
+            foreach ($arRelations as $sRelationName => $arConfig) {
+                $this->relations[$sRelationName] = $sRelationType;
             }
         }
     }
@@ -258,9 +274,44 @@ class MakeDomainCommand extends Command
 
     /**
      * @param string $sField
+     * @param string $sDbType
      * @param array  $arCasts
      *
      * @return string
+     */
+    protected function inferTypeFromDb(string $sField, string $sDbType, array $arCasts): string
+    {
+        // Prioridad 1: Si tiene cast definido, usar ese
+        if (isset($arCasts[$sField])) {
+            return match ($arCasts[$sField]) {
+                'int', 'integer' => 'int',
+                'bool', 'boolean' => 'bool',
+                'float', 'double' => 'float',
+                'array', 'json' => 'array',
+                'datetime', 'date', 'timestamp' => 'string',
+                default => 'string',
+            };
+        }
+
+        // Prioridad 2: Inferir desde tipo de DB
+        return match (true) {
+            str_contains($sDbType, 'int') => 'int',
+            str_contains($sDbType, 'bool') || str_contains($sDbType, 'tinyint(1)') => 'bool',
+            str_contains($sDbType, 'float') || str_contains($sDbType, 'double') || str_contains($sDbType, 'decimal') => 'float',
+            str_contains($sDbType, 'json') => 'array',
+            str_contains($sDbType, 'date') || str_contains($sDbType, 'time') => 'string',
+            str_contains($sDbType, 'text') || str_contains($sDbType, 'char') || str_contains($sDbType, 'varchar') => 'string',
+            default => 'string',
+        };
+    }
+
+    /**
+     * @param string $sField
+     * @param array  $arCasts
+     *
+     * @return string
+     *
+     * @deprecated Use inferTypeFromDb instead
      */
     protected function inferType(string $sField, array $arCasts): string
     {
@@ -315,10 +366,15 @@ class MakeDomainCommand extends Command
             $arRows = [];
 
             foreach ($this->properties as $sName => $arInfo) {
-                $arRows[] = [$sName, $arInfo['type'], $arInfo['cast'] ?? '-'];
+                $arRows[] = [
+                    $sName,
+                    $arInfo['type'],
+                    $arInfo['db_type'] ?? '-',
+                    $arInfo['cast'] ?? '-'
+                ];
             }
 
-            $this->table(['Campo', 'Tipo', 'Cast'], $arRows);
+            $this->table(['Campo', 'Tipo PHP', 'Tipo DB', 'Cast'], $arRows);
         }
 
         if (empty($this->relations)) {
@@ -560,7 +616,7 @@ class MakeDomainCommand extends Command
         return $this->parse(
             'dto',
             '\\Dtos',
-            ['{{properties}}', '{{fromRequest}}', '{{fromModel}}', '{{toArray}}'],
+            ['{{properties}}', '{{fromArrayData}}', '{{fromModelData}}', '{{toArrayData}}'],
             [
                 $this->buildDtoProperties(),
                 $this->buildDtoFromRequest(),
@@ -590,7 +646,7 @@ class MakeDomainCommand extends Command
 
         foreach ($this->properties as $sName => $arInfo) {
             $sCamelCase = Str::camel($sName);
-            $arLines[]  = sprintf("            %s: \$arData['%s'] ?? null,", $sCamelCase, $sName);
+            $arLines[]  = sprintf("            '%s' => \$arData['%s'] ?? null,", $sCamelCase, $sName);
         }
 
         return implode("\n", $arLines);
@@ -602,7 +658,7 @@ class MakeDomainCommand extends Command
 
         foreach ($this->properties as $sName => $arInfo) {
             $sCamelCase = Str::camel($sName);
-            $arLines[]  = sprintf('            %s: $obModel->%s,', $sCamelCase, $sName);
+            $arLines[]  = sprintf("            '%s' => \$obModel->%s,", $sCamelCase, $sName);
         }
 
         return implode("\n", $arLines);
@@ -747,13 +803,14 @@ class MakeDomainCommand extends Command
 
     protected function getRoutesTemplate(): string
     {
-        $sPrefix = Str::plural(Str::snake($this->modelName));
+        $sDomainNamespace = $this->namespace.'\\App\\Domain\\'.Str::studly(Str::lower($this->modelName));
+        $sPrefix          = Str::plural(Str::snake($this->modelName));
 
         return $this->parse(
             'routes',
             '',
-            ['{{prefix}}'],
-            [$sPrefix]
+            ['{{prefix}}', '{{domainNamespace}}'],
+            [$sPrefix, $sDomainNamespace]
         );
     }
 

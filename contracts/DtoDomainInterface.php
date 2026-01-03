@@ -12,7 +12,17 @@ use Model;
 interface DtoDomainInterface
 {
     /**
-     * Create a DTO instance from an request array of data
+     * Create a DTO instance from an array of data
+     * This method replaces fromRequest and fromArray as they both process arrays
+     *
+     * @param array $data
+     *
+     * @return static
+     */
+    public static function fromArray(array $data): static;
+
+    /**
+     * Alias for fromArray (for backwards compatibility)
      *
      * @param array $data
      *
