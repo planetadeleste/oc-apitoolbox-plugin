@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Http\Resources\Json\ResourceCollection;
 use Illuminate\Routing\Controller;
+use PlanetaDelEste\Alvis\Classes\Helper\AlvisHelper;
 use TService;
 
 /**
@@ -25,6 +26,7 @@ use TService;
  *
  * @property TService $service
  * @property \PlanetaDelEste\ApiToolbox\Contracts\QueryDomainInterface<TModel> $query
+ * @property int $cacheTtl
  */
 abstract class AbstractControllerDomain extends Controller
 {
@@ -48,7 +50,9 @@ abstract class AbstractControllerDomain extends Controller
      */
     public function index(Request $request): ResourceCollection
     {
-        [$sSort, $sDir] = explode('|', $this->getSortColumn() ?: 'id|asc');
+        [$sSort, $sDir] = str_contains($this->getSortColumn() ?: 'id|asc', '|')
+            ? explode('|', $this->getSortColumn())
+            : [$this->getSortColumn(), 'asc'];
         $obQuery        = $this->query
             ->applyFilters($request->get('filters', []))
             ->applySorting($request->get('sort', $sSort), $sDir);
@@ -57,7 +61,7 @@ abstract class AbstractControllerDomain extends Controller
             $obQuery->withRelations($arRelations);
         }
 
-        $obCollection     = $obQuery->paginate($request->get('per_page', 15));
+        $obCollection     = $obQuery->paginate($request->get('limit', 15));
         $sCollectionClass = $this->getCollectionClass();
 
         return new $sCollectionClass($obCollection);
@@ -197,6 +201,37 @@ abstract class AbstractControllerDomain extends Controller
         $this->attachFiles($request, $obModel);
 
         return $this->message('file.attached');
+    }
+
+    /**
+     * Generate a cache key based on the request
+     *
+     * @param Request $request
+     *
+     * @return string
+     */
+    public function getCacheKey(Request $request): string
+    {
+        $sRouteKey  = $request->route()->getName();
+        $sRouteKey  = str_replace(['api.v1', 'api.v2'], 'domain', $sRouteKey);
+        $sFilters   = json_encode($request->get('filters', []));
+        $sSort      = $request->get('sort', $this->getSortColumn() ?: 'id|asc');
+        $sLimit     = $request->get('limit', 15);
+        $iCompanyId = AlvisHelper::companyID();
+
+        return sprintf(
+            '%s.%s.%s.%s.%s',
+            $sRouteKey,
+            md5($sFilters),
+            $sSort,
+            $sLimit,
+            $iCompanyId
+        );
+    }
+
+    public function getCacheTags(): array
+    {
+        return ['domain', $this->getDomainName()];
     }
 
     /**
@@ -375,5 +410,12 @@ abstract class AbstractControllerDomain extends Controller
         }
 
         return $arExcluded;
+    }
+
+    protected function getDomainName(): string
+    {
+        $arParts = explode('\\', static::class);
+
+        return strtolower($arParts[4]);
     }
 }

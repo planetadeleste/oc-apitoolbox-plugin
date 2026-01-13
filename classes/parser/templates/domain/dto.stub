@@ -14,6 +14,8 @@ use PlanetaDelEste\ApiToolbox\Contracts\DtoDomainInterface;
  * datos entre capas sin exponer directamente los modelos
  *
  * @implements DtoDomainInterface<{{modelName}}>
+ *
+ * @extends AbstractDtoDomain<{{modelName}}>
  */
 class {{modelName}}Data extends AbstractDtoDomain implements DtoDomainInterface
 {
@@ -33,11 +35,11 @@ class {{modelName}}Data extends AbstractDtoDomain implements DtoDomainInterface
     }
 
   /**
-   * @param {{modelName}} $obModel
+   * @param {{modelName}}|mixed $obModel
    *
    * @return array
    */
-    protected static function fromModelData(Model $obModel): array
+    protected static function fromModelData($obModel): array
     {
         return [
 {{fromModelData}}
@@ -52,5 +54,13 @@ class {{modelName}}Data extends AbstractDtoDomain implements DtoDomainInterface
         return [
 {{toArrayData}}
         ];
+    }
+
+  /**
+   * @inheritDoc
+   */
+    protected function mapOutput(array $arData): array
+    {
+{{mapOutput}}
     }
 }

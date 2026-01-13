@@ -2,6 +2,7 @@
 
 namespace PlanetaDelEste\ApiToolbox\Classes\Domain;
 
+use Cache;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Model;
 use October\Rain\Database\Builder;
@@ -19,6 +20,7 @@ use Str;
  *
  * @method void onBeforeFilters(array &$filters)
  * @method void onBeforeSorting(string &$field, string &$direction)
+ * @method void bindEvent(string $event, \Closure $callback, int $priority = 0)
  */
 abstract class AbstractQueryDomain implements QueryDomainInterface
 {
@@ -62,6 +64,8 @@ abstract class AbstractQueryDomain implements QueryDomainInterface
         $this->withEvents();
         $this->fireBeforeEvent('filters', [&$filters]);
 
+        $arColumns = $this->getModelColumns();
+
         foreach ($filters as $field => $value) {
             if (empty($value)) {
                 continue;
@@ -72,6 +76,11 @@ abstract class AbstractQueryDomain implements QueryDomainInterface
             if (method_exists($this, $sMethod)) {
                 $this->$sMethod($value);
 
+                continue;
+            }
+
+            // Validar que la columna exista en el modelo
+            if (!in_array($field, $arColumns)) {
                 continue;
             }
 
@@ -92,6 +101,15 @@ abstract class AbstractQueryDomain implements QueryDomainInterface
     {
         $this->withEvents();
         $this->fireBeforeEvent('sorting', [&$field, &$direction]);
+
+        $sMethod = Str::camel('sort_by_'.$field);
+
+        if (method_exists($this, $sMethod)) {
+            $this->$sMethod($direction);
+
+            return $this;
+        }
+
         $this->query->orderBy($field, $direction);
 
         return $this;
@@ -149,9 +167,9 @@ abstract class AbstractQueryDomain implements QueryDomainInterface
     /**
      * Get the first result
      *
-     * @return TModel|null
+     * @return TModel|mixed|null
      */
-    public function first(): ?Model
+    public function first()
     {
         return $this->query->first();
     }
@@ -161,9 +179,9 @@ abstract class AbstractQueryDomain implements QueryDomainInterface
      *
      * @param mixed $iId
      *
-     * @return TModel|null
+     * @return TModel|mixed|null
      */
-    public function find(mixed $iId): ?Model
+    public function find(mixed $iId)
     {
         return $this->query->find($iId);
     }
@@ -173,9 +191,9 @@ abstract class AbstractQueryDomain implements QueryDomainInterface
      *
      * @param mixed $iId
      *
-     * @return TModel
+     * @return TModel|mixed
      */
-    public function findOrFail(mixed $iId): Model
+    public function findOrFail(mixed $iId)
     {
         return $this->query->findOrFail($iId);
     }
@@ -189,5 +207,34 @@ abstract class AbstractQueryDomain implements QueryDomainInterface
     public function paginate(int $perPage = 15): LengthAwarePaginator
     {
         return $this->query->paginate($perPage);
+    }
+
+    public function filterSet(mixed $sValue): self
+    {
+        $arIdList = is_string($sValue) && str_contains($sValue, '|')
+          ? explode('|', $sValue)
+          : array_wrap($sValue);
+        $this->query->whereIn('id', $arIdList);
+
+        return $this;
+    }
+
+    /**
+     * Obtener las columnas del modelo con caché permanente
+     *
+     * @return array
+     */
+    protected function getModelColumns(): array
+    {
+        $sModelClass = $this->getModelClass();
+        $sCacheKey   = 'model_columns_'.Str::slug($sModelClass);
+
+        return Cache::rememberForever($sCacheKey, static function () use ($sModelClass) {
+            $obModel = new $sModelClass();
+
+            return $obModel->getConnection()
+                ->getSchemaBuilder()
+                ->getColumnListing($obModel->getTable());
+        });
     }
 }

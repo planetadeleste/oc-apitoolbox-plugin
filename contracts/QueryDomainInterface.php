@@ -33,27 +33,27 @@ interface QueryDomainInterface
     /**
      * Get the first result
      *
-     * @return TModel|null
+     * @return TModel|mixed|null
      */
-    public function first(): ?Model;
+    public function first();
 
     /**
      * Encontrar
      *
      * @param int $iId
      *
-     * @return TModel|null
+     * @return TModel|mixed|null
      */
-    public function find(int $iId): ?Model;
+    public function find(int $iId);
 
     /**
      * Encontrar o fallar
      *
      * @param int $iId
      *
-     * @return TModel
+     * @return TModel|mixed
      */
-    public function findOrFail(int $iId): Model;
+    public function findOrFail(int $iId);
 
     public function paginate(int $perPage = 15): LengthAwarePaginator;
 }

@@ -6,6 +6,11 @@ Route::controller({{modelName}}Controller::class)
     ->group(static function (): void {
         $sPrefix = '{{prefix}}';
 
+        // Ruta específica DEBE ir antes de las rutas con parámetros dinámicos
+        Route::prefix($sPrefix)->name("{$sPrefix}.")->group(static function (): void {
+            Route::get('list', 'index')->name('list');
+        });
+
         // Rutas públicas (sin autenticación)
         Route::prefix($sPrefix)->name("{$sPrefix}.")->group(static function (): void {
             Route::get('{id}', 'show')->name('show');
@@ -19,7 +24,6 @@ Route::controller({{modelName}}Controller::class)
                 ->except(['show']);
 
             Route::prefix($sPrefix)->name("{$sPrefix}.")->group(static function (): void {
-                Route::get('list', 'index')->name('list');
                 // Gestión de avatares
                 Route::prefix('{id}')->group(static function (): void {
                     Route::post('upload', 'attachFile')->name('upload');

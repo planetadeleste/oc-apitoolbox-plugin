@@ -2,22 +2,19 @@
 
 namespace {{namespace}};
 
-use Illuminate\Http\Resources\Json\JsonResource;
+use {{domainNamespace}}\Dtos\{{modelName}}Data;
 use {{modelNamespace}}\{{modelName}};
+use PlanetaDelEste\ApiToolbox\Classes\Domain\AbstractResource;
 
 /**
  * Recurso para controladores de {{modelName}}
  *
  * @mixin {{modelName}}
  */
-class {{modelName}}Resource extends JsonResource
+class {{modelName}}Resource extends AbstractResource
 {
-    public function toArray($request): array
+    protected function getDtoClass(): string
     {
-        return [
-{{toArray}}
-            'created_at' => $this->created_at?->toDateTimeString(),
-            'updated_at' => $this->updated_at?->toDateTimeString(),
-        ];
+        return {{modelName}}Data::class;
     }
 }

@@ -51,4 +51,14 @@ class {{modelName}}Controller extends AbstractControllerDomain
     {
         return 'created_at|asc';
     }
+
+    public function getCreateActionClass(): string
+    {
+        return Create{{modelName}}Action::class;
+    }
+
+    public function getUpdateActionClass(): string
+    {
+        return Update{{modelName}}Action::class;
+    }
 }

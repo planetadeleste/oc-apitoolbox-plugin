@@ -20,6 +20,7 @@ class MakeDomainCommand extends Command
     {model : Nombre del modelo (sin namespace)}
     {--plugin= : Nombre del plugin donde se generará el dominio (Author.Plugin)}
     {--model-plugin= : Nombre del plugin del modelo si es diferente (Author.Plugin)}
+    {--domain-name= : Nombre personalizado para el dominio (por defecto usa el nombre del modelo)}
     {--force : Sobrescribir archivos existentes}
     {--all : Generar todos los componentes}
     {--dto : Generar DTOs}
@@ -60,6 +61,11 @@ class MakeDomainCommand extends Command
      * @var string Namespace del modelo
      */
     protected string $modelNamespace;
+
+    /**
+     * @var string Nombre del dominio
+     */
+    protected string $domainName;
 
     /**
      * @var string Ruta del dominio generado
@@ -147,9 +153,14 @@ class MakeDomainCommand extends Command
         $this->modelName = Str::studly($sModel);
 
         if ($sModelPlugin) {
-            // El modelo está en otro plugin
-            [$sModelAuthor, $sModelPluginName] = explode('.', $sModelPlugin);
-            $sModelPluginPath                  = plugins_path(strtolower($sModelAuthor).'/'.strtolower($sModelPluginName));
+            if (!str_contains($sModelPlugin, '.')) {
+                $sModelPluginName = $sModelPlugin;
+                $sModelPluginPath = base_path('modules/'.strtolower($sModelPluginName));
+            } else {
+              // El modelo está en otro plugin
+                [$sModelAuthor, $sModelPluginName] = explode('.', $sModelPlugin);
+                $sModelPluginPath                  = plugins_path(strtolower($sModelAuthor).'/'.strtolower($sModelPluginName));
+            }
 
             if (!File::isDirectory($sModelPluginPath)) {
                 $this->error("El plugin del modelo {$sModelPlugin} no existe en {$sModelPluginPath}");
@@ -157,7 +168,7 @@ class MakeDomainCommand extends Command
                 return false;
             }
 
-            $this->modelNamespace = str_replace('/', '\\', $sModelAuthor.'\\'.$sModelPluginName);
+            $this->modelNamespace = isset($sModelAuthor) ? str_replace('/', '\\', $sModelAuthor.'\\'.$sModelPluginName) : str_replace('/', '\\', $sModelPlugin);
             $this->modelClass     = $this->modelNamespace.'\\Models\\'.$this->modelName;
         } else {
             // El modelo está en el mismo plugin
@@ -172,7 +183,8 @@ class MakeDomainCommand extends Command
         }
 
         // Preparar path del dominio
-        $sDomainName      = Str::lower($this->modelName);
+        $sDomainName      = $this->option('domain-name') ?: Str::lower($this->modelName);
+        $this->domainName = $sDomainName;
         $this->domainPath = $this->pluginPath.'/app/domain/'.$sDomainName;
 
         return true;
@@ -353,6 +365,7 @@ class MakeDomainCommand extends Command
             [
                 ['Modelo', $this->modelName],
                 ['Clase del Modelo', $this->modelClass],
+                ['Nombre del Dominio', $this->domainName],
                 ['Namespace Destino', $this->namespace],
                 ['Path', $this->domainPath],
                 ['Propiedades', count($this->properties)],
@@ -394,7 +407,21 @@ class MakeDomainCommand extends Command
 
     protected function generateFiles(): void
     {
-        $bAll = $this->option('all');
+        $bAll      = $this->option('all');
+        $arOptions = [
+            'dto',
+            'actions',
+            'services',
+            'queries',
+            'controller',
+            'requests',
+            'resources',
+            'routes'
+        ];
+
+        if (!$bAll && !array_any($arOptions, fn($option) => $this->option($option))) {
+            $bAll = true;
+        }
 
         $this->newLine();
         $this->info('📦 Generando archivos...');
@@ -616,12 +643,13 @@ class MakeDomainCommand extends Command
         return $this->parse(
             'dto',
             '\\Dtos',
-            ['{{properties}}', '{{fromArrayData}}', '{{fromModelData}}', '{{toArrayData}}'],
+            ['{{properties}}', '{{fromArrayData}}', '{{fromModelData}}', '{{toArrayData}}', '{{mapOutput}}'],
             [
                 $this->buildDtoProperties(),
                 $this->buildDtoFromRequest(),
                 $this->buildDtoFromModel(),
                 $this->buildDtoToArray(),
+                $this->buildDtoMapOutput(),
             ]
         );
     }
@@ -631,8 +659,13 @@ class MakeDomainCommand extends Command
         $arLines = ['        public readonly ?int $id,'];
 
         foreach ($this->properties as $sName => $arInfo) {
+            // Excluir 'id' ya que se agrega manualmente al inicio
+            if ('id' === $sName) {
+                continue;
+            }
+
             $sType      = $arInfo['type'];
-            $sPhpType   = $sType === 'bool' ? 'bool' : ($sType === 'int' ? 'int' : ($sType === 'array' ? 'array' : 'string'));
+            $sPhpType   = 'bool' === $sType ? 'bool' : ('int' === $sType ? 'int' : ('array' === $sType ? 'array' : 'string'));
             $sCamelCase = Str::camel($sName);
             $arLines[]  = sprintf('        public readonly ?%s $%s,', $sPhpType, $sCamelCase);
         }
@@ -676,9 +709,37 @@ class MakeDomainCommand extends Command
         return implode("\n", $arLines);
     }
 
+    protected function buildDtoMapOutput(): string
+    {
+        if (empty($this->relations)) {
+            return '        return $arData;';
+        }
+
+        $arLines   = [];
+        $arLines[] = '        // Solo cargar relaciones si están presentes en el modelo';
+        $arLines[] = '        $obModel = $this->getModel();';
+        $arLines[] = '';
+        $arLines[] = '        if (!$obModel) {';
+        $arLines[] = '            return $arData;';
+        $arLines[] = '        }';
+        $arLines[] = '';
+
+        foreach ($this->relations as $sRelationName => $sRelationType) {
+            $sCamelCase = Str::camel($sRelationName);
+            $arLines[]  = sprintf("        if (\$obModel->relationLoaded('%s') && \$this->%s) {", $sRelationName, $sCamelCase);
+            $arLines[]  = sprintf("            \$arData['%s'] = \$this->%s->toArray();", $sCamelCase, $sCamelCase);
+            $arLines[]  = '        }';
+            $arLines[]  = '';
+        }
+
+        $arLines[] = '        return $arData;';
+
+        return implode("\n", $arLines);
+    }
+
     protected function getCreateActionTemplate(): string
     {
-        $sDtoNamespace = $this->namespace.'\\App\\Domain\\'.Str::studly(Str::lower($this->modelName)).'\\Dtos';
+        $sDtoNamespace = $this->namespace.'\\App\\Domain\\'.Str::studly($this->domainName).'\\Dtos';
 
         return $this->parse(
             'create-action',
@@ -690,7 +751,7 @@ class MakeDomainCommand extends Command
 
     protected function getUpdateActionTemplate(): string
     {
-        $sDtoNamespace = $this->namespace.'\\App\\Domain\\'.Str::studly(Str::lower($this->modelName)).'\\Dtos';
+        $sDtoNamespace = $this->namespace.'\\App\\Domain\\'.Str::studly($this->domainName).'\\Dtos';
 
         return $this->parse('update-action', '\\Actions', ['{{dtoNamespace}}'], [$sDtoNamespace]);
     }
@@ -707,7 +768,7 @@ class MakeDomainCommand extends Command
 
     protected function getControllerTemplate(): string
     {
-        $sDomainNamespace = $this->namespace.'\\App\\Domain\\'.Str::studly(Str::lower($this->modelName));
+        $sDomainNamespace = $this->namespace.'\\App\\Domain\\'.Str::studly($this->domainName);
 
         return $this->parse(
             'controller',
@@ -758,11 +819,13 @@ class MakeDomainCommand extends Command
 
     protected function getResourceTemplate(): string
     {
+        $sDomainNamespace = $this->namespace.'\\App\\Domain\\'.Str::studly($this->domainName);
+
         return $this->parse(
             'resource',
             '\\Http\\Resources',
-            ['{{toArray}}'],
-            [$this->buildResourceToArray()]
+            ['{{toArray}}', '{{domainNamespace}}'],
+            [$this->buildResourceToArray(), $sDomainNamespace]
         );
     }
 
@@ -803,7 +866,7 @@ class MakeDomainCommand extends Command
 
     protected function getRoutesTemplate(): string
     {
-        $sDomainNamespace = $this->namespace.'\\App\\Domain\\'.Str::studly(Str::lower($this->modelName));
+        $sDomainNamespace = $this->namespace.'\\App\\Domain\\'.Str::studly($this->domainName);
         $sPrefix          = Str::plural(Str::snake($this->modelName));
 
         return $this->parse(
@@ -824,7 +887,7 @@ class MakeDomainCommand extends Command
      */
     protected function parse(string $sStub, string $sNamespacePart = '', array $arKeys = [], array $arValues = []): string
     {
-        $sNamespace      = sprintf('%s\\App\\Domain\\%s%s', $this->namespace, Str::studly(Str::lower($this->modelName)), $sNamespacePart);
+        $sNamespace      = sprintf('%s\\App\\Domain\\%s%s', $this->namespace, Str::studly($this->domainName), $sNamespacePart);
         $sModelNamespace = $this->modelNamespace.'\\Models';
         $sTemplate       = $this->loadStub($sStub);
 

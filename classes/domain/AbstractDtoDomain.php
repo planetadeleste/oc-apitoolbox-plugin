@@ -2,8 +2,8 @@
 
 namespace PlanetaDelEste\ApiToolbox\Classes\Domain;
 
-use Model;
 use PlanetaDelEste\ApiToolbox\Contracts\DtoDomainInterface;
+use TModel;
 
 /**
  * Class AbstractDtoDomain
@@ -21,6 +21,11 @@ use PlanetaDelEste\ApiToolbox\Contracts\DtoDomainInterface;
 abstract class AbstractDtoDomain implements DtoDomainInterface
 {
     /**
+     * @var TModel|mixed|null $obModel Instancia del modelo asociada al DTO
+     */
+    protected $obModel = null;
+
+    /**
      * Create a DTO instance from an array of data
      * Este método reemplaza a fromRequest y fromArray, ya que ambos procesan arrays
      *
@@ -31,6 +36,26 @@ abstract class AbstractDtoDomain implements DtoDomainInterface
     public static function fromArray(array $arData): static
     {
         return new static(...static::fromArrayData($arData));
+    }
+
+    /**
+     * @param array $arDataList
+     *
+     * @return array<static>
+     */
+    public static function fromArrayList(array $arDataList): array
+    {
+        return array_map(static fn($arData) => static::fromArray($arData), $arDataList);
+    }
+
+    /**
+     * @param array $obModelList
+     *
+     * @return array<static>
+     */
+    public static function fromModelList(array $obModelList): array
+    {
+        return array_map(static fn($obModel) => static::from($obModel), $obModelList);
     }
 
     /**
@@ -48,13 +73,16 @@ abstract class AbstractDtoDomain implements DtoDomainInterface
     /**
      * Create a DTO instance from a model
      *
-     * @param TModel $obModel
+     * @param TModel|mixed $obModel
      *
      * @return static
      */
-    public static function from(Model $obModel): static
+    public static function from($obModel): static
     {
-        return new static(...static::fromModelData($obModel));
+        $obDto = new static(...static::fromModelData($obModel));
+        $obDto->withModel($obModel);
+
+        return $obDto;
     }
 
     /**
@@ -65,6 +93,30 @@ abstract class AbstractDtoDomain implements DtoDomainInterface
     public function toArray(): array
     {
         return $this->mapOutput($this->toArrayData());
+    }
+
+    /**
+     * @param array<static> $arDtoList
+     *
+     * @return array
+     */
+    public function toArrayList(array $arDtoList): array
+    {
+        return array_map(static fn($obDto) => $obDto->toArray(), $arDtoList);
+    }
+
+    /**
+     * Set the model instance for relation loading
+     *
+     * @param TModel|mixed $obModel
+     *
+     * @return static
+     */
+    public function withModel($obModel): static
+    {
+        $this->obModel = $obModel;
+
+        return $this;
     }
 
     /**
@@ -83,6 +135,16 @@ abstract class AbstractDtoDomain implements DtoDomainInterface
         return $arData;
     }
 
+  /**
+   * Get the model instance
+   *
+   * @return TModel|mixed|null
+   */
+    protected function getModel()
+    {
+        return $this->obModel;
+    }
+
     /**
      * Retorna los datos para construir el DTO desde un array
      * Este método debe retornar un array asociativo con las claves que coincidan
@@ -99,11 +161,11 @@ abstract class AbstractDtoDomain implements DtoDomainInterface
      * Este método debe retornar un array asociativo con las claves que coincidan
      * con los parámetros del constructor del DTO
      *
-     * @param TModel $obModel
+     * @param TModel|mixed $obModel
      *
      * @return array
      */
-    abstract protected static function fromModelData(Model $obModel): array;
+    abstract protected static function fromModelData($obModel): array;
 
     /**
      * Retorna los datos para convertir el DTO a array
