@@ -1,0 +1,19 @@
+<?php
+
+namespace {{namespace}};
+
+use {{modelNamespace}}\{{modelName}};
+use PlanetaDelEste\ApiToolbox\Classes\Domain\AbstractServiceDomain;
+
+/**
+ * Service para lógica de negocio de {{modelName}}
+ *
+ * @extends AbstractServiceDomain<{{modelName}}>
+ */
+class {{modelName}}Service extends AbstractServiceDomain
+{
+    public function getModelClass(): string
+    {
+        return {{modelName}}::class;
+    }
+}

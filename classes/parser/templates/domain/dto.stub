@@ -1,0 +1,66 @@
+<?php
+
+namespace {{namespace}};
+
+use Model;
+use {{modelNamespace}}\{{modelName}};
+use PlanetaDelEste\ApiToolbox\Classes\Domain\AbstractDtoDomain;
+use PlanetaDelEste\ApiToolbox\Contracts\DtoDomainInterface;
+
+/**
+ * Data Transfer Object para {{modelName}}
+ *
+ * Los DTOs proveen una capa de abstracción para transferir
+ * datos entre capas sin exponer directamente los modelos
+ *
+ * @implements DtoDomainInterface<{{modelName}}>
+ *
+ * @extends AbstractDtoDomain<{{modelName}}>
+ */
+class {{modelName}}Data extends AbstractDtoDomain implements DtoDomainInterface
+{
+    public function __construct(
+{{properties}}
+    ) {
+    }
+
+  /**
+   * @inheritDoc
+   */
+    protected static function fromArrayData(array $arData): array
+    {
+        return [
+{{fromArrayData}}
+        ];
+    }
+
+  /**
+   * @param {{modelName}}|mixed $obModel
+   *
+   * @return array
+   */
+    protected static function fromModelData($obModel): array
+    {
+        return [
+{{fromModelData}}
+        ];
+    }
+
+  /**
+   * @inheritDoc
+   */
+    protected function toArrayData(): array
+    {
+        return [
+{{toArrayData}}
+        ];
+    }
+
+  /**
+   * @inheritDoc
+   */
+    protected function mapOutput(array $arData): array
+    {
+{{mapOutput}}
+    }
+}

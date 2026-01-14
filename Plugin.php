@@ -12,6 +12,7 @@ use PlanetaDelEste\ApiToolbox\Classes\Console\CreateApiResources;
 use PlanetaDelEste\ApiToolbox\Classes\Console\CreateApiResourceShow;
 use PlanetaDelEste\ApiToolbox\Classes\Console\CreateApiRoute;
 use PlanetaDelEste\ApiToolbox\Classes\Console\CreateUpdateModel;
+use PlanetaDelEste\ApiToolbox\Classes\Console\MakeDomainCommand;
 use PlanetaDelEste\ApiToolbox\Classes\Event\Settings\ExtendSettingsFieldsHandler;
 use ReaZzon\JWTAuth\Http\Middlewares\ResolveUser;
 use ReaZzon\JWTAuth\Http\Middlewares\SoftResolveUser;
@@ -89,5 +90,6 @@ class Plugin extends PluginBase
         $this->registerConsoleCommand('toolbox:create.api.resourceshow', CreateApiResourceShow::class);
         $this->registerConsoleCommand('toolbox:create.api.route', CreateApiRoute::class);
         $this->registerConsoleCommand('toolbox:create.model.update', CreateUpdateModel::class);
+        $this->registerConsoleCommand('toolbox:create.domain', MakeDomainCommand::class);
     }
 }

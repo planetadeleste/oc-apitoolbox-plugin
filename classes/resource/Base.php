@@ -61,17 +61,31 @@ abstract class Base extends JsonResource
     }
 
     /**
+     * Transform the resource into an array.
+     *
+     * @param Request $request
+     *
+     * @return array|\Illuminate\Contracts\Support\Arrayable|\JsonSerializable
+     */
+    public function toAttributes(Request $request)
+    {
+        return $this->toArray($request);
+    }
+
+    /**
      * @param Request $request
      *
      * @return array
      */
     public function toArray(?Request $request = null): array
     {
-        if (empty($this->resource)
-            || (($this->resource instanceof Collection
-            || $this->resource instanceof ElementItem
-            || $this->resource instanceof ElementCollection)
-            && $this->resource->isEmpty())
+        if (empty($this->resource)) {
+            return [];
+        }
+
+        // Check isEmpty() only for collections, not for ElementItem
+        if (($this->resource instanceof Collection || $this->resource instanceof ElementCollection)
+            && $this->resource->isEmpty()
         ) {
             return [];
         }
@@ -105,7 +119,8 @@ abstract class Base extends JsonResource
                     continue;
                 }
 
-                $arData[$sKey] = $this->resource->getAttribute($sKey);
+                // Use direct property access for ElementItem, getAttribute for Eloquent models
+                $arData[$sKey] = $this->resource instanceof ElementItem ? $this->resource->{$sKey} : $this->resource->getAttribute($sKey);
             }
         }
 
@@ -141,7 +156,7 @@ abstract class Base extends JsonResource
         foreach ($this->arDates as $sKey => $sValue) {
             $sProp      = is_numeric($sKey) ? $sValue : $sKey;
             $sFormat    = is_string($sKey) && !is_numeric($sKey) ? $sValue : null;
-            $obDate     = $this->resource->getAttribute($sProp) ?? null;
+            $obDate     = ($this->resource instanceof ElementItem ? $this->resource->{$sProp} : $this->resource->getAttribute($sProp)) ?? null;
             $sDateValue = $obDate instanceof Carbon
                 ? (!empty($sFormat)
                     ? $obDate->format($sFormat)

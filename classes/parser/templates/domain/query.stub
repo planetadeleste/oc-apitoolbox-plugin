@@ -1,0 +1,41 @@
+<?php
+
+namespace {{namespace}};
+
+use October\Rain\Database\Builder;
+use {{modelNamespace}}\{{modelName}};
+use PlanetaDelEste\ApiToolbox\Classes\Domain\AbstractQueryDomain;
+
+/**
+ * Query para consultas de {{modelName}}
+ *
+ * @property Builder|{{modelName}} $query
+ *
+ * @extends AbstractQueryDomain<{{modelName}}>
+ */
+class {{modelName}}Query extends AbstractQueryDomain
+{
+    /**
+     * Búsqueda por nombre
+     *
+     * @param string $sSearch
+     *
+     * @return $this
+     */
+    public function filterSearch(string $sSearch): self
+    {
+        $this->query->where(static function (Builder $obQuery) use ($sSearch): void {
+            $obQuery->where('name', 'LIKE', "%{$sSearch}%");
+        });
+
+        return $this;
+    }
+
+    /**
+     * @return string
+     */
+    public function getModelClass(): string
+    {
+        return {{modelName}}::class;
+    }
+}

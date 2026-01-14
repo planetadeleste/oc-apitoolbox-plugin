@@ -1,0 +1,20 @@
+<?php
+
+namespace {{namespace}};
+
+use {{domainNamespace}}\Dtos\{{modelName}}Data;
+use {{modelNamespace}}\{{modelName}};
+use PlanetaDelEste\ApiToolbox\Classes\Domain\AbstractResource;
+
+/**
+ * Recurso para controladores de {{modelName}}
+ *
+ * @mixin {{modelName}}
+ */
+class {{modelName}}Resource extends AbstractResource
+{
+    protected function getDtoClass(): string
+    {
+        return {{modelName}}Data::class;
+    }
+}

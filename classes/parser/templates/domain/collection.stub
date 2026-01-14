@@ -1,0 +1,10 @@
+<?php
+
+namespace {{namespace}};
+
+use PlanetaDelEste\ApiToolbox\Classes\Domain\AbstractResourceCollectionDomain;
+
+class {{modelName}}Collection extends AbstractResourceCollectionDomain
+{
+    public $collects = {{modelName}}Resource::class;
+}
