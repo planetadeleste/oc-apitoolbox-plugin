@@ -15,7 +15,6 @@ use PlanetaDelEste\ApiToolbox\Classes\Console\CreateUpdateModel;
 use PlanetaDelEste\ApiToolbox\Classes\Console\MakeDomainCommand;
 use PlanetaDelEste\ApiToolbox\Classes\Event\Settings\ExtendSettingsFieldsHandler;
 use ReaZzon\JWTAuth\Http\Middlewares\ResolveUser;
-use ReaZzon\JWTAuth\Http\Middlewares\SoftResolveUser;
 use System\Classes\PluginBase;
 
 /**
