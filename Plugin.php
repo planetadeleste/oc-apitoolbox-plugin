@@ -8,11 +8,12 @@ use PlanetaDelEste\ApiToolbox\Classes\Console\CreateApiController;
 use PlanetaDelEste\ApiToolbox\Classes\Console\CreateApiResourceIndex;
 use PlanetaDelEste\ApiToolbox\Classes\Console\CreateApiResourceItem;
 use PlanetaDelEste\ApiToolbox\Classes\Console\CreateApiResourceList;
-use PlanetaDelEste\ApiToolbox\Classes\Console\CreateApiResourceShow;
 use PlanetaDelEste\ApiToolbox\Classes\Console\CreateApiResources;
+use PlanetaDelEste\ApiToolbox\Classes\Console\CreateApiResourceShow;
 use PlanetaDelEste\ApiToolbox\Classes\Console\CreateApiRoute;
 use PlanetaDelEste\ApiToolbox\Classes\Console\CreateUpdateModel;
 use PlanetaDelEste\ApiToolbox\Classes\Event\Settings\ExtendSettingsFieldsHandler;
+use ReaZzon\JWTAuth\Http\Middlewares\ResolveUser;
 use ReaZzon\JWTAuth\Http\Middlewares\SoftResolveUser;
 use System\Classes\PluginBase;
 
@@ -73,7 +74,7 @@ class Plugin extends PluginBase
     public function boot(): void
     {
         $router = $this->app['router'];
-        $router->aliasMiddleware('jwt.auth', SoftResolveUser::class);
+        $router->aliasMiddleware('jwt.auth', ResolveUser::class);
         Event::subscribe(ExtendSettingsFieldsHandler::class);
     }
 
