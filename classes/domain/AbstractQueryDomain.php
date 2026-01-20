@@ -102,7 +102,7 @@ abstract class AbstractQueryDomain implements QueryDomainInterface
         $this->withEvents();
         $this->fireBeforeEvent('sorting', [&$field, &$direction]);
 
-        $sMethod = Str::camel('sort_by_'.$field);
+        $sMethod = Str::camel('sort_by_'.str_replace('.', '_', $field));
 
         if (method_exists($this, $sMethod)) {
             $this->$sMethod($direction);
@@ -110,9 +110,127 @@ abstract class AbstractQueryDomain implements QueryDomainInterface
             return $this;
         }
 
+        // Detectar si es ordenamiento por relación (ej: firm.name)
+        if (str_contains($field, '.')) {
+            $this->applySortingByRelation($field, $direction);
+
+            return $this;
+        }
+
         $this->query->orderBy($field, $direction);
 
         return $this;
+    }
+
+    /**
+     * Aplicar ordenamiento por relación
+     *
+     * @param string $field     Campo con relación (ej: firm.name)
+     * @param string $direction Dirección del ordenamiento
+     *
+     * @return void
+     */
+    protected function applySortingByRelation(string $field, string $direction = 'asc'): void
+    {
+        [$sRelation, $sColumn] = explode('.', $field, 2);
+
+        $sModelClass   = $this->getModelClass();
+        $obModel       = new $sModelClass();
+        $obRelation    = $obModel->{$sRelation}();
+        $sRelatedTable = $obRelation->getRelated()->getTable();
+        $sMainTable    = $obModel->getTable();
+
+        // Determinar las claves según el tipo de relación
+        $sRelationClass = $obRelation::class;
+
+        match (true) {
+            $obRelation instanceof \Illuminate\Database\Eloquent\Relations\BelongsTo => $this->applySortingByBelongsTo(
+                $sMainTable,
+                $sRelatedTable,
+                $obRelation,
+                $sColumn,
+                $direction
+            ),
+            $obRelation instanceof \Illuminate\Database\Eloquent\Relations\HasOne,
+            $obRelation instanceof \Illuminate\Database\Eloquent\Relations\HasMany => $this->applySortingByHasOneOrMany(
+                $sMainTable,
+                $sRelatedTable,
+                $obRelation,
+                $sColumn,
+                $direction
+            ),
+            $obRelation instanceof \Illuminate\Database\Eloquent\Relations\MorphOne,
+            $obRelation instanceof \Illuminate\Database\Eloquent\Relations\MorphMany => $this->applySortingByMorph(
+                $sMainTable,
+                $sRelatedTable,
+                $obRelation,
+                $sColumn,
+                $direction
+            ),
+            default => throw new \RuntimeException("Relation type {$sRelationClass} not supported for sorting")
+        };
+    }
+
+    /**
+     * Ordenar por relación BelongsTo
+     */
+    protected function applySortingByBelongsTo(
+        string $sMainTable,
+        string $sRelatedTable,
+        \Illuminate\Database\Eloquent\Relations\BelongsTo $obRelation,
+        string $sColumn,
+        string $direction
+    ): void {
+        $sForeignKey = $obRelation->getForeignKeyName();
+        $sOwnerKey   = $obRelation->getOwnerKeyName();
+
+        $this->query
+            ->select($sMainTable.'.*')
+            ->leftJoin($sRelatedTable, $sMainTable.'.'.$sForeignKey, '=', $sRelatedTable.'.'.$sOwnerKey)
+            ->orderBy($sRelatedTable.'.'.$sColumn, $direction);
+    }
+
+    /**
+     * Ordenar por relación HasOne o HasMany
+     */
+    protected function applySortingByHasOneOrMany(
+        string $sMainTable,
+        string $sRelatedTable,
+        \Illuminate\Database\Eloquent\Relations\HasOneOrMany $obRelation,
+        string $sColumn,
+        string $direction
+    ): void {
+        $sForeignKey = $obRelation->getForeignKeyName();
+        $sLocalKey   = $obRelation->getLocalKeyName();
+
+        $this->query
+            ->select($sMainTable.'.*')
+            ->leftJoin($sRelatedTable, $sMainTable.'.'.$sLocalKey, '=', $sRelatedTable.'.'.$sForeignKey)
+            ->orderBy($sRelatedTable.'.'.$sColumn, $direction);
+    }
+
+    /**
+     * Ordenar por relación Morph (polimórfica)
+     */
+    protected function applySortingByMorph(
+        string $sMainTable,
+        string $sRelatedTable,
+        \Illuminate\Database\Eloquent\Relations\MorphOneOrMany $obRelation,
+        string $sColumn,
+        string $direction
+    ): void {
+        $sForeignKey = $obRelation->getForeignKeyName();
+        $sLocalKey   = $obRelation->getLocalKeyName();
+        $sMorphType  = $obRelation->getMorphType();
+        $sMorphClass = $obRelation->getMorphClass();
+
+        $this->query
+            ->select($sMainTable.'.*')
+            ->leftJoin($sRelatedTable, static function ($join) use ($sMainTable, $sRelatedTable, $sForeignKey, $sLocalKey, $sMorphType, $sMorphClass): void {
+                $join->on($sMainTable.'.'.$sLocalKey, '=', $sRelatedTable.'.'.$sForeignKey)
+                    ->where($sRelatedTable.'.'.$sMorphType, '=', $sMorphClass);
+            })
+            ->orderBy($sRelatedTable.'.'.$sColumn, $direction);
     }
 
     /**

@@ -185,7 +185,7 @@ class MakeDomainCommand extends Command
         // Preparar path del dominio
         $sDomainName      = $this->option('domain-name') ?: Str::lower($this->modelName);
         $this->domainName = $sDomainName;
-        $this->domainPath = $this->pluginPath.'/app/domain/'.$sDomainName;
+        $this->domainPath = strtolower($this->pluginPath.'/app/domain/'.$sDomainName);
 
         return true;
     }
@@ -768,13 +768,9 @@ class MakeDomainCommand extends Command
 
     protected function getControllerTemplate(): string
     {
-        $sDomainNamespace = $this->namespace.'\\App\\Domain\\'.Str::studly($this->domainName);
-
         return $this->parse(
             'controller',
-            '\\Http\\Controllers',
-            ['{{domainNamespace}}'],
-            [$sDomainNamespace]
+            '\\Http\\Controllers'
         );
     }
 
@@ -819,13 +815,11 @@ class MakeDomainCommand extends Command
 
     protected function getResourceTemplate(): string
     {
-        $sDomainNamespace = $this->namespace.'\\App\\Domain\\'.Str::studly($this->domainName);
-
         return $this->parse(
             'resource',
             '\\Http\\Resources',
-            ['{{toArray}}', '{{domainNamespace}}'],
-            [$this->buildResourceToArray(), $sDomainNamespace]
+            ['{{toArray}}'],
+            [$this->buildResourceToArray()]
         );
     }
 
@@ -866,14 +860,13 @@ class MakeDomainCommand extends Command
 
     protected function getRoutesTemplate(): string
     {
-        $sDomainNamespace = $this->namespace.'\\App\\Domain\\'.Str::studly($this->domainName);
-        $sPrefix          = Str::plural(Str::snake($this->modelName));
+        $sPrefix = Str::plural(Str::snake($this->modelName));
 
         return $this->parse(
             'routes',
             '',
-            ['{{prefix}}', '{{domainNamespace}}'],
-            [$sPrefix, $sDomainNamespace]
+            ['{{prefix}}'],
+            [$sPrefix]
         );
     }
 
@@ -887,13 +880,14 @@ class MakeDomainCommand extends Command
      */
     protected function parse(string $sStub, string $sNamespacePart = '', array $arKeys = [], array $arValues = []): string
     {
-        $sNamespace      = sprintf('%s\\App\\Domain\\%s%s', $this->namespace, Str::studly($this->domainName), $sNamespacePart);
-        $sModelNamespace = $this->modelNamespace.'\\Models';
-        $sTemplate       = $this->loadStub($sStub);
+        $sNamespace       = sprintf('%s\\App\\Domain\\%s%s', $this->namespace, Str::studly($this->domainName), $sNamespacePart);
+        $sDomainNamespace = $this->namespace.'\\App\\Domain\\'.Str::studly($this->domainName);
+        $sModelNamespace  = $this->modelNamespace.'\\Models';
+        $sTemplate        = $this->loadStub($sStub);
 
         return str_replace(
-            array_merge(['{{namespace}}', '{{modelName}}', '{{modelNamespace}}'], $arKeys),
-            array_merge([$sNamespace, $this->modelName, $sModelNamespace], $arValues),
+            array_merge(['{{namespace}}', '{{modelName}}', '{{modelNamespace}}', '{{domainNamespace}}'], $arKeys),
+            array_merge([$sNamespace, $this->modelName, $sModelNamespace, $sDomainNamespace], $arValues),
             $sTemplate
         );
     }

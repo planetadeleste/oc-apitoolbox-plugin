@@ -10,6 +10,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Http\Resources\Json\ResourceCollection;
 use Illuminate\Routing\Controller;
 use PlanetaDelEste\Alvis\Classes\Helper\AlvisHelper;
+use PlanetaDelEste\ApiToolbox\Classes\Api\ApiException;
+use PlanetaDelEste\ApiToolbox\Classes\Helper\ApiHelper;
 use TService;
 
 /**
@@ -48,23 +50,27 @@ abstract class AbstractControllerDomain extends Controller
      *
      * @return ResourceCollection<TResource>
      */
-    public function index(Request $request): ResourceCollection
+    public function index(Request $request): ResourceCollection|JsonResponse
     {
-        [$sSort, $sDir] = str_contains($this->getSortColumn() ?: 'id|asc', '|')
-            ? explode('|', $this->getSortColumn())
-            : [$this->getSortColumn(), 'asc'];
-        $obQuery        = $this->query
-            ->applyFilters($request->get('filters', []))
-            ->applySorting($request->get('sort', $sSort), $sDir);
+        try {
+            [$sSort, $sDir] = str_contains($this->getSortColumn() ?: 'id|asc', '|')
+              ? explode('|', $this->getSortColumn())
+              : [$this->getSortColumn(), 'asc'];
+            $obQuery        = $this->query
+              ->applyFilters($request->get('filters', []))
+              ->applySorting($request->get('sort', $sSort), $sDir);
 
-        if ($arRelations = array_get($this->arRelations, 'index')) {
-            $obQuery->withRelations($arRelations);
+            if ($arRelations = array_get($this->arRelations, 'index')) {
+                $obQuery->withRelations($arRelations);
+            }
+
+            $obCollection     = $obQuery->paginate($request->get('limit', 15));
+            $sCollectionClass = $this->getCollectionClass();
+
+            return new $sCollectionClass($obCollection);
+        } catch (\Throwable $e) {
+            return ApiException::exception($e);
         }
-
-        $obCollection     = $obQuery->paginate($request->get('limit', 15));
-        $sCollectionClass = $this->getCollectionClass();
-
-        return new $sCollectionClass($obCollection);
     }
 
       /**
@@ -72,18 +78,22 @@ abstract class AbstractControllerDomain extends Controller
        *
        * @return TResource
        */
-    public function show(mixed $iId): JsonResource
+    public function show(mixed $iId): JsonResource|JsonResponse
     {
-        $sResourceClass = $this->getResourceClass();
-        $obQuery        = $this->query;
+        try {
+            $sResourceClass = $this->getResourceClass();
+            $obQuery        = $this->query;
 
-        if ($arRelations = array_get($this->arRelations, 'show')) {
-            $obQuery->withRelations($arRelations);
+            if ($arRelations = array_get($this->arRelations, 'show')) {
+                $obQuery->withRelations($arRelations);
+            }
+
+            $obModel = $obQuery->findOrFail($iId);
+
+            return new $sResourceClass($obModel);
+        } catch (\Throwable $e) {
+            return ApiException::exception($e);
         }
-
-        $obModel = $obQuery->findOrFail($iId);
-
-        return new $sResourceClass($obModel);
     }
 
     /**
@@ -93,23 +103,28 @@ abstract class AbstractControllerDomain extends Controller
      */
     public function store(FormRequest $request): JsonResponse
     {
-        $sResourceClass = $this->getResourceClass();
-        $sDtoClass      = $this->getDtoClass();
-        $sActionClass   = $this->getCreateActionClass();
+        try {
+            $sResourceClass = $this->getResourceClass();
+            $sDtoClass      = $this->getDtoClass();
+            $sActionClass   = $this->getCreateActionClass();
 
-        // Filtrar campos excluidos
-        $arData = array_diff_key(
-            $request->all(),
-            array_flip($this->getExcludedFields())
-        );
+            // Filtrar campos excluidos
+            $arData = AlvisHelper::arrayFilterRecursive($request->all());
+            $arData = array_diff_key(
+                $arData,
+                array_flip($this->getExcludedFields())
+            );
 
-        $data    = $sDtoClass::fromArray($arData);
-        $action  = app($sActionClass);
-        $obModel = $action->execute($data);
+            $data    = $sDtoClass::fromArray($arData);
+            $action  = app($sActionClass);
+            $obModel = $action->execute($data);
 
-        $this->attachFiles($request, $obModel);
+            $this->attachFiles($request, $obModel);
 
-        return $this->success('record.created', new $sResourceClass($obModel), 201);
+            return $this->success('record.created', new $sResourceClass($obModel), 201);
+        } catch (\Throwable $e) {
+            return ApiException::exception($e);
+        }
     }
 
     /**
@@ -120,25 +135,30 @@ abstract class AbstractControllerDomain extends Controller
      */
     public function update(FormRequest $request, mixed $iId): JsonResponse
     {
-        $sResourceClass = $this->getResourceClass();
-        $sDtoClass      = $this->getDtoClass();
-        $sActionClass   = $this->getUpdateActionClass();
+        try {
+            $sResourceClass = $this->getResourceClass();
+            $sDtoClass      = $this->getDtoClass();
+            $sActionClass   = $this->getUpdateActionClass();
 
-        $obModel = $this->query->findOrFail($iId);
+            $obModel = $this->query->findOrFail($iId);
 
-        // Filtrar campos excluidos
-        $arData = array_diff_key(
-            $request->all(),
-            array_flip($this->getExcludedFields())
-        );
+            // Filtrar campos excluidos
+            $arData = AlvisHelper::arrayFilterRecursive($request->all());
+            $arData = array_diff_key(
+                $arData,
+                array_flip($this->getExcludedFields())
+            );
 
-        $data    = $sDtoClass::fromArray($arData);
-        $action  = app($sActionClass);
-        $obModel = $action->execute($obModel, $data);
+            $data    = $sDtoClass::fromArray($arData);
+            $action  = app($sActionClass);
+            $obModel = $action->execute($obModel, $data);
 
-        $this->attachFiles($request, $obModel);
+            $this->attachFiles($request, $obModel);
 
-        return $this->success('record.updated', new $sResourceClass($obModel));
+            return $this->success('record.updated', new $sResourceClass($obModel));
+        } catch (\Throwable $e) {
+            return ApiException::exception($e);
+        }
     }
 
     /**
@@ -148,11 +168,15 @@ abstract class AbstractControllerDomain extends Controller
      */
     public function destroy(mixed $iId): JsonResponse
     {
-        $obCompany = $this->query->findOrFail($iId);
+        try {
+            $obModel = $this->query->findOrFail($iId);
 
-        $this->service->delete($obCompany);
+            $this->service->delete($obModel);
 
-        return $this->message('record.deleted');
+            return $this->message('record.deleted');
+        } catch (\Throwable $th) {
+            return ApiException::exception($th);
+        }
     }
 
     /**
@@ -166,27 +190,31 @@ abstract class AbstractControllerDomain extends Controller
      */
     public function detachFile(int $iModelId, int $iFileId, string $sAttribute): JsonResponse
     {
-        $obModel = $this->query->findOrFail($iModelId);
+        try {
+            $obModel = $this->query->findOrFail($iModelId);
 
-        // Validar que el atributo existe en $arFileList
-        $bIsValidAttribute = collect($this->arFileList)
-            ->flatten()
-            ->contains($sAttribute);
+            // Validar que el atributo existe en $arFileList
+            $bIsValidAttribute = collect($this->arFileList)
+                ->flatten()
+                ->contains($sAttribute);
 
-        if (!$bIsValidAttribute) {
-            return $this->message('file.invalid_attribute', 400);
+            if (!$bIsValidAttribute) {
+                return $this->message('file.invalid_attribute', 400);
+            }
+
+            // Buscar y eliminar el archivo
+            $obFile = $obModel->{$sAttribute}()->find($iFileId);
+
+            if (!$obFile) {
+                return $this->message('file.not_found', 404);
+            }
+
+            $obFile->delete();
+
+            return $this->message('file.deleted');
+        } catch (\Throwable $th) {
+            return ApiException::exception($th);
         }
-
-        // Buscar y eliminar el archivo
-        $obFile = $obModel->{$sAttribute}()->find($iFileId);
-
-        if (!$obFile) {
-            return $this->message('file.not_found', 404);
-        }
-
-        $obFile->delete();
-
-        return $this->message('file.deleted');
     }
 
     /**
@@ -197,10 +225,14 @@ abstract class AbstractControllerDomain extends Controller
      */
     public function attachFile(Request $request, mixed $iId): JsonResponse
     {
-        $obModel = $this->query->findOrFail($iId);
-        $this->attachFiles($request, $obModel);
+        try {
+            $obModel = $this->query->findOrFail($iId);
+            $this->attachFiles($request, $obModel);
 
-        return $this->message('file.attached');
+            return $this->message('file.attached');
+        } catch (\Throwable $th) {
+            return ApiException::exception($th);
+        }
     }
 
     /**
@@ -358,6 +390,10 @@ abstract class AbstractControllerDomain extends Controller
     {
         $arJsonData = ['success' => true];
 
+        if (ApiHelper::isTranslatable($sMessage)) {
+            $sMessage = ApiHelper::tr($sMessage);
+        }
+
         if (null !== $sMessage) {
             $arJsonData['message'] = $sMessage;
         }
@@ -376,14 +412,18 @@ abstract class AbstractControllerDomain extends Controller
     /**
      * Sends a JSON message response
      *
-     * @param string $sValue
+     * @param string $sMessage
      * @param int    $status
      *
      * @return JsonResponse
      */
-    protected function message(string $sValue, int $status = 200): JsonResponse
+    protected function message(string $sMessage, int $status = 200): JsonResponse
     {
-        return response()->json(['message' => tr($sValue)], $status);
+        if (ApiHelper::isTranslatable($sMessage)) {
+            $sMessage = ApiHelper::tr($sMessage);
+        }
+
+        return response()->json(['message' => $sMessage], $status);
     }
 
     /**

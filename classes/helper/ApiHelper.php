@@ -3,6 +3,7 @@
 namespace PlanetaDelEste\ApiToolbox\Classes\Helper;
 
 use Exception;
+use Str;
 use System\Classes\PluginManager;
 
 class ApiHelper
@@ -14,13 +15,27 @@ class ApiHelper
      *
      * @return string
      */
-    public static function tr(string $message, array $options = [], string $locale = null): string
+    public static function tr(string $message, array $options = [], ?string $locale = null): string
     {
         if (!PluginManager::instance()->hasPlugin('RainLab.Translate')) {
             return $message;
         }
 
         return \RainLab\Translate\Models\Message::trans($message, $options, $locale);
+    }
+
+    /**
+     * @param string $message
+     *
+     * @return bool
+     */
+    public static function isTranslatable(string $message): bool
+    {
+        if (!PluginManager::instance()->hasPlugin('RainLab.Translate')) {
+            return false;
+        }
+
+        return Str::slug($message, '.') === $message;
     }
 
     /**
@@ -41,11 +56,13 @@ class ApiHelper
 
     /**
      * @param string|null $ip
+     *
      * @return string|null
+     *
      * @throws Exception
      */
-    public static function tz(string $ip = null): ?string
+    public static function tz(?string $ip = null): ?string
     {
-        return geoip()->getLocation()->timezone;
+        return geoip($ip)->getLocation()->timezone;
     }
 }

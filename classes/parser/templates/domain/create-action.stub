@@ -4,6 +4,7 @@ namespace {{namespace}};
 
 use Illuminate\Support\Facades\DB;
 use {{dtoNamespace}}\{{modelName}}Data;
+use {{domainNamespace}}\Services\{{modelName}}Service;
 use {{modelNamespace}}\{{modelName}};
 
 /**
@@ -11,10 +12,15 @@ use {{modelNamespace}}\{{modelName}};
  */
 class Create{{modelName}}Action
 {
+    public function __construct(
+        protected {{modelName}}Service $service
+    ) {
+    }
+
     public function execute({{modelName}}Data $data): {{modelName}}
     {
         return DB::transaction(function () use ($data) {
-            return {{modelName}}::create($data->toArray());
+            return $this->service->create($data->toArray());
         });
     }
 }

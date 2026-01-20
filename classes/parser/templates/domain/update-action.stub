@@ -4,6 +4,7 @@ namespace {{namespace}};
 
 use Illuminate\Support\Facades\DB;
 use {{dtoNamespace}}\{{modelName}}Data;
+use {{domainNamespace}}\Services\{{modelName}}Service;
 use {{modelNamespace}}\{{modelName}};
 
 /**
@@ -11,13 +12,15 @@ use {{modelNamespace}}\{{modelName}};
  */
 class Update{{modelName}}Action
 {
+    public function __construct(
+        protected {{modelName}}Service $service
+    ) {
+    }
+
     public function execute({{modelName}} $obModel, {{modelName}}Data $data): {{modelName}}
     {
         return DB::transaction(function () use ($obModel, $data) {
-            $obModel->fill($data->toArray());
-            $obModel->save();
-
-            return $obModel->fresh();
+            return $this->service->update($obModel, $data->toArray());
         });
     }
 }

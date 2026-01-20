@@ -5,7 +5,6 @@ namespace PlanetaDelEste\ApiToolbox\Classes\Domain;
 use DB;
 use Model;
 use October\Rain\Exception\ApplicationException;
-use October\Rain\Support\Traits\Emitter;
 use PlanetaDelEste\ApiToolbox\Contracts\ServiceDomainInterface;
 use PlanetaDelEste\ApiToolbox\Traits\EmitterTrait;
 
@@ -19,11 +18,12 @@ use PlanetaDelEste\ApiToolbox\Traits\EmitterTrait;
  * @implements ServiceDomainInterface<TModel>
  *
  * @method void onBeforeCreate(array &$data)
- * @method void onAfterCreate(TModel $model)
+ * @method void onAfterCreate(TModel $model, array $data)
  * @method void onBeforeUpdate(TModel $model, array &$data)
- * @method void onAfterUpdate(TModel $model)
+ * @method void onAfterUpdate(TModel $model, array $data)
  * @method void onBeforeDelete(TModel $model)
  * @method void onAfterDelete(TModel $model)
+ * @method void bindEvent(string $event, \Closure $callback, int $priority = 0)
  */
 abstract class AbstractServiceDomain implements ServiceDomainInterface
 {
@@ -81,7 +81,7 @@ abstract class AbstractServiceDomain implements ServiceDomainInterface
 
         $obModel->update($data);
 
-        $this->fireAfterEvent('update', [$obModel]);
+        $this->fireAfterEvent('update', [$obModel, $data]);
 
         return $obModel;
     }
@@ -99,7 +99,7 @@ abstract class AbstractServiceDomain implements ServiceDomainInterface
         $obModel->fill($data);
         $obModel->save();
 
-        $this->fireAfterEvent('create', [$obModel]);
+        $this->fireAfterEvent('create', [$obModel, $data]);
 
         return $obModel;
     }

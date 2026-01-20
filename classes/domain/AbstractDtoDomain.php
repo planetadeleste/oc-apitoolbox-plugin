@@ -2,7 +2,9 @@
 
 namespace PlanetaDelEste\ApiToolbox\Classes\Domain;
 
+use Closure;
 use PlanetaDelEste\ApiToolbox\Contracts\DtoDomainInterface;
+use Str;
 use TModel;
 
 /**
@@ -133,6 +135,43 @@ abstract class AbstractDtoDomain implements DtoDomainInterface
         // return array_filter($arData, fn($value) => !is_null($value));
 
         return $arData;
+    }
+
+    protected function mapRelations(array $arRelations, array &$arData, ?Closure $callback = null): void
+    {
+        if (empty($arRelations)) {
+            return;
+        }
+
+        $obModel     = $this->getModel();
+        $bIncludeAll = !$obModel;
+
+        foreach ($arRelations as $sRelation => $sDtoKey) {
+            if (is_int($sRelation)) {
+                $sRelation = $sDtoKey;
+            }
+
+            $dtoProperty = $this->{Str::camel($sDtoKey)};
+
+            if ($callback) {
+                $callback($sRelation, $arData);
+
+                if (array_get($arData, $sDtoKey)) {
+                    continue;
+                }
+            }
+
+            if ((!$bIncludeAll && !$obModel->relationLoaded($sRelation)) || !$dtoProperty) {
+                continue;
+            }
+
+            $obRelationData = $obModel?->{$sRelation};
+            $arItemData     = (is_array($obRelationData) || $obRelationData instanceof \Illuminate\Support\Collection)
+                ? $this->toArrayList(collect($dtoProperty)->values()->all())
+                : $dtoProperty->toArray();
+
+            $arData[$sDtoKey] = $arItemData;
+        }
     }
 
   /**
