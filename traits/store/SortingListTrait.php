@@ -127,7 +127,7 @@ trait SortingListTrait
      */
     protected function wheres(Builder | EloquentBuilder $obQuery): void
     {
-        if (!count($this->arItems) > 2) {
+        if (empty($this->arItems)) {
             return;
         }
 

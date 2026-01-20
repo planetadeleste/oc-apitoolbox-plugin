@@ -4,7 +4,6 @@ namespace PlanetaDelEste\ApiToolbox\Classes\Helper;
 
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Foundation\Application;
-use JetBrains\PhpStorm\ArrayShape;
 use Lovata\Buddies\Classes\Item\UserItem;
 use Lovata\Buddies\Facades\AuthHelper as BuddiesAuthHelper;
 use Lovata\Buddies\Models\Group;
@@ -116,11 +115,7 @@ class AuthHelper
      *
      * @throws \Exception
      */
-    #[ArrayShape(['token'      => "string",
-                  'expires'    => "string",
-                  'user'       => ItemResource::class,
-                  'expires_in' => "int"
-    ])] public static function loginAndReturnResult(Authenticatable $user): array
+    public static function loginAndReturnResult(Authenticatable $user): array
     {
         $sToken = self::login($user);
 
@@ -135,11 +130,7 @@ class AuthHelper
      *
      * @throws \Exception
      */
-    #[ArrayShape(['token'      => "string",
-                  'expires'    => "string",
-                  'user'       => ItemResource::class,
-                  'expires_in' => "int"
-    ])] public static function dtoData(string $sToken, ?Authenticatable $user = null)
+    public static function dtoData(string $sToken, ?Authenticatable $user = null): array
     {
         $tokenDto   = self::getTokenDto($sToken, $user);
         $arResult   = $tokenDto->toArray();
