@@ -28,6 +28,13 @@ abstract class AbstractDtoDomain implements DtoDomainInterface
     protected $obModel = null;
 
     /**
+     * Stack para rastrear objetos en proceso y prevenir recursión infinita
+     *
+     * @var array<string, bool>
+     */
+    protected static array $processingStack = [];
+
+    /**
      * Create a DTO instance from an array of data
      * Este método reemplaza a fromRequest y fromArray, ya que ambos procesan arrays
      *
@@ -94,7 +101,25 @@ abstract class AbstractDtoDomain implements DtoDomainInterface
      */
     public function toArray(): array
     {
-        return $this->mapOutput($this->toArrayData());
+        $sObjectHash = spl_object_hash($this);
+
+        // Detectar recursión infinita
+        if (isset(static::$processingStack[$sObjectHash])) {
+            // Retornar solo los datos básicos sin relaciones
+            return $this->toArrayData();
+        }
+
+        // Marcar este objeto como en proceso
+        static::$processingStack[$sObjectHash] = true;
+
+        try {
+            $arResult = $this->mapOutput($this->toArrayData());
+        } finally {
+            // Limpiar el stack al terminar
+            unset(static::$processingStack[$sObjectHash]);
+        }
+
+        return $arResult;
     }
 
     /**
@@ -104,7 +129,18 @@ abstract class AbstractDtoDomain implements DtoDomainInterface
      */
     public function toArrayList(array $arDtoList): array
     {
-        return array_map(static fn($obDto) => $obDto->toArray(), $arDtoList);
+        return array_map(static fn($obDto) => $obDto?->toArray(), $arDtoList);
+    }
+
+    /**
+     * Clear the processing stack
+     * Útil para testing o cuando necesites resetear el estado
+     *
+     * @return void
+     */
+    public static function clearProcessingStack(): void
+    {
+        static::$processingStack = [];
     }
 
     /**
@@ -161,13 +197,24 @@ abstract class AbstractDtoDomain implements DtoDomainInterface
                 }
             }
 
-            if ((!$bIncludeAll && !$obModel->relationLoaded($sRelation)) || !$dtoProperty) {
+            // Skip si no hay propiedad o si hay modelo y la relación no está cargada
+            if (!$dtoProperty || (!$bIncludeAll && !$obModel->relationLoaded($sRelation))) {
+                continue;
+            }
+
+            // Si la propiedad es un array vacío, skip
+            if (is_array($dtoProperty) && empty($dtoProperty)) {
                 continue;
             }
 
             $obRelationData = $obModel?->{$sRelation};
-            $arItemData     = (is_array($obRelationData) || $obRelationData instanceof \Illuminate\Support\Collection)
-                ? $this->toArrayList(collect($dtoProperty)->values()->all())
+
+            // Determinar si es una colección/array
+            $bIsCollection = is_array($dtoProperty)
+                || ($obRelationData && ($obRelationData instanceof \Illuminate\Support\Collection || is_array($obRelationData)));
+
+            $arItemData = $bIsCollection
+                ? $this->toArrayList(is_array($dtoProperty) ? $dtoProperty : collect($dtoProperty)->values()->all())
                 : $dtoProperty->toArray();
 
             $arData[$sDtoKey] = $arItemData;
