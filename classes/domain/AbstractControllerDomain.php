@@ -115,6 +115,9 @@ abstract class AbstractControllerDomain extends Controller
                 array_flip($this->getExcludedFields())
             );
 
+            // Limpiar objetos anidados/relaciones que puedan causar recursión
+            // $arData = $this->sanitizeDataForDto($arData);
+
             $data    = $sDtoClass::fromArray($arData);
             $action  = app($sActionClass);
             $obModel = $action->execute($data);
@@ -148,6 +151,9 @@ abstract class AbstractControllerDomain extends Controller
                 $arData,
                 array_flip($this->getExcludedFields())
             );
+
+            // Limpiar objetos anidados/relaciones que puedan causar recursión
+            // $arData = $this->sanitizeDataForDto($arData);
 
             $data    = $sDtoClass::fromArray($arData);
             $action  = app($sActionClass);
@@ -457,5 +463,89 @@ abstract class AbstractControllerDomain extends Controller
         $arParts = explode('\\', static::class);
 
         return strtolower($arParts[4]);
+    }
+
+    /**
+     * Sanitiza el array de datos para evitar recursión al crear DTOs
+     * Detecta y elimina objetos Model/Collection pero preserva arrays de datos planos del request
+     *
+     * @param array $arData
+     *
+     * @return array
+     */
+    protected function sanitizeDataForDto(array $arData): array
+    {
+        foreach ($arData as $sKey => $value) {
+            // Preservar null y valores primitivos
+            if (is_null($value) || is_scalar($value)) {
+                continue;
+            }
+
+            // Preservar UploadedFile
+            if ($value instanceof \Illuminate\Http\UploadedFile) {
+                continue;
+            }
+
+            // Si es un objeto PHP (Model, Collection, DTO, etc), convertir a null
+            if (is_object($value)) {
+                $arData[$sKey] = null;
+
+                continue;
+            }
+
+            // Si es un array, verificar su contenido
+            if (!is_array($value)) {
+                continue;
+            }
+
+            // Array vacío - preservar
+            if (empty($value)) {
+                continue;
+            }
+
+            // Verificar si contiene objetos PHP (no arrays asociativos)
+            $bHasModelObjects = false;
+
+            foreach ($value as $item) {
+                // Si encontramos un objeto que NO es un array asociativo
+                if (is_object($item) && !($item instanceof \Illuminate\Http\UploadedFile)) {
+                    $bHasModelObjects = true;
+
+                    break;
+                }
+            }
+
+            if ($bHasModelObjects) {
+                // Es una colección de modelos eager-loaded - eliminar
+                $arData[$sKey] = null;
+
+                continue;
+            }
+
+            // Es un array de datos planos (del request JSON) - sanitizar recursivamente
+            $arData[$sKey] = $this->isAssociativeArray($value)
+                ? $this->sanitizeDataForDto($value)
+// Array asociativo único
+                : array_map(fn($item) => is_array($item) ? $this->sanitizeDataForDto($item) : $item, $value);
+// Array de arrays
+        }
+
+        return $arData;
+    }
+
+    /**
+     * Verifica si un array es asociativo (tiene claves string) vs numérico secuencial
+     *
+     * @param array $array
+     *
+     * @return bool
+     */
+    protected function isAssociativeArray(array $array): bool
+    {
+        if (empty($array)) {
+            return false;
+        }
+
+        return array_keys($array) !== range(0, count($array) - 1);
     }
 }

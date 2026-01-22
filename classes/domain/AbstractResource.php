@@ -20,31 +20,41 @@ abstract class AbstractResource extends JsonResource
     /**
      * Transform the resource into an array.
      *
-     * @param \Illuminate\Http\Request $request
+     * @param Request $request
      *
      * @return array
      */
     public function toArray(Request $request): array
     {
-        // Obtener clase del DTO
-        $sDtoClass = $this->getDtoClass();
+        try {
+            // Obtener clase del DTO
+            $sDtoClass = $this->getDtoClass();
 
-        // Convertir modelo a DTO
-        $dto = $sDtoClass::from($this->resource);
+            // Convertir modelo a DTO
+            $dto = $sDtoClass::from($this->resource);
 
-        // Obtener datos base del DTO
-        $arData = $dto->toArray();
+            // Obtener datos base del DTO
+            $arData = $dto->toArray();
 
-        // Permitir que las clases hijas agreguen relaciones condicionales
-        return $this->withRelations($arData, $request);
+            // Permitir que las clases hijas agreguen relaciones condicionales
+            return $this->withRelations($arData, $request);
+        } catch (\Throwable $e) {
+            \Log::error('Error in AbstractResource toArray()', [
+                'resource_class' => static::class,
+                'error'          => $e->getMessage(),
+                'trace'          => $e->getTraceAsString(),
+            ]);
+
+            throw $e;
+        }
     }
 
     /**
      * Método que puede ser sobrescrito para agregar relaciones condicionales
      * usando whenLoaded, when, etc.
      *
-     * @param array                    $arData  Datos base del DTO
-     * @param \Illuminate\Http\Request $request
+     * @param array   $arData  Datos base del DTO
+     * @param Request $request
      *
      * @return array
      */

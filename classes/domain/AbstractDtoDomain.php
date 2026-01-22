@@ -44,7 +44,22 @@ abstract class AbstractDtoDomain implements DtoDomainInterface
      */
     public static function fromArray(array $arData): static
     {
-        return new static(...static::fromArrayData($arData));
+        try {
+            $arMappedData = static::fromArrayData($arData);
+
+            return new static(...$arMappedData);
+        } catch (\Throwable $e) {
+            // Log para debugging
+            \Log::error('Error creating DTO from array', [
+                'dto_class'   => static::class,
+                'input_data'  => $arData,
+                'mapped_data' => $arMappedData ?? null,
+                'error'       => $e->getMessage(),
+                'trace'       => $e->getTraceAsString(),
+            ]);
+
+            throw $e;
+        }
     }
 
     /**
@@ -105,6 +120,12 @@ abstract class AbstractDtoDomain implements DtoDomainInterface
 
         // Detectar recursión infinita
         if (isset(static::$processingStack[$sObjectHash])) {
+            \Log::warning('Recursion detected in DTO toArray()', [
+                'dto_class'   => static::class,
+                'object_hash' => $sObjectHash,
+                'stack_depth' => count(static::$processingStack),
+            ]);
+
             // Retornar solo los datos básicos sin relaciones
             return $this->toArrayData();
         }
@@ -114,6 +135,15 @@ abstract class AbstractDtoDomain implements DtoDomainInterface
 
         try {
             $arResult = $this->mapOutput($this->toArrayData());
+        } catch (\Throwable $e) {
+            \Log::error('Error in DTO toArray()', [
+                'dto_class'   => static::class,
+                'object_hash' => $sObjectHash,
+                'error'       => $e->getMessage(),
+                'trace'       => $e->getTraceAsString(),
+            ]);
+
+            throw $e;
         } finally {
             // Limpiar el stack al terminar
             unset(static::$processingStack[$sObjectHash]);
@@ -226,9 +256,57 @@ abstract class AbstractDtoDomain implements DtoDomainInterface
    *
    * @return TModel|mixed|null
    */
-    protected function getModel()
+    public function getModel()
     {
         return $this->obModel;
+    }
+
+    /**
+     * Helper para castear a int, convirtiendo strings vacíos a null
+     *
+     * @param mixed $value
+     *
+     * @return int|null
+     */
+    protected static function castToInt($value): ?int
+    {
+        if (is_null($value) || $value === '' || $value === []) {
+            return null;
+        }
+
+        return (int) $value;
+    }
+
+    /**
+     * Helper para castear a bool, convirtiendo strings/números a bool
+     *
+     * @param mixed $value
+     *
+     * @return bool|null
+     */
+    protected static function castToBool($value): ?bool
+    {
+        if (is_null($value) || $value === '') {
+            return null;
+        }
+
+        return filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+    }
+
+    /**
+     * Helper para castear a string, convirtiendo null a null
+     *
+     * @param mixed $value
+     *
+     * @return string|null
+     */
+    protected static function castToString($value): ?string
+    {
+        if (is_null($value) || $value === '') {
+            return null;
+        }
+
+        return (string) $value;
     }
 
     /**
