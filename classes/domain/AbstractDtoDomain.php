@@ -159,7 +159,7 @@ abstract class AbstractDtoDomain implements DtoDomainInterface
      */
     public function toArrayList(array $arDtoList): array
     {
-        return array_map(static fn($obDto) => $obDto?->toArray(), $arDtoList);
+        return array_map(static fn($obDto) => is_object($obDto) && method_exists($obDto, 'toArray') ? $obDto->toArray() : $obDto, $arDtoList);
     }
 
     /**
