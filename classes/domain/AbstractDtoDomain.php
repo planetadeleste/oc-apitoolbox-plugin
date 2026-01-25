@@ -203,6 +203,13 @@ abstract class AbstractDtoDomain implements DtoDomainInterface
         return $arData;
     }
 
+    /**
+     * @param array $arRelations
+     * @param array $arData
+     * @param mixed $callback
+     *
+     * @return void
+     */
     protected function mapRelations(array $arRelations, array &$arData, ?Closure $callback = null): void
     {
         if (empty($arRelations)) {
@@ -217,15 +224,16 @@ abstract class AbstractDtoDomain implements DtoDomainInterface
                 $sRelation = $sDtoKey;
             }
 
-            $dtoProperty = $this->{Str::camel($sDtoKey)};
-
             if ($callback) {
-                $callback($sRelation, $arData);
+                $callback($sRelation, $arData, $obModel);
 
                 if (array_get($arData, $sDtoKey)) {
                     continue;
                 }
             }
+
+            $sDtoPropertyKey = Str::camel($sDtoKey);
+            $dtoProperty     = property_exists($this, $sDtoPropertyKey) ? $this->{$sDtoPropertyKey} : null;
 
             // Skip si no hay propiedad o si hay modelo y la relación no está cargada
             if (!$dtoProperty || (!$bIncludeAll && !$obModel->relationLoaded($sRelation))) {
