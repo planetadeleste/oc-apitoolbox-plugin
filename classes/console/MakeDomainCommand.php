@@ -17,10 +17,11 @@ use RuntimeException;
 class MakeDomainCommand extends Command
 {
     protected $signature = 'toolbox:create.domain
-    {model : Nombre del modelo (sin namespace)}
+    {model : Nombre del modelo o dominio (sin namespace)}
     {--plugin= : Nombre del plugin donde se generará el dominio (Author.Plugin)}
     {--model-plugin= : Nombre del plugin del modelo si es diferente (Author.Plugin)}
     {--domain-name= : Nombre personalizado para el dominio (por defecto usa el nombre del modelo)}
+    {--no-model : Generar dominio sin modelo Eloquent asociado}
     {--force : Sobrescribir archivos existentes}
     {--all : Generar todos los componentes}
     {--dto : Generar DTOs}
@@ -50,7 +51,7 @@ class MakeDomainCommand extends Command
     /**
      * @var string Clase del modelo
      */
-    protected string $modelClass;
+    protected ?string $modelClass;
 
     /**
      * @var string Nombre del modelo
@@ -88,19 +89,27 @@ class MakeDomainCommand extends Command
     protected bool $force;
 
     /**
+     * @var bool Indica si se genera dominio sin modelo
+     */
+    protected bool $noModel;
+
+    /**
      * @return int
      */
     public function handle(): int
     {
         $this->force = $this->option('force');
+        $this->noModel = $this->option('no-model');
 
         // 1. Validar y preparar datos
         if (!$this->prepareData()) {
             return 1;
         }
 
-        // 2. Analizar modelo
-        $this->analyzeModel();
+        // 2. Analizar modelo (solo si hay modelo)
+        if (!$this->noModel) {
+            $this->analyzeModel();
+        }
 
         // 3. Mostrar información
         $this->displayInfo();
@@ -152,34 +161,41 @@ class MakeDomainCommand extends Command
         // Preparar clase del modelo (puede estar en otro plugin)
         $this->modelName = Str::studly($sModel);
 
-        if ($sModelPlugin) {
-            if (!str_contains($sModelPlugin, '.')) {
-                $sModelPluginName = $sModelPlugin;
-                $sModelPluginPath = base_path('modules/'.strtolower($sModelPluginName));
+        if ($this->noModel) {
+            // Modo sin modelo: solo necesitamos el nombre para el dominio
+            $this->modelNamespace = $this->namespace;
+            $this->modelClass     = null;
+        } else {
+            // Modo con modelo: validar que exista
+            if ($sModelPlugin) {
+                if (!str_contains($sModelPlugin, '.')) {
+                    $sModelPluginName = $sModelPlugin;
+                    $sModelPluginPath = base_path('modules/'.strtolower($sModelPluginName));
+                } else {
+                  // El modelo está en otro plugin
+                    [$sModelAuthor, $sModelPluginName] = explode('.', $sModelPlugin);
+                    $sModelPluginPath                  = plugins_path(strtolower($sModelAuthor).'/'.strtolower($sModelPluginName));
+                }
+
+                if (!File::isDirectory($sModelPluginPath)) {
+                    $this->error("El plugin del modelo {$sModelPlugin} no existe en {$sModelPluginPath}");
+
+                    return false;
+                }
+
+                $this->modelNamespace = isset($sModelAuthor) ? str_replace('/', '\\', $sModelAuthor.'\\'.$sModelPluginName) : str_replace('/', '\\', $sModelPlugin);
+                $this->modelClass     = $this->modelNamespace.'\\Models\\'.$this->modelName;
             } else {
-              // El modelo está en otro plugin
-                [$sModelAuthor, $sModelPluginName] = explode('.', $sModelPlugin);
-                $sModelPluginPath                  = plugins_path(strtolower($sModelAuthor).'/'.strtolower($sModelPluginName));
+                // El modelo está en el mismo plugin
+                $this->modelNamespace = $this->namespace;
+                $this->modelClass     = $this->namespace.'\\Models\\'.$this->modelName;
             }
 
-            if (!File::isDirectory($sModelPluginPath)) {
-                $this->error("El plugin del modelo {$sModelPlugin} no existe en {$sModelPluginPath}");
+            if (!class_exists($this->modelClass)) {
+                $this->error("El modelo {$this->modelClass} no existe.");
 
                 return false;
             }
-
-            $this->modelNamespace = isset($sModelAuthor) ? str_replace('/', '\\', $sModelAuthor.'\\'.$sModelPluginName) : str_replace('/', '\\', $sModelPlugin);
-            $this->modelClass     = $this->modelNamespace.'\\Models\\'.$this->modelName;
-        } else {
-            // El modelo está en el mismo plugin
-            $this->modelNamespace = $this->namespace;
-            $this->modelClass     = $this->namespace.'\\Models\\'.$this->modelName;
-        }
-
-        if (!class_exists($this->modelClass)) {
-            $this->error("El modelo {$this->modelClass} no existe.");
-
-            return false;
         }
 
         // Preparar path del dominio
@@ -195,6 +211,11 @@ class MakeDomainCommand extends Command
      */
     protected function analyzeModel(): void
     {
+        if ($this->noModel) {
+            $this->info('📦 Modo sin modelo - generando estructura básica...');
+            return;
+        }
+
         $this->info('🔍 Analizando modelo '.$this->modelClass.'...');
 
         $obModel      = new $this->modelClass();
@@ -360,20 +381,25 @@ class MakeDomainCommand extends Command
     {
         $this->newLine();
         $this->info('📋 Información del dominio:');
-        $this->table(
-            ['Item', 'Valor'],
-            [
-                ['Modelo', $this->modelName],
-                ['Clase del Modelo', $this->modelClass],
-                ['Nombre del Dominio', $this->domainName],
-                ['Namespace Destino', $this->namespace],
-                ['Path', $this->domainPath],
-                ['Propiedades', count($this->properties)],
-                ['Relaciones', count($this->relations)],
-            ]
-        );
 
-        if (!empty($this->properties)) {
+        $arInfo = [
+            ['Nombre del Dominio', $this->domainName],
+            ['Namespace Destino', $this->namespace],
+            ['Path', $this->domainPath],
+        ];
+
+        if (!$this->noModel) {
+            array_unshift($arInfo, ['Modelo', $this->modelName]);
+            array_unshift($arInfo, ['Clase del Modelo', $this->modelClass]);
+            $arInfo[] = ['Propiedades', count($this->properties)];
+            $arInfo[] = ['Relaciones', count($this->relations)];
+        } else {
+            $arInfo[] = ['Modo', 'Sin modelo Eloquent'];
+        }
+
+        $this->table(['Item', 'Valor'], $arInfo);
+
+        if (!$this->noModel && !empty($this->properties)) {
             $this->newLine();
             $this->info('📝 Propiedades detectadas:');
             $arRows = [];
@@ -390,7 +416,7 @@ class MakeDomainCommand extends Command
             $this->table(['Campo', 'Tipo PHP', 'Tipo DB', 'Cast'], $arRows);
         }
 
-        if (empty($this->relations)) {
+        if ($this->noModel || empty($this->relations)) {
             return;
         }
 
@@ -478,6 +504,12 @@ class MakeDomainCommand extends Command
 
     protected function generateActions(): void
     {
+        if ($this->noModel) {
+            // Sin modelo no generamos acciones CRUD estándar
+            $this->line('   ℹ Omitiendo acciones CRUD (use --no-model, cree acciones personalizadas según necesite)');
+            return;
+        }
+
         $sPath = $this->domainPath.'/actions';
         $this->ensureDirectory($sPath);
 
@@ -517,6 +549,12 @@ class MakeDomainCommand extends Command
 
     protected function generateQuery(): void
     {
+        if ($this->noModel) {
+            // Sin modelo no generamos queries
+            $this->line('   ℹ Omitiendo Query (no aplica sin modelo)');
+            return;
+        }
+
         $sPath = $this->domainPath.'/queries';
         $this->ensureDirectory($sPath);
 
@@ -550,6 +588,18 @@ class MakeDomainCommand extends Command
         $sPath = $this->domainPath.'/http/requests';
         $this->ensureDirectory($sPath);
 
+        if ($this->noModel) {
+            // Sin modelo: generar un request genérico
+            $sContent = $this->getGenericRequestTemplate();
+            $sFile    = $sPath.'/'.$this->modelName.'Request.php';
+
+            if ($this->writeFile($sFile, $sContent)) {
+                $this->line('   ✓ Request: '.$this->modelName.'Request.php');
+            }
+            return;
+        }
+
+        // Con modelo: generar StoreRequest y UpdateRequest
         // StoreRequest
         $sContent = $this->getStoreRequestTemplate();
         $sFile    = $sPath.'/Store'.$this->modelName.'Request.php';
@@ -640,6 +690,19 @@ class MakeDomainCommand extends Command
 
     protected function getDtoTemplate(): string
     {
+        if ($this->noModel) {
+            return $this->parse(
+                'dto-no-model',
+                '\\Dtos',
+                ['{{properties}}', '{{fromArrayData}}', '{{toArrayData}}'],
+                [
+                    $this->buildDtoPropertiesNoModel(),
+                    $this->buildDtoFromRequestNoModel(),
+                    $this->buildDtoToArrayNoModel(),
+                ]
+            );
+        }
+
         return $this->parse(
             'dto',
             '\\Dtos',
@@ -737,6 +800,49 @@ class MakeDomainCommand extends Command
         return implode("\n", $arLines);
     }
 
+    /**
+     * Build DTO properties for no-model domains
+     *
+     * @return string
+     */
+    protected function buildDtoPropertiesNoModel(): string
+    {
+        // Para dominios sin modelo, generar propiedades básicas comunes
+        return <<<'PHP'
+        public readonly ?array $filters = [],
+        public readonly ?string $startDate = null,
+        public readonly ?string $endDate = null,
+PHP;
+    }
+
+    /**
+     * Build DTO fromArrayData for no-model domains
+     *
+     * @return string
+     */
+    protected function buildDtoFromRequestNoModel(): string
+    {
+        return <<<'PHP'
+            filters: $arData['filters'] ?? [],
+            startDate: $arData['start_date'] ?? $arData['startDate'] ?? null,
+            endDate: $arData['end_date'] ?? $arData['endDate'] ?? null,
+PHP;
+    }
+
+    /**
+     * Build DTO toArrayData for no-model domains
+     *
+     * @return string
+     */
+    protected function buildDtoToArrayNoModel(): string
+    {
+        return <<<'PHP'
+            'filters' => $this->filters,
+            'start_date' => $this->startDate,
+            'end_date' => $this->endDate,
+PHP;
+    }
+
     protected function getCreateActionTemplate(): string
     {
         $sDtoNamespace = $this->namespace.'\\App\\Domain\\'.Str::studly($this->domainName).'\\Dtos';
@@ -758,7 +864,8 @@ class MakeDomainCommand extends Command
 
     protected function getServiceTemplate(): string
     {
-        return $this->parse('service', '\\Services');
+        $sStub = $this->noModel ? 'service-no-model' : 'service';
+        return $this->parse($sStub, '\\Services');
     }
 
     protected function getQueryTemplate(): string
@@ -768,10 +875,8 @@ class MakeDomainCommand extends Command
 
     protected function getControllerTemplate(): string
     {
-        return $this->parse(
-            'controller',
-            '\\Http\\Controllers'
-        );
+        $sStub = $this->noModel ? 'controller-no-model' : 'controller';
+        return $this->parse($sStub, '\\Http\\Controllers');
     }
 
     protected function getStoreRequestTemplate(): string
@@ -791,6 +896,14 @@ class MakeDomainCommand extends Command
             '\\Http\\Requests',
             ['{{rules}}'],
             [$this->buildValidationRules(false)]
+        );
+    }
+
+    protected function getGenericRequestTemplate(): string
+    {
+        return $this->parse(
+            'generic-request',
+            '\\Http\\Requests'
         );
     }
 
@@ -885,10 +998,35 @@ class MakeDomainCommand extends Command
         $sModelNamespace  = $this->modelNamespace.'\\Models';
         $sTemplate        = $this->loadStub($sStub);
 
-        return str_replace(
+        // Reemplazos básicos
+        $sTemplate = str_replace(
             array_merge(['{{namespace}}', '{{modelName}}', '{{modelNamespace}}', '{{domainNamespace}}'], $arKeys),
             array_merge([$sNamespace, $this->modelName, $sModelNamespace, $sDomainNamespace], $arValues),
             $sTemplate
         );
+
+        // Aplicar filtros adicionales (como |lower)
+        $sTemplate = preg_replace_callback(
+            '/\{\{(\w+)\|(\w+)\}\}/',
+            function ($matches) {
+                $sVar = $matches[1];
+                $sFilter = $matches[2];
+
+                $sValue = match($sVar) {
+                    'modelName' => $this->modelName,
+                    default => $matches[0],
+                };
+
+                return match($sFilter) {
+                    'lower' => Str::lower($sValue),
+                    'snake' => Str::snake($sValue),
+                    'kebab' => Str::kebab($sValue),
+                    default => $sValue,
+                };
+            },
+            $sTemplate
+        );
+
+        return $sTemplate;
     }
 }

@@ -1,0 +1,26 @@
+<?php
+
+namespace {{namespace}};
+
+/**
+ * Service para lógica de negocio de {{modelName}} (sin modelo Eloquent)
+ *
+ * Este servicio contiene la lógica de negocio reutilizable
+ * que puede ser usada por múltiples controladores o jobs.
+ * No está asociado a un modelo Eloquent específico.
+ */
+class {{modelName}}Service
+{
+    /**
+     * Ejemplo de método de servicio
+     *
+     * @param array $arData
+     *
+     * @return array
+     */
+    public function process(array $arData): array
+    {
+        // Implementar lógica de negocio aquí
+        return $arData;
+    }
+}

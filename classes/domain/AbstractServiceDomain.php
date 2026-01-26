@@ -105,6 +105,27 @@ abstract class AbstractServiceDomain implements ServiceDomainInterface
     }
 
     /**
+     * @param array  $data
+     * @param string $sKeyColumn Model key column to check for existing record
+     *
+     * @return TModel|null
+     */
+    public function createOrUpdate(array $data, string $sKeyColumn = 'id'): Model
+    {
+        $iId = $data[$sKeyColumn] ?? null;
+
+        if ($iId) {
+            $obModel = ($this->getModelClass())::find($iId);
+
+            if ($obModel) {
+                return $this->update($obModel, $data);
+            }
+        }
+
+        return $this->create($data);
+    }
+
+    /**
      * Validate the input data
      *
      * @param array $data

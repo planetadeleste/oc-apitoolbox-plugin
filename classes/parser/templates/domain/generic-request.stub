@@ -1,0 +1,30 @@
+<?php
+
+namespace {{namespace}};
+
+use Illuminate\Foundation\Http\FormRequest;
+
+class {{modelName}}Request extends FormRequest
+{
+    public function authorize(): bool
+    {
+        // Verificar permisos de acceso
+        return true;
+    }
+
+    public function rules(): array
+    {
+        return [
+            'filters' => ['nullable', 'array'],
+            'start_date' => ['nullable', 'date'],
+            'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'end_date.after_or_equal' => __('alvis::api.{{modelName|lower}}.validation.end_date_after_start'),
+        ];
+    }
+}

@@ -1,0 +1,42 @@
+<?php
+
+namespace {{namespace}};
+
+/**
+ * Data Transfer Object para {{modelName}} (sin modelo Eloquent)
+ *
+ * DTO simple para transferir datos entre capas sin modelo asociado
+ */
+class {{modelName}}Data
+{
+    public function __construct(
+{{properties}}
+    ) {
+    }
+
+    /**
+     * Crear DTO desde array de request
+     *
+     * @param array $arData
+     *
+     * @return static
+     */
+    public static function fromArray(array $arData): static
+    {
+        return new static(
+{{fromArrayData}}
+        );
+    }
+
+    /**
+     * Convertir DTO a array
+     *
+     * @return array
+     */
+    public function toArray(): array
+    {
+        return [
+{{toArrayData}}
+        ];
+    }
+}

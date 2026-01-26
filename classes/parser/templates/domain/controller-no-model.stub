@@ -1,0 +1,48 @@
+<?php
+
+namespace {{namespace}};
+
+use Illuminate\Http\JsonResponse;
+use Illuminate\Routing\Controller;
+use {{domainNamespace}}\Dtos\{{modelName}}Data;
+use {{domainNamespace}}\Http\Requests\{{modelName}}Request;
+use {{domainNamespace}}\Services\{{modelName}}Service;
+use PlanetaDelEste\ApiToolbox\Classes\Api\ApiException;
+use PlanetaDelEste\ApiToolbox\Classes\Helper\ApiHelper;
+
+/**
+ * Controlador para {{modelName}} (sin modelo Eloquent)
+ *
+ * No extiende AbstractControllerDomain porque no hay modelo base
+ */
+class {{modelName}}Controller extends Controller
+{
+    public function __construct(
+        private readonly {{modelName}}Service $service
+    ) {}
+
+    /**
+     * Procesar solicitud
+     *
+     * @param {{modelName}}Request $request
+     *
+     * @return JsonResponse
+     */
+    public function index({{modelName}}Request $request): JsonResponse
+    {
+        try {
+            // Request ya validado por {{modelName}}Request
+            $data = {{modelName}}Data::fromArray($request->all());
+
+            $arResult = $this->service->process($data->toArray());
+
+            return response()->json([
+                'status' => true,
+                'data' => $arResult,
+                'message' => ApiHelper::tr('{{modelName|lower}}.success'),
+            ]);
+        } catch (\Throwable $e) {
+            return ApiException::exception($e);
+        }
+    }
+}
