@@ -5,7 +5,6 @@ namespace PlanetaDelEste\ApiToolbox\Classes\Domain;
 use Closure;
 use PlanetaDelEste\ApiToolbox\Contracts\DtoDomainInterface;
 use Str;
-use TModel;
 
 /**
  * Class AbstractDtoDomain
@@ -41,6 +40,8 @@ abstract class AbstractDtoDomain implements DtoDomainInterface
      * @param array $arData
      *
      * @return static
+     *
+     * @throws \Throwable
      */
     public static function fromArray(array $arData): static
     {
@@ -113,6 +114,8 @@ abstract class AbstractDtoDomain implements DtoDomainInterface
      * Convert the DTO to an array
      *
      * @return array
+     *
+     * @throws \Throwable
      */
     public function toArray(): array
     {
@@ -188,6 +191,36 @@ abstract class AbstractDtoDomain implements DtoDomainInterface
     }
 
     /**
+     * @param TModel|mixed $obModel
+     * @param string       $sDtoClass
+     * @param string       $sKey
+     *
+     * @return mixed
+     */
+    public static function getDataFromModel(mixed $obModel, string $sDtoClass, string $sKey): mixed
+    {
+        if (is_null($obModel) || !$obModel->relationLoaded($sKey) || empty($obModel->{$sKey})) {
+            return null;
+        }
+
+        if ($obModel->{$sKey} instanceof \Illuminate\Support\Collection) {
+            return $sDtoClass::fromModelList($obModel->{$sKey}->all());
+        }
+
+        return $sDtoClass::from($obModel->{$sKey});
+    }
+
+    /**
+     * Get the model instance
+     *
+     * @return TModel|mixed|null
+     */
+    public function getModel()
+    {
+        return $this->obModel;
+    }
+
+    /**
      * Método central de mapeo que construye la salida final
      * Puede ser sobrescrito para aplicar transformaciones globales
      *
@@ -204,9 +237,10 @@ abstract class AbstractDtoDomain implements DtoDomainInterface
     }
 
     /**
-     * @param array $arRelations
-     * @param array $arData
-     * @param mixed $callback
+     * @param array        $arRelations Array de relaciones a mapear
+     * @param array        $arData      Array de datos a mapear
+     * @param Closure|null $callback    Opcional. Función callback para personalizar el mapeo de cada
+     *                                  relación.
      *
      * @return void
      */
@@ -259,16 +293,6 @@ abstract class AbstractDtoDomain implements DtoDomainInterface
         }
     }
 
-  /**
-   * Get the model instance
-   *
-   * @return TModel|mixed|null
-   */
-    public function getModel()
-    {
-        return $this->obModel;
-    }
-
     /**
      * Helper para castear a int, convirtiendo strings vacíos a null
      *
@@ -278,7 +302,7 @@ abstract class AbstractDtoDomain implements DtoDomainInterface
      */
     protected static function castToInt($value): ?int
     {
-        if (is_null($value) || $value === '' || $value === []) {
+        if (is_null($value) || '' === $value || [] === $value) {
             return null;
         }
 
@@ -294,7 +318,7 @@ abstract class AbstractDtoDomain implements DtoDomainInterface
      */
     protected static function castToBool($value): ?bool
     {
-        if (is_null($value) || $value === '') {
+        if (is_null($value) || '' === $value) {
             return null;
         }
 
@@ -310,7 +334,7 @@ abstract class AbstractDtoDomain implements DtoDomainInterface
      */
     protected static function castToString($value): ?string
     {
-        if (is_null($value) || $value === '') {
+        if (is_null($value) || '' === $value) {
             return null;
         }
 

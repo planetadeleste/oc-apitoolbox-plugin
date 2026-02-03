@@ -54,6 +54,14 @@ abstract class AbstractQueryDomain implements QueryDomainInterface
     }
 
     /**
+     * @return string
+     */
+    public function getTable(): string
+    {
+        return $this->query->getModel()->getTable();
+    }
+
+    /**
      * Apply filters to the query
      * @param array $filters
      *
@@ -327,12 +335,18 @@ abstract class AbstractQueryDomain implements QueryDomainInterface
         return $this->query->paginate($perPage);
     }
 
+    /**
+     * @param mixed $sValue
+     *
+     * @return static
+     */
     public function filterSet(mixed $sValue): self
     {
+        $sTable   = $this->getTable();
         $arIdList = is_string($sValue) && str_contains($sValue, '|')
           ? explode('|', $sValue)
           : array_wrap($sValue);
-        $this->query->whereIn('id', $arIdList);
+        $this->query->whereIn($sTable.'.id', $arIdList);
 
         return $this;
     }
