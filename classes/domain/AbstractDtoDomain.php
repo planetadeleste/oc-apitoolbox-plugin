@@ -45,16 +45,18 @@ abstract class AbstractDtoDomain implements DtoDomainInterface
      */
     public static function fromArray(array $arData): static
     {
+        $arMappedData = null;
+
         try {
             $arMappedData = static::fromArrayData($arData);
 
             return new static(...$arMappedData);
         } catch (\Throwable $e) {
-            // Log para debugging
+            // Log para debugging - limitar tamaño para evitar problemas de memoria
             \Log::error('Error creating DTO from array', [
                 'dto_class'   => static::class,
-                'input_data'  => $arData,
-                'mapped_data' => $arMappedData ?? null,
+                'input_data'  => static::truncateForLog($arData),
+                'mapped_data' => static::truncateForLog($arMappedData),
                 'error'       => $e->getMessage(),
                 'trace'       => $e->getTraceAsString(),
             ]);
@@ -67,10 +69,22 @@ abstract class AbstractDtoDomain implements DtoDomainInterface
      * @param array $arDataList
      *
      * @return array<static>
+     *
+     * @throws \Throwable
      */
     public static function fromArrayList(array $arDataList): array
     {
-        return array_map(static fn($arData) => static::fromArray($arData), $arDataList);
+        try {
+            return array_map(static fn($arData) => static::fromArray($arData), $arDataList);
+        } catch (\Throwable $e) {
+            \Log::error('Error creating DTO list from array', [
+                'dto_class' => static::class,
+                'count'     => count($arDataList),
+                'error'     => $e->getMessage(),
+            ]);
+
+            throw $e;
+        }
     }
 
     /**
@@ -221,6 +235,41 @@ abstract class AbstractDtoDomain implements DtoDomainInterface
     }
 
     /**
+     * Trunca datos para logging, evitando problemas de memoria
+     *
+     * @param mixed $data
+     * @param int   $maxDepth
+     *
+     * @return mixed
+     */
+    protected static function truncateForLog(mixed $data, int $maxDepth = 3): mixed
+    {
+        if (null === $data) {
+            return null;
+        }
+
+        if (!is_array($data)) {
+            if (is_object($data)) {
+                return get_class($data);
+            }
+
+            return $data;
+        }
+
+        if (0 === $maxDepth) {
+            return '[...]';
+        }
+
+        $result = [];
+
+        foreach ($data as $key => $value) {
+            $result[$key] = static::truncateForLog($value, $maxDepth - 1);
+        }
+
+        return $result;
+    }
+
+    /**
      * Método central de mapeo que construye la salida final
      * Puede ser sobrescrito para aplicar transformaciones globales
      *
@@ -339,6 +388,34 @@ abstract class AbstractDtoDomain implements DtoDomainInterface
         }
 
         return (string) $value;
+    }
+
+    /**
+     * Helper para castear a Carbon, convirtiendo strings/timestamps a Carbon
+     *
+     * @param mixed $value
+     *
+     * @return \Carbon\Carbon|null
+     */
+    protected static function castToDate($value): ?\Carbon\Carbon
+    {
+        if (is_null($value) || '' === $value) {
+            return null;
+        }
+
+        if ($value instanceof \Carbon\Carbon) {
+            return $value;
+        }
+
+        if ($value instanceof \DateTimeInterface) {
+            return \Carbon\Carbon::instance($value);
+        }
+
+        try {
+            return \Carbon\Carbon::parse($value);
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 
     /**

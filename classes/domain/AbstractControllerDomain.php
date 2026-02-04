@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Http\Resources\Json\ResourceCollection;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\Cache;
 use PlanetaDelEste\Alvis\Classes\Helper\AlvisHelper;
 use PlanetaDelEste\ApiToolbox\Classes\Api\ApiException;
 use PlanetaDelEste\ApiToolbox\Classes\Helper\ApiHelper;
@@ -48,11 +49,27 @@ abstract class AbstractControllerDomain extends Controller
     /**
      * @param TStoreRequest|TUpdateRequest|Request $request
      *
-     * @return ResourceCollection<TResource>
+     * @return ResourceCollection<TResource>|JsonResponse
      */
     public function index(Request $request): ResourceCollection|JsonResponse
     {
         try {
+            // Intentar obtener respuesta cacheada
+            $sCacheKey   = $this->getCacheKey($request);
+            $arCacheTags = $this->getCacheTags();
+            $iTtl        = $this->cacheTtl ?? 3600;
+
+            $sCachedJson = Cache::tags($arCacheTags)->get($sCacheKey);
+
+            if (null !== $sCachedJson) {
+                return response()->json(
+                    json_decode($sCachedJson, true),
+                    200,
+                    ['X-Cache' => 'HIT']
+                );
+            }
+
+            // Sin caché - ejecutar query normal
             [$sSort, $sDir] = str_contains($this->getSortColumn() ?: 'id|asc', '|')
               ? explode('|', $this->getSortColumn())
               : [$this->getSortColumn(), 'asc'];
@@ -66,8 +83,16 @@ abstract class AbstractControllerDomain extends Controller
 
             $obCollection     = $obQuery->paginate($request->get('limit', 15));
             $sCollectionClass = $this->getCollectionClass();
+            $obResource       = new $sCollectionClass($obCollection);
 
-            return new $sCollectionClass($obCollection);
+            // Cachear la respuesta JSON (string, sin closures)
+            $obResponse   = $obResource->response();
+            $arData       = $obResponse->getData(true);
+            $sJsonToCache = json_encode($arData);
+
+            Cache::tags($arCacheTags)->put($sCacheKey, $sJsonToCache, $iTtl);
+
+            return $obResponse->header('X-Cache', 'MISS');
         } catch (\Throwable $e) {
             return ApiException::exception($e);
         }
@@ -76,11 +101,27 @@ abstract class AbstractControllerDomain extends Controller
       /**
        * @param mixed $iId
        *
-       * @return TResource
+       * @return TResource|JsonResponse
        */
     public function show(mixed $iId): JsonResource|JsonResponse
     {
         try {
+            // Intentar obtener respuesta cacheada
+            $sCacheKey   = $this->getCacheKey(request()).'.show.'.$iId;
+            $arCacheTags = $this->getCacheTags();
+            $iTtl        = $this->cacheTtl ?? 3600;
+
+            $sCachedJson = Cache::tags($arCacheTags)->get($sCacheKey);
+
+            if (null !== $sCachedJson) {
+                return response()->json(
+                    json_decode($sCachedJson, true),
+                    200,
+                    ['X-Cache' => 'HIT']
+                );
+            }
+
+            // Sin caché - ejecutar query normal
             $sResourceClass = $this->getResourceClass();
             $obQuery        = $this->query;
 
@@ -88,9 +129,17 @@ abstract class AbstractControllerDomain extends Controller
                 $obQuery->withRelations($arRelations);
             }
 
-            $obModel = $obQuery->findOrFail($iId);
+            $obModel    = $obQuery->findOrFail($iId);
+            $obResource = new $sResourceClass($obModel);
 
-            return new $sResourceClass($obModel);
+            // Cachear la respuesta JSON (string, sin closures)
+            $obResponse   = $obResource->response();
+            $arData       = $obResponse->getData(true);
+            $sJsonToCache = json_encode($arData);
+
+            Cache::tags($arCacheTags)->put($sCacheKey, $sJsonToCache, $iTtl);
+
+            return $obResponse->header('X-Cache', 'MISS');
         } catch (\Throwable $e) {
             return ApiException::exception($e);
         }
@@ -123,6 +172,7 @@ abstract class AbstractControllerDomain extends Controller
             $obModel = $action->execute($data);
 
             $this->attachFiles($request, $obModel);
+            $this->flushCache();
 
             return $this->success('record.created', new $sResourceClass($obModel), 201);
         } catch (\Throwable $e) {
@@ -160,6 +210,7 @@ abstract class AbstractControllerDomain extends Controller
             $obModel = $action->execute($obModel, $data);
 
             $this->attachFiles($request, $obModel);
+            $this->flushCache();
 
             return $this->success('record.updated', new $sResourceClass($obModel));
         } catch (\Throwable $e) {
@@ -178,6 +229,7 @@ abstract class AbstractControllerDomain extends Controller
             $obModel = $this->query->findOrFail($iId);
 
             $this->service->delete($obModel);
+            $this->flushCache();
 
             return $this->message('record.deleted');
         } catch (\Throwable $th) {
@@ -216,6 +268,7 @@ abstract class AbstractControllerDomain extends Controller
             }
 
             $obFile->delete();
+            $this->flushCache();
 
             return $this->message('file.deleted');
         } catch (\Throwable $th) {
@@ -234,6 +287,7 @@ abstract class AbstractControllerDomain extends Controller
         try {
             $obModel = $this->query->findOrFail($iId);
             $this->attachFiles($request, $obModel);
+            $this->flushCache();
 
             return $this->message('file.attached');
         } catch (\Throwable $th) {
@@ -270,6 +324,16 @@ abstract class AbstractControllerDomain extends Controller
     public function getCacheTags(): array
     {
         return ['domain', $this->getDomainName()];
+    }
+
+    /**
+     * Invalidar todo el caché del dominio actual
+     *
+     * @return void
+     */
+    public function flushCache(): void
+    {
+        Cache::tags($this->getCacheTags())->flush();
     }
 
     /**

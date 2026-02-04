@@ -10,17 +10,25 @@ use Kharanenka\Helper\Result;
 class ApiException
 {
     /**
-     * @param Exception|mixed $obException
-     * @param int             $iStatus
+     * @param \Throwable|mixed $obException
+     * @param int              $iStatus
+     * @param bool             $translate
      *
      * @return JsonResponse
      */
     public static function exception(mixed $obException, int $iStatus = 403, bool $translate = false): JsonResponse
     {
-        trace_log($obException);
+        try {
+            trace_log($obException);
+        } catch (\Throwable $e) {
+            // Ignorar errores de logging
+        }
+
         Result::setFalse();
 
-        $message = $obException->getMessage();
+        $message = $obException instanceof \Throwable
+            ? $obException->getMessage()
+            : (string) $obException;
 
         if ($translate) {
             $options = [];
