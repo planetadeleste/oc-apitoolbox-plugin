@@ -57,7 +57,7 @@ abstract class AbstractControllerDomain extends Controller
             // Intentar obtener respuesta cacheada
             $sCacheKey   = $this->getCacheKey($request);
             $arCacheTags = $this->getCacheTags();
-            $iTtl        = $this->cacheTtl ?? 3600;
+            $iTtl        = $this->getTtl();
 
             $sCachedJson = Cache::tags($arCacheTags)->get($sCacheKey);
 
@@ -109,7 +109,7 @@ abstract class AbstractControllerDomain extends Controller
             // Intentar obtener respuesta cacheada
             $sCacheKey   = $this->getCacheKey(request()).'.show.'.$iId;
             $arCacheTags = $this->getCacheTags();
-            $iTtl        = $this->cacheTtl ?? 3600;
+            $iTtl        = $this->getTtl();
 
             $sCachedJson = Cache::tags($arCacheTags)->get($sCacheKey);
 
@@ -304,20 +304,21 @@ abstract class AbstractControllerDomain extends Controller
      */
     public function getCacheKey(Request $request): string
     {
-        $sRouteKey  = $request->route()->getName();
-        $sRouteKey  = str_replace(['api.v1', 'api.v2'], 'domain', $sRouteKey);
-        $sFilters   = json_encode($request->get('filters', []));
-        $sSort      = $request->get('sort', $this->getSortColumn() ?: 'id|asc');
-        $sLimit     = $request->get('limit', 15);
-        $iCompanyId = AlvisHelper::companyID();
+        $sRouteKey = $request->route()->getName();
+        $sRouteKey = str_replace(['api.v1', 'api.v2'], 'domain', $sRouteKey);
+        $sFilters  = json_encode($request->get('filters', []));
+        $sSort     = $request->get('sort', $this->getSortColumn() ?: 'id|asc');
+        $sLimit    = $request->get('limit', 15);
+        $sPage     = $request->get('page', 1);
 
         return sprintf(
-            '%s.%s.%s.%s.%s',
+            '%s.%s.%s.%s.%s.%s',
             $sRouteKey,
             md5($sFilters),
             $sSort,
             $sLimit,
-            $iCompanyId
+            $sPage,
+            $this->companyId()
         );
     }
 
@@ -334,6 +335,37 @@ abstract class AbstractControllerDomain extends Controller
     public function flushCache(): void
     {
         Cache::tags($this->getCacheTags())->flush();
+    }
+
+    /**
+     * Obtiene el ID de la empresa actual
+     *
+     * @return string|null
+     */
+    public function companyId(): ?string
+    {
+        return AlvisHelper::companyID();
+    }
+
+    /**
+     * Obtiene el ID de la oficina actual
+     *
+     * @return string|null
+     */
+    public function officeId(): ?string
+    {
+        return AlvisHelper::officeID();
+    }
+
+    /**
+     * Obtiene el TTL para cachear las respuestas (en segundos) 6hs por defecto
+     * Puede ser sobrescrito por las clases hijas para definir un TTL específico
+     *
+     * @return int
+     */
+    public function getTtl(): int
+    {
+        return $this->cacheTtl ?? (3600 * 6);
     }
 
     /**
