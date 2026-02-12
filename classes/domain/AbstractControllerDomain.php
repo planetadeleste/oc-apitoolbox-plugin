@@ -324,17 +324,47 @@ abstract class AbstractControllerDomain extends Controller
 
     public function getCacheTags(): array
     {
-        return ['domain', $this->getDomainName()];
+        $sDomainName = $this->getDomainName();
+        $sCompanyId  = $this->companyId();
+
+        // Tag compuesto: domain:company para flush específico por empresa
+        $arTagList = ['domain', $sDomainName];
+
+        if ($sCompanyId) {
+            // Tag compuesto asegura que flush solo afecte a esta empresa+dominio
+            $arTagList[] = "{$sDomainName}:company:{$sCompanyId}";
+        }
+
+        return $arTagList;
     }
 
     /**
-     * Invalidar todo el caché del dominio actual
+     * Obtiene los tags para invalidar caché (solo dominio+empresa actual)
+     *
+     * @return array
+     */
+    public function getFlushCacheTags(): array
+    {
+        $sDomainName = $this->getDomainName();
+        $sCompanyId  = $this->companyId();
+
+        if ($sCompanyId) {
+            // Solo invalida items de este dominio + esta empresa
+            return ["{$sDomainName}:company:{$sCompanyId}"];
+        }
+
+        // Sin empresa, invalida todo el dominio
+        return [$sDomainName];
+    }
+
+    /**
+     * Invalidar caché del dominio actual (solo empresa actual)
      *
      * @return void
      */
     public function flushCache(): void
     {
-        Cache::tags($this->getCacheTags())->flush();
+        Cache::tags($this->getFlushCacheTags())->flush();
     }
 
     /**

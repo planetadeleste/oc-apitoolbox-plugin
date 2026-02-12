@@ -3,6 +3,7 @@
 namespace PlanetaDelEste\ApiToolbox\Classes\Domain;
 
 use Closure;
+use PlanetaDelEste\ApiToolbox\Classes\Domain\Concerns\HasCasts;
 use PlanetaDelEste\ApiToolbox\Contracts\DtoDomainInterface;
 use Str;
 
@@ -13,14 +14,25 @@ use Str;
  * Los métodos específicos (toArrayData, fromArrayData, fromModelData) solo retornan
  * las claves/datos a mapear, y mapOutput() construye la salida final.
  *
+ * Soporta casting de atributos similar a Laravel Eloquent mediante la propiedad $casts.
+ * @see HasCasts
+ *
  * @template TModel of \Model
  *
  * @implements DtoDomainInterface<TModel>
+ *
+ * @property array $casts Define los casts para atributos, similar a Eloquent. Ejemplo:
+ *                      protected array $casts = [
+ *                          'is_active' => 'bool',
+ *                          'created_at' => 'datetime',
+ *                      ];
  *
  * @method static __construct(...$args)
  */
 abstract class AbstractDtoDomain implements DtoDomainInterface
 {
+    use HasCasts;
+
     /**
      * @var TModel|mixed|null $obModel Instancia del modelo asociada al DTO
      */
@@ -53,7 +65,7 @@ abstract class AbstractDtoDomain implements DtoDomainInterface
             return new static(...$arMappedData);
         } catch (\Throwable $e) {
             // Log para debugging - limitar tamaño para evitar problemas de memoria
-            \Log::error('Error creating DTO from array', [
+            \Illuminate\Support\Facades\Log::error('Error creating DTO from array', [
                 'dto_class'   => static::class,
                 'input_data'  => static::truncateForLog($arData),
                 'mapped_data' => static::truncateForLog($arMappedData),
@@ -77,7 +89,7 @@ abstract class AbstractDtoDomain implements DtoDomainInterface
         try {
             return array_map(static fn($arData) => static::fromArray($arData), $arDataList);
         } catch (\Throwable $e) {
-            \Log::error('Error creating DTO list from array', [
+            \Illuminate\Support\Facades\Log::error('Error creating DTO list from array', [
                 'dto_class' => static::class,
                 'count'     => count($arDataList),
                 'error'     => $e->getMessage(),
@@ -137,14 +149,14 @@ abstract class AbstractDtoDomain implements DtoDomainInterface
 
         // Detectar recursión infinita
         if (isset(static::$processingStack[$sObjectHash])) {
-            \Log::warning('Recursion detected in DTO toArray()', [
+            \Illuminate\Support\Facades\Log::warning('Recursion detected in DTO toArray()', [
                 'dto_class'   => static::class,
                 'object_hash' => $sObjectHash,
                 'stack_depth' => count(static::$processingStack),
             ]);
 
             // Retornar solo los datos básicos sin relaciones
-            return $this->toArrayData();
+            return $this->serializeAllAttributes($this->toArrayData());
         }
 
         // Marcar este objeto como en proceso
@@ -152,8 +164,9 @@ abstract class AbstractDtoDomain implements DtoDomainInterface
 
         try {
             $arResult = $this->mapOutput($this->toArrayData());
+            $arResult = $this->serializeAllAttributes($arResult);
         } catch (\Throwable $e) {
-            \Log::error('Error in DTO toArray()', [
+            \Illuminate\Support\Facades\Log::error('Error in DTO toArray()', [
                 'dto_class'   => static::class,
                 'object_hash' => $sObjectHash,
                 'error'       => $e->getMessage(),
@@ -250,7 +263,7 @@ abstract class AbstractDtoDomain implements DtoDomainInterface
 
         if (!is_array($data)) {
             if (is_object($data)) {
-                return get_class($data);
+                return $data::class;
             }
 
             return $data;
@@ -361,14 +374,15 @@ abstract class AbstractDtoDomain implements DtoDomainInterface
     /**
      * Helper para castear a bool, convirtiendo strings/números a bool
      *
-     * @param mixed $value
+     * @param mixed     $value
+     * @param bool|null $default Valor por defecto si el valor es null o vacío
      *
      * @return bool|null
      */
-    protected static function castToBool($value): ?bool
+    protected static function castToBool($value, ?bool $default = false): ?bool
     {
         if (is_null($value) || '' === $value) {
-            return null;
+            return $default;
         }
 
         return filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
