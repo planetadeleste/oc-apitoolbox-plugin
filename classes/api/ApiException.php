@@ -3,9 +3,10 @@
 namespace PlanetaDelEste\ApiToolbox\Classes\Api;
 
 use Arr;
-use Exception;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
 use Kharanenka\Helper\Result;
+use Throwable;
 
 class ApiException
 {
@@ -18,11 +19,7 @@ class ApiException
      */
     public static function exception(mixed $obException, int $iStatus = 403, bool $translate = false): JsonResponse
     {
-        try {
-            trace_log($obException);
-        } catch (\Throwable $e) {
-            // Ignorar errores de logging
-        }
+        static::logExceptionSafely($obException);
 
         Result::setFalse();
 
@@ -48,6 +45,46 @@ class ApiException
             Result::setMessage($message);
         }
 
+        $iStatus = static::resolveStatusCode($obException, $iStatus);
+
         return response()->json(Result::get(), $iStatus);
+    }
+
+    protected static function logExceptionSafely(mixed $obException): void
+    {
+        try {
+            if ($obException instanceof Throwable) {
+                Log::error('API exception handled', [
+                    'class'   => $obException::class,
+                    'message' => $obException->getMessage(),
+                    'code'    => $obException->getCode(),
+                    'file'    => $obException->getFile(),
+                    'line'    => $obException->getLine(),
+                ]);
+
+                return;
+            }
+
+            Log::error('API exception handled (non-throwable)', [
+                'exception' => is_scalar($obException) || null === $obException
+                    ? $obException
+                    : get_debug_type($obException),
+            ]);
+        } catch (Throwable) {
+            // Evitar que un error al loguear bloquee la respuesta de la API
+        }
+    }
+
+    protected static function resolveStatusCode(mixed $obException, int $defaultStatus): int
+    {
+        if ($obException instanceof Throwable) {
+            $code = (int) $obException->getCode();
+
+            if ($code >= 400 && $code < 600) {
+                return $code;
+            }
+        }
+
+        return $defaultStatus;
     }
 }
