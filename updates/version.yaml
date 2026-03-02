@@ -214,3 +214,5 @@ v2.0.24:
     - 'Fix issue on empty or null filters var'
 v2.0.25:
     - 'Refactor data retrieval in Base class to use resource getAttribute method'
+v2.0.26:
+    - 'Improve DDD pattern on api classes'
