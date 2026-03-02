@@ -51,6 +51,10 @@ trait FilterListTrait
             });
         }
 
+        if (method_exists($this, 'applyCompanyScope')) {
+            $this->applyCompanyScope($obQuery);
+        }
+
         return $obQuery->pluck($this->getKeyId())->all();
     }
 

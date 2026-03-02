@@ -2,6 +2,7 @@
 
 namespace PlanetaDelEste\ApiToolbox\Traits\Event;
 
+use Kharanenka\Helper\CCache;
 use Lovata\Toolbox\Classes\Store\AbstractStoreWithParam;
 use Lovata\Toolbox\Classes\Store\AbstractStoreWithoutParam;
 
@@ -75,6 +76,24 @@ trait ModelHandlerTrait
         foreach ($arFieldList as $sFieldName) {
             $this->clearCacheEmptyValue($sFieldName, $sClassName::instance()->{$sFieldName});
         }
+    }
+
+    /**
+     * Flush company-scoped store cache by tags (Redis only).
+     * Use when model has company_id and stores use CompanyScopableStoreTrait.
+     *
+     * @param string|null $sModelTag   Model tag (e.g. 'Invoice', 'Customer')
+     * @param int|null    $iCompanyId  Company ID from model
+     *
+     * @return void
+     */
+    protected function clearCompanyScopedCache(?string $sModelTag = null, ?int $iCompanyId = null): void
+    {
+        if (!$iCompanyId || !$sModelTag || config('cache.default') !== 'redis') {
+            return;
+        }
+
+        CCache::clear(['company:' . $iCompanyId, 'model:' . $sModelTag], null);
     }
 
     abstract protected function getStoreClass(): string;

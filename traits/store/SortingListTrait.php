@@ -117,7 +117,13 @@ trait SortingListTrait
         $obQuery->orderBy($sColumn, $sDir);
         $this->wheres($obQuery);
 
-        return $obQuery->pluck('id')->all();
+        if (method_exists($this, 'applyCompanyScope')) {
+            $this->applyCompanyScope($obQuery);
+        }
+
+        $sIdColumn = $this->getTable().'.id';
+
+        return $obQuery->pluck($sIdColumn)->all();
     }
 
     /**
@@ -151,7 +157,13 @@ trait SortingListTrait
         $sModelClass = $this->getModelClass();
         $obQuery     = $this->db ? Db::table($this->getTable()) : (new $sModelClass())->query();
 
-        return $obQuery->pluck('id')->all();
+        if (method_exists($this, 'applyCompanyScope')) {
+            $this->applyCompanyScope($obQuery);
+        }
+
+        $sIdColumn = $this->getTable().'.id';
+
+        return $obQuery->pluck($sIdColumn)->all();
     }
 
     protected function getTable()
