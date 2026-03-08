@@ -240,13 +240,13 @@ abstract class AbstractControllerDomain extends Controller
     /**
      * Elimina un archivo del modelo
      *
-     * @param int    $iModelId
+     * @param mixed  $iModelId
      * @param int    $iFileId
      * @param string $sAttribute
      *
      * @return JsonResponse
      */
-    public function detachFile(int $iModelId, int $iFileId, string $sAttribute): JsonResponse
+    public function detachFile(mixed $iModelId, int $iFileId, string $sAttribute): JsonResponse
     {
         try {
             $obModel = $this->query->findOrFail($iModelId);

@@ -53,6 +53,8 @@ class ApiException
     protected static function logExceptionSafely(mixed $obException): void
     {
         try {
+            trace_log($obException);
+
             if ($obException instanceof Throwable) {
                 Log::error('API exception handled', [
                     'class'   => $obException::class,
