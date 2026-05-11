@@ -216,3 +216,5 @@ v2.0.25:
     - 'Refactor data retrieval in Base class to use resource getAttribute method'
 v2.0.26:
     - 'Improve DDD pattern on api classes'
+v2.0.27:
+    - 'Add support for automatic image-to-webp conversion during file attachments in AbstractControllerDomain'

@@ -10,6 +10,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Http\Resources\Json\ResourceCollection;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Cache;
+use Intervention\Image\Drivers\Gd\Driver as GdDriver;
+use Intervention\Image\ImageManager;
 use PlanetaDelEste\Alvis\Classes\Helper\AlvisHelper;
 use PlanetaDelEste\ApiToolbox\Classes\Api\ApiException;
 use PlanetaDelEste\ApiToolbox\Classes\Helper\ApiHelper;
@@ -161,7 +163,7 @@ abstract class AbstractControllerDomain extends Controller
             $arData = AlvisHelper::arrayFilterRecursive($request->all());
             $arData = array_diff_key(
                 $arData,
-                array_flip($this->getExcludedFields())
+                array_flip(array_filter($this->getExcludedFields(), 'is_scalar'))
             );
 
             // Limpiar objetos anidados/relaciones que puedan causar recursión
@@ -199,7 +201,7 @@ abstract class AbstractControllerDomain extends Controller
             $arData = AlvisHelper::arrayFilterRecursive($request->all());
             $arData = array_diff_key(
                 $arData,
-                array_flip($this->getExcludedFields())
+                array_flip(array_filter($this->getExcludedFields(), 'is_scalar'))
             );
 
             // Limpiar objetos anidados/relaciones que puedan causar recursión
@@ -252,9 +254,7 @@ abstract class AbstractControllerDomain extends Controller
             $obModel = $this->query->findOrFail($iModelId);
 
             // Validar que el atributo existe en $arFileList
-            $bIsValidAttribute = collect($this->arFileList)
-                ->flatten()
-                ->contains($sAttribute);
+            $bIsValidAttribute = in_array($sAttribute, $this->getFileAttributeNames(), true);
 
             if (!$bIsValidAttribute) {
                 return $this->message('file.invalid_attribute', 400);
@@ -429,7 +429,21 @@ abstract class AbstractControllerDomain extends Controller
     abstract public function getSortColumn(): string;
 
     /**
-     * Adjunta archivos al modelo basándose en el request y la configuración de $arFileList
+     * Adjunta archivos al modelo basándose en el request y la configuración de $arFileList.
+     *
+     * Cada entrada de $arFileList puede ser un string simple o un array asociativo
+     * con el nombre del atributo como clave y un array de opciones como valor:
+     *
+     * ```php
+     * $this->arFileList = [
+     *     'attachOne'  => ['preview_image', 'cover_image' => ['convertToWebp' => true]],
+     *     'attachMany' => ['images' => ['convertToWebp' => true]],
+     * ];
+     * ```
+     *
+     * Opciones disponibles:
+     *   - `convertToWebp` (bool): convierte la imagen a WebP antes de adjuntarla (default: false)
+     *   - `webpQuality`   (int):  calidad WebP entre 1 y 100 (default: 85)
      *
      * @param Request $request
      * @param TModel  $obModel
@@ -439,14 +453,23 @@ abstract class AbstractControllerDomain extends Controller
     protected function attachFiles(Request $request, $obModel): void
     {
         foreach ($this->arFileList as $sType => $arAttributes) {
-            foreach ($arAttributes as $sAttribute) {
+            foreach ($arAttributes as $mKey => $mValue) {
+                // Soporte para formato simple (string) y formato con opciones (array)
+                if (is_int($mKey)) {
+                    $sAttribute = $mValue;
+                    $arOptions  = [];
+                } else {
+                    $sAttribute = $mKey;
+                    $arOptions  = is_array($mValue) ? $mValue : [];
+                }
+
                 if (!$request->hasFile($sAttribute)) {
                     continue;
                 }
 
                 match ($sType) {
-                    'attachOne'  => $this->attachOneFile($obModel, $sAttribute, $request->file($sAttribute)),
-                    'attachMany' => $this->attachManyFiles($obModel, $sAttribute, $request->file($sAttribute)),
+                    'attachOne'  => $this->attachOneFile($obModel, $sAttribute, $request->file($sAttribute), $arOptions),
+                    'attachMany' => $this->attachManyFiles($obModel, $sAttribute, $request->file($sAttribute), $arOptions),
                     default      => null,
                 };
             }
@@ -454,42 +477,90 @@ abstract class AbstractControllerDomain extends Controller
     }
 
     /**
-     * Adjunta un archivo único al modelo
+     * Adjunta un archivo único al modelo, con conversión WebP opcional.
      *
      * @param TModel                        $obModel
      * @param string                        $sAttribute
      * @param \Illuminate\Http\UploadedFile $obFile
+     * @param array                         $arOptions  Opciones: convertToWebp, webpQuality
      *
      * @return void
      */
-    protected function attachOneFile($obModel, string $sAttribute, \Illuminate\Http\UploadedFile $obFile): void
+    protected function attachOneFile($obModel, string $sAttribute, \Illuminate\Http\UploadedFile $obFile, array $arOptions = []): void
     {
         // Si ya existe un archivo, lo eliminamos
         if ($obModel->{$sAttribute}) {
             $obModel->{$sAttribute}->delete();
         }
 
+        $obFile = $this->maybeConvertToWebp($obFile, $arOptions);
         $obModel->{$sAttribute}()->create(['data' => $obFile]);
     }
 
     /**
-     * Adjunta múltiples archivos al modelo
+     * Adjunta múltiples archivos al modelo, con conversión WebP opcional.
      *
      * @param TModel                                          $obModel
      * @param string                                          $sAttribute
      * @param \Illuminate\Http\UploadedFile|array<int, mixed> $arFiles
+     * @param array                                           $arOptions  Opciones: convertToWebp, webpQuality
      *
      * @return void
      */
-    protected function attachManyFiles($obModel, string $sAttribute, $arFiles): void
+    protected function attachManyFiles($obModel, string $sAttribute, $arFiles, array $arOptions = []): void
     {
         if (!is_array($arFiles)) {
             $arFiles = [$arFiles];
         }
 
         foreach ($arFiles as $obFile) {
+            $obFile = $this->maybeConvertToWebp($obFile, $arOptions);
             $obModel->{$sAttribute}()->create(['data' => $obFile]);
         }
+    }
+
+    /**
+     * Convierte un UploadedFile a WebP si la opción `convertToWebp` está activa
+     * y el archivo es una imagen compatible (JPEG, PNG, GIF, BMP, TIFF).
+     * Si el archivo ya es WebP o no es una imagen, lo devuelve sin modificar.
+     *
+     * @param \Illuminate\Http\UploadedFile $obFile
+     * @param array                         $arOptions Opciones: convertToWebp (bool), webpQuality (int 1-100)
+     *
+     * @return \Illuminate\Http\UploadedFile
+     */
+    protected function maybeConvertToWebp(\Illuminate\Http\UploadedFile $obFile, array $arOptions = []): \Illuminate\Http\UploadedFile
+    {
+        if (empty($arOptions['convertToWebp'])) {
+            return $obFile;
+        }
+
+        $sMime = $obFile->getMimeType();
+
+        // Solo convertir imágenes raster; excluir WebP ya convertido y SVG
+        $arConvertibleMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/bmp', 'image/tiff', 'image/x-bmp'];
+
+        if (!in_array($sMime, $arConvertibleMimes, true)) {
+            return $obFile;
+        }
+
+        $iQuality  = (int) ($arOptions['webpQuality'] ?? 85);
+        $iQuality  = max(1, min(100, $iQuality));
+        $sBaseName = pathinfo($obFile->getClientOriginalName(), PATHINFO_FILENAME);
+        $sWebpName = $sBaseName.'.webp';
+        $sTempPath = sys_get_temp_dir().DIRECTORY_SEPARATOR.'webp_'.uniqid().'_'.$sWebpName;
+
+        $obManager = new ImageManager(new GdDriver());
+        $obManager->read($obFile->getRealPath())->toWebp($iQuality)->save($sTempPath);
+
+        return new \Illuminate\Http\UploadedFile(
+            $sTempPath,
+            $sWebpName,
+            'image/webp',
+            null,
+            true
+            // test mode: no valida si el archivo fue subido via HTTP
+        );
     }
 
     /**
@@ -577,8 +648,11 @@ abstract class AbstractControllerDomain extends Controller
         ];
 
         // Agregar archivos de $arFileList (manejados por attachFiles)
+        // Soporta tanto formato simple (string) como formato con opciones (array)
         foreach ($this->arFileList as $arAttributes) {
-            $arExcluded = array_merge($arExcluded, $arAttributes);
+            foreach ($arAttributes as $mKey => $mValue) {
+                $arExcluded[] = is_int($mKey) ? $mValue : $mKey;
+            }
         }
 
         return $arExcluded;
@@ -589,6 +663,25 @@ abstract class AbstractControllerDomain extends Controller
         $arParts = explode('\\', static::class);
 
         return strtolower($arParts[4]);
+    }
+
+    /**
+     * Retorna la lista plana de nombres de atributos de archivo definidos en $arFileList,
+     * soportando tanto el formato simple (string) como el formato con opciones (array).
+     *
+     * @return array<string>
+     */
+    protected function getFileAttributeNames(): array
+    {
+        $arNames = [];
+
+        foreach ($this->arFileList as $arAttributes) {
+            foreach ($arAttributes as $mKey => $mValue) {
+                $arNames[] = is_int($mKey) ? $mValue : $mKey;
+            }
+        }
+
+        return $arNames;
     }
 
     /**
