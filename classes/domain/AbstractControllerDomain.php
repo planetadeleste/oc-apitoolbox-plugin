@@ -8,29 +8,31 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Http\Resources\Json\ResourceCollection;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Cache;
 use Intervention\Image\Drivers\Gd\Driver as GdDriver;
 use Intervention\Image\ImageManager;
-use PlanetaDelEste\Alvis\Classes\Helper\AlvisHelper;
 use PlanetaDelEste\ApiToolbox\Classes\Api\ApiException;
 use PlanetaDelEste\ApiToolbox\Classes\Helper\ApiHelper;
+use PlanetaDelEste\ApiToolbox\Contracts\QueryDomainInterface;
+use PlanetaDelEste\ApiToolbox\Contracts\ServiceDomainInterface;
 use TService;
 
 /**
  * Class AbstractControllerDomain
  *
  * @template TModel of \Model
- * @template TService of \PlanetaDelEste\ApiToolbox\Contracts\ServiceDomainInterface<TModel>
- * @template TResource of \Illuminate\Http\Resources\Json\JsonResource
+ * @template TService of ServiceDomainInterface<TModel>
+ * @template TResource of JsonResource
  * @template TDto of \stdClass
- * @template TStoreRequest of \Illuminate\Http\Request
- * @template TUpdateRequest of \Illuminate\Http\Request
+ * @template TStoreRequest of Request
+ * @template TUpdateRequest of Request
  * @template TCreateAction of object
  * @template TUpdateAction of object
  *
  * @property TService $service
- * @property \PlanetaDelEste\ApiToolbox\Contracts\QueryDomainInterface<TModel> $query
+ * @property QueryDomainInterface<TModel> $query
  * @property int $cacheTtl
  */
 abstract class AbstractControllerDomain extends Controller
@@ -160,7 +162,7 @@ abstract class AbstractControllerDomain extends Controller
             $sActionClass   = $this->getCreateActionClass();
 
             // Filtrar campos excluidos
-            $arData = AlvisHelper::arrayFilterRecursive($request->all());
+            $arData = ApiHelper::arrayFilterRecursive($request->all());
             $arData = array_diff_key(
                 $arData,
                 array_flip(array_filter($this->getExcludedFields(), 'is_scalar'))
@@ -198,7 +200,7 @@ abstract class AbstractControllerDomain extends Controller
             $obModel = $this->query->findOrFail($iId);
 
             // Filtrar campos excluidos
-            $arData = AlvisHelper::arrayFilterRecursive($request->all());
+            $arData = ApiHelper::arrayFilterRecursive($request->all());
             $arData = array_diff_key(
                 $arData,
                 array_flip(array_filter($this->getExcludedFields(), 'is_scalar'))
@@ -322,6 +324,9 @@ abstract class AbstractControllerDomain extends Controller
         );
     }
 
+    /**
+     * @return array<string>
+     */
     public function getCacheTags(): array
     {
         $sDomainName = $this->getDomainName();
@@ -370,21 +375,21 @@ abstract class AbstractControllerDomain extends Controller
     /**
      * Obtiene el ID de la empresa actual
      *
-     * @return string|null
+     * @return mixed
      */
-    public function companyId(): ?string
+    public function companyId(): mixed
     {
-        return AlvisHelper::companyID();
+        return ApiHelper::companyID();
     }
 
     /**
      * Obtiene el ID de la oficina actual
      *
-     * @return string|null
+     * @return mixed
      */
-    public function officeId(): ?string
+    public function officeId(): mixed
     {
-        return AlvisHelper::officeID();
+        return ApiHelper::officeID();
     }
 
     /**
@@ -479,14 +484,14 @@ abstract class AbstractControllerDomain extends Controller
     /**
      * Adjunta un archivo único al modelo, con conversión WebP opcional.
      *
-     * @param TModel                        $obModel
-     * @param string                        $sAttribute
-     * @param \Illuminate\Http\UploadedFile $obFile
-     * @param array                         $arOptions  Opciones: convertToWebp, webpQuality
+     * @param TModel       $obModel
+     * @param string       $sAttribute
+     * @param UploadedFile $obFile
+     * @param array        $arOptions  Opciones: convertToWebp, webpQuality
      *
      * @return void
      */
-    protected function attachOneFile($obModel, string $sAttribute, \Illuminate\Http\UploadedFile $obFile, array $arOptions = []): void
+    protected function attachOneFile($obModel, string $sAttribute, UploadedFile $obFile, array $arOptions = []): void
     {
         // Si ya existe un archivo, lo eliminamos
         if ($obModel->{$sAttribute}) {
@@ -500,10 +505,10 @@ abstract class AbstractControllerDomain extends Controller
     /**
      * Adjunta múltiples archivos al modelo, con conversión WebP opcional.
      *
-     * @param TModel                                          $obModel
-     * @param string                                          $sAttribute
-     * @param \Illuminate\Http\UploadedFile|array<int, mixed> $arFiles
-     * @param array                                           $arOptions  Opciones: convertToWebp, webpQuality
+     * @param TModel                         $obModel
+     * @param string                         $sAttribute
+     * @param UploadedFile|array<int, mixed> $arFiles
+     * @param array                          $arOptions  Opciones: convertToWebp, webpQuality
      *
      * @return void
      */
@@ -524,12 +529,12 @@ abstract class AbstractControllerDomain extends Controller
      * y el archivo es una imagen compatible (JPEG, PNG, GIF, BMP, TIFF).
      * Si el archivo ya es WebP o no es una imagen, lo devuelve sin modificar.
      *
-     * @param \Illuminate\Http\UploadedFile $obFile
-     * @param array                         $arOptions Opciones: convertToWebp (bool), webpQuality (int 1-100)
+     * @param UploadedFile $obFile
+     * @param array        $arOptions Opciones: convertToWebp (bool), webpQuality (int 1-100)
      *
-     * @return \Illuminate\Http\UploadedFile
+     * @return UploadedFile
      */
-    protected function maybeConvertToWebp(\Illuminate\Http\UploadedFile $obFile, array $arOptions = []): \Illuminate\Http\UploadedFile
+    protected function maybeConvertToWebp(UploadedFile $obFile, array $arOptions = []): UploadedFile
     {
         if (empty($arOptions['convertToWebp'])) {
             return $obFile;
@@ -553,13 +558,12 @@ abstract class AbstractControllerDomain extends Controller
         $obManager = new ImageManager(new GdDriver());
         $obManager->read($obFile->getRealPath())->toWebp($iQuality)->save($sTempPath);
 
-        return new \Illuminate\Http\UploadedFile(
+        return new UploadedFile(
             $sTempPath,
             $sWebpName,
             'image/webp',
             null,
             true
-            // test mode: no valida si el archivo fue subido via HTTP
         );
     }
 
@@ -575,6 +579,7 @@ abstract class AbstractControllerDomain extends Controller
     {
         return response()->json([
             'success' => false,
+            'status'  => false,
             'message' => $ex->getMessage(),
             'code'    => $ex->getCode() ?: $iStatus,
         ], $ex->getCode() ?: $iStatus);
@@ -591,7 +596,7 @@ abstract class AbstractControllerDomain extends Controller
      */
     protected function success(?string $sMessage, mixed $arData = [], int $iStatus = 200): JsonResponse
     {
-        $arJsonData = ['success' => true];
+        $arJsonData = ['success' => true, 'status' => true];
 
         if (ApiHelper::isTranslatable($sMessage)) {
             $sMessage = ApiHelper::tr($sMessage);
@@ -658,6 +663,9 @@ abstract class AbstractControllerDomain extends Controller
         return $arExcluded;
     }
 
+    /**
+     * @return string
+     */
     protected function getDomainName(): string
     {
         $arParts = explode('\\', static::class);
@@ -701,7 +709,7 @@ abstract class AbstractControllerDomain extends Controller
             }
 
             // Preservar UploadedFile
-            if ($value instanceof \Illuminate\Http\UploadedFile) {
+            if ($value instanceof UploadedFile) {
                 continue;
             }
 
@@ -727,7 +735,7 @@ abstract class AbstractControllerDomain extends Controller
 
             foreach ($value as $item) {
                 // Si encontramos un objeto que NO es un array asociativo
-                if (is_object($item) && !($item instanceof \Illuminate\Http\UploadedFile)) {
+                if (is_object($item) && !($item instanceof UploadedFile)) {
                     $bHasModelObjects = true;
 
                     break;
