@@ -65,4 +65,35 @@ class ApiHelper
     {
         return geoip($ip)->getLocation()->timezone;
     }
+
+    public static function companyID(): int|string|null
+    {
+        $iCompanyID = request()->header('X-AV-CID', null);
+
+        return $iCompanyID ?: null;
+    }
+
+    public static function officeID(): int|string|null
+    {
+        $iOfficeID = request()->header('X-AV-OID', null);
+
+        return $iOfficeID ?: null;
+    }
+
+    public static function arrayFilterRecursive(array $arData): array
+    {
+        return array_filter(array_map(static function ($item) {
+            if (is_array($item)) {
+                $item = self::arrayFilterRecursive($item);
+            }
+
+            return $item;
+        }, $arData), static function ($item) {
+            if (is_array($item)) {
+                return !empty($item);
+            }
+
+            return null !== $item;
+        });
+    }
 }
