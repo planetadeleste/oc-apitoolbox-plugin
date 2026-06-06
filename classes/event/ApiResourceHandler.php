@@ -7,7 +7,7 @@ use PlanetaDelEste\ApiToolbox\Classes\Resource\Base;
 
 abstract class ApiResourceHandler
 {
-    public function subscribe(Dispatcher $obEvent)
+    public function subscribe($obEvent)
     {
         $sResourceClass = $this->getResourceClass();
         $sEvent = $sResourceClass::make([])->event();

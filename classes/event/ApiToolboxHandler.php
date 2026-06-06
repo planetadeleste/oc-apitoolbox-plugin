@@ -8,9 +8,11 @@ use PlanetaDelEste\ApiToolbox\Plugin;
 abstract class ApiToolboxHandler
 {
     /**
-     * @param \October\Rain\Events\Dispatcher $obEvent
+     * @param Dispatcher|mixed $obEvent
+     *
+     * @return void
      */
-    public function subscribe(Dispatcher $obEvent)
+    public function subscribe($obEvent): void
     {
         $obEvent->listen(
             Plugin::EVENT_API_ADD_COLLECTION,

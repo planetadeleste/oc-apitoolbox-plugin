@@ -24,7 +24,11 @@ use PlanetaDelEste\ApiToolbox\Plugin;
  */
 abstract class ApiControllerHandler
 {
-    public function subscribe(Dispatcher $obEvent): void
+    /**
+     * @param Dispatcher|mixed $obEvent
+     * @return void
+     */
+    public function subscribe($obEvent): void
     {
         if (method_exists($this, 'beforeSave')) {
             $obEvent->listen(
