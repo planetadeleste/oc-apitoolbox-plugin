@@ -92,7 +92,7 @@ abstract class AbstractQueryDomain implements QueryDomainInterface
                 continue;
             }
 
-            $this->query->where($field, $value);
+            $this->query->where($this->getTable().'.'.$field, $value);
         }
 
         return $this;
