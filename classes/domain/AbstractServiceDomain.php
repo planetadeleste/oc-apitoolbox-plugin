@@ -58,15 +58,15 @@ abstract class AbstractServiceDomain implements ServiceDomainInterface
      */
     public function delete(Model $obModel): bool
     {
-        return DB::transaction(function () use ($obModel) {
-            $this->fireBeforeEvent('delete', [$obModel]);
+        $this->fireBeforeEvent('delete', [$obModel]);
 
-            $result = $obModel->delete();
-
-            $this->fireAfterEvent('delete', [$obModel]);
-
-            return $result;
+        $result = DB::transaction(static function () use ($obModel) {
+            return $obModel->delete();
         });
+
+        $this->fireAfterEvent('delete', [$obModel]);
+
+        return $result;
     }
 
     /**
@@ -79,7 +79,9 @@ abstract class AbstractServiceDomain implements ServiceDomainInterface
     {
         $this->fireBeforeEvent('update', [$obModel, &$data]);
 
-        $obModel->update($data);
+        DB::transaction(static function () use ($obModel, $data): void {
+            $obModel->update($data);
+        });
 
         $this->fireAfterEvent('update', [$obModel, $data]);
 
@@ -95,9 +97,13 @@ abstract class AbstractServiceDomain implements ServiceDomainInterface
     {
         $this->fireBeforeEvent('create', [&$data]);
 
-        $obModel = new ($this->getModelClass())();
-        $obModel->fill($data);
-        $obModel->save();
+        $obModel = DB::transaction(function () use (&$data) {
+            $obModel = new ($this->getModelClass())();
+            $obModel->fill($data);
+            $obModel->save();
+
+            return $obModel;
+        });
 
         $this->fireAfterEvent('create', [$obModel, $data]);
 
