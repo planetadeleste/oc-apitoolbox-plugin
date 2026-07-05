@@ -221,3 +221,6 @@ v2.0.27:
 v2.0.28:
     - 'Replace AlvisHelper dependency with ApiHelper'
     - 'Update API response structure'
+v2.0.29:
+    - 'Fix scope query filtering by table name to prevent column ambiguity errors'
+    - 'Add AbstractServiceDomain base class for managing CRUD operations and lifecycle events'
