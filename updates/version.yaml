@@ -224,3 +224,5 @@ v2.0.28:
 v2.0.29:
     - 'Fix scope query filtering by table name to prevent column ambiguity errors'
     - 'Add AbstractServiceDomain base class for managing CRUD operations and lifecycle events'
+v2.0.30:
+    - 'Implement AbstractControllerDomain with CRUD support, file handling, and response caching'

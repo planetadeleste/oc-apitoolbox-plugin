@@ -556,7 +556,12 @@ abstract class AbstractControllerDomain extends Controller
         $sTempPath = sys_get_temp_dir().DIRECTORY_SEPARATOR.'webp_'.uniqid().'_'.$sWebpName;
 
         $obManager = new ImageManager(new GdDriver());
-        $obManager->read($obFile->getRealPath())->toWebp($iQuality)->save($sTempPath);
+
+        if (method_exists($obManager, 'read')) {
+            $obManager->read($obFile->getRealPath())->toWebp($iQuality)->save($sTempPath);
+        } else {
+            $obManager->decode($obFile->getRealPath())->save($sTempPath, quality: $iQuality);
+        }
 
         return new UploadedFile(
             $sTempPath,
