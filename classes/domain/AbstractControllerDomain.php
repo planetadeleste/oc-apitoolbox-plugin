@@ -603,11 +603,12 @@ abstract class AbstractControllerDomain extends Controller
     {
         $arJsonData = ['success' => true, 'status' => true];
 
-        if (ApiHelper::isTranslatable($sMessage)) {
-            $sMessage = ApiHelper::tr($sMessage);
-        }
 
         if (null !== $sMessage) {
+            if (ApiHelper::isTranslatable($sMessage)) {
+                $sMessage = ApiHelper::tr($sMessage);
+            }
+
             $arJsonData['message'] = $sMessage;
         }
 

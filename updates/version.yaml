@@ -226,3 +226,5 @@ v2.0.29:
     - 'Add AbstractServiceDomain base class for managing CRUD operations and lifecycle events'
 v2.0.30:
     - 'Implement AbstractControllerDomain with CRUD support, file handling, and response caching'
+v2.0.31:
+    - 'Ensure message translation only executes when message is not null'
