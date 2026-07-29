@@ -372,6 +372,22 @@ abstract class AbstractDtoDomain implements DtoDomainInterface
     }
 
     /**
+     * Helper para castear a float, convirtiendo null a null
+     *
+     * @param mixed $value
+     *
+     * @return float|null
+     */
+    protected static function castToFloat($value): ?float
+    {
+        if (is_null($value) || '' === $value || [] === $value) {
+            return null;
+        }
+
+        return (float) $value;
+    }
+
+    /**
      * Helper para castear a bool, convirtiendo strings/números a bool
      *
      * @param mixed     $value
