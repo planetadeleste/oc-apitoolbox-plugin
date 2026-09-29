@@ -102,6 +102,58 @@ abstract class AbstractControllerDomain extends Controller
         }
     }
 
+    /**
+     * Listado ligero sin paginación. Los campos se proyectan sobre el DTO existente
+     * para no exponer accidentalmente atributos sensibles del modelo o del recurso completo.
+     */
+    public function list(Request $request): JsonResponse
+    {
+        try {
+            [$sSort, $sDir] = str_contains($this->getSortColumn() ?: 'id|asc', '|')
+                ? explode('|', $this->getSortColumn())
+                : [$this->getSortColumn(), 'asc'];
+
+            $obQuery = $this->query
+                ->applyFilters($request->get('filters', []))
+                ->applySorting($request->get('sort', $sSort), $sDir);
+
+            if ($arRelations = $this->getListRelations()) {
+                $obQuery->withRelations($arRelations);
+            }
+
+            $sDtoClass = $this->getDtoClass();
+            $arFields = $this->getListFields();
+            $arItems = $obQuery->get()->map(static function ($obModel) use ($sDtoClass, $arFields): array {
+                $arData = $sDtoClass::from($obModel)->toArray();
+                $arItem = [];
+
+                foreach ($arFields as $sField) {
+                    if (\Illuminate\Support\Arr::has($arData, $sField)) {
+                        \Illuminate\Support\Arr::set($arItem, $sField, \Illuminate\Support\Arr::get($arData, $sField));
+                    }
+                }
+
+                return $arItem;
+            })->all();
+
+            return response()->json(['data' => $arItems]);
+        } catch (\Throwable $e) {
+            return ApiException::exception($e);
+        }
+    }
+
+    /** @return array<string> Campos del DTO permitidos en list; admite rutas como firm.name. */
+    protected function getListFields(): array
+    {
+        return ['id'];
+    }
+
+    /** @return array<string> Relaciones necesarias para los campos de list. */
+    protected function getListRelations(): array
+    {
+        return [];
+    }
+
       /**
        * @param mixed $iId
        *
