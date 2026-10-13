@@ -1,230 +1,233 @@
 v1.0.0:
-    - 'Init plugin'
+  - "Init plugin"
 v1.0.1:
-    - 'Update composer.json'
+  - "Update composer.json"
 v1.0.2:
-    - Migrate console commands to Lovata.Toolbox console
+  - Migrate console commands to Lovata.Toolbox console
 v1.0.3:
-    - Fix register console commands
+  - Fix register console commands
 v1.0.4:
-    - Add extendSave method
+  - Add extendSave method
 v1.0.5:
-    - Use EventEmitter
+  - Use EventEmitter
 v1.0.6:
-    - Return ShowResource element on update
-    - Fix attaching files
-    - New getItem model
-    - Fix attaching files
-    - Do not force char "|" on sort filter
-    - Add local event constants
-    - Pass params by reference on events
+  - Return ShowResource element on update
+  - Fix attaching files
+  - New getItem model
+  - Fix attaching files
+  - Do not force char "|" on sort filter
+  - Add local event constants
+  - Pass params by reference on events
 v1.0.7:
-    - Use returned value as primary value to show load model
+  - Use returned value as primary value to show load model
 v1.0.8:
-    - Move sort instance before filters
-    - Use make method to crate collections instead of app()
-    - Use `propertyExists` method instead of `property_exists` function to get dynamic properties
+  - Move sort instance before filters
+  - Use make method to crate collections instead of app()
+  - Use `propertyExists` method instead of `property_exists` function to get dynamic properties
 v1.0.9:
-    - New getItemId method on Base api class
-    - Fix issue on global model dates on Base resource class
-    - Add properties doc
-    - Fix applying method filters
-    - Permit to not return error message
+  - New getItemId method on Base api class
+  - Fix issue on global model dates on Base resource class
+  - Add properties doc
+  - Fix applying method filters
+  - Permit to not return error message
 v1.0.10:
-    - Add has_plugin, has_jwtauth_plugin helpers
+  - Add has_plugin, has_jwtauth_plugin helpers
 v1.0.11:
-    - Switch resource event params
-    - Add local events constants
+  - Switch resource event params
+  - Add local events constants
 v1.0.12:
-    - Rename events
-    - New ApiControllerHandler abstract class
+  - Rename events
+  - New ApiControllerHandler abstract class
 v1.0.13:
-    - New isBackend method
+  - New isBackend method
 v1.0.14:
-    - Add locale param to tr method
+  - Add locale param to tr method
 v1.0.15:
-    - Add getSortColumn method to controller stub
-    - Use local current plugin class for event constant
-    - Remove event from show resource
+  - Add getSortColumn method to controller stub
+  - Use local current plugin class for event constant
+  - Remove event from show resource
 v1.0.16:
-    - Fix extending filters
-    - add per_page parameter (thanks to Octavian)
-    - With this parameter you can change number of elements shown on each page
+  - Fix extending filters
+  - add per_page parameter (thanks to Octavian)
+  - With this parameter you can change number of elements shown on each page
 v1.0.17:
-    - New Filter singleton class
-    - Fix issue passing multiple params to collection method throw filters
+  - New Filter singleton class
+  - Fix issue passing multiple params to collection method throw filters
 v1.0.18:
-    - Create abstract class to add collections event
+  - Create abstract class to add collections event
 v1.0.19:
-    - New create.api.all command
-    - Rename resources adding studly model name as prefix.
+  - New create.api.all command
+  - Rename resources adding studly model name as prefix.
 v1.0.20:
-    - Add use resource classes
+  - Add use resource classes
 v1.0.21:
-    - Fix show resource extends class name
+  - Fix show resource extends class name
 v1.0.22:
-    - Fix ListCollection extends class name
+  - Fix ListCollection extends class name
 v1.0.23:
-    - New helper class AuthHelper
+  - New helper class AuthHelper
 v1.0.24:
-    - Return empty array if resource is empty or null
-    - New store SortingListTrait trait class
+  - Return empty array if resource is empty or null
+  - New store SortingListTrait trait class
 v1.0.25:
-    - Fix issue checking for empty resource object
+  - Fix issue checking for empty resource object
 v1.0.26:
-    - Update version.yaml
-    - Add 'toolbox:create.api.route' console command
+  - Update version.yaml
+  - Add 'toolbox:create.api.route' console command
 v1.0.27:
-    - Add event getter
+  - Add event getter
 v1.0.28:
-    - New ApiResourceHandler class
+  - New ApiResourceHandler class
 v1.0.29:
-    - Fix issue calling undefined resource
+  - Fix issue calling undefined resource
 v1.0.30:
-    - New toolbox:create.model.update console command
+  - New toolbox:create.model.update console command
 v1.0.31:
-    - Add version ask
-    - Store in version folder
-    - Update class name
+  - Add version ask
+  - Store in version folder
+  - Update class name
 v1.0.32:
-    - Fix UpdateModelCreateFile console command
+  - Fix UpdateModelCreateFile console command
 v1.0.33:
-    - Throw exception on result status
+  - Throw exception on result status
 v1.0.34:
-    - New property to set date keys
+  - New property to set date keys
 v1.0.35:
-    - Auto set getPageUrl, getPageParamList methods
+  - Auto set getPageUrl, getPageParamList methods
 v1.0.36:
-    - Set locale on contructor
-    - Load resource item
+  - Set locale on contructor
+  - Load resource item
 v1.0.37:
-    - New ModelHandlerTrait class
-    - Simplify setting SortingListTrait fields columns
+  - New ModelHandlerTrait class
+  - Simplify setting SortingListTrait fields columns
 v1.0.38:
-    - New ApiHelper
-    - Switch static::tr to ApiHelper::tr
-    - Made some code improvements
+  - New ApiHelper
+  - Switch static::tr to ApiHelper::tr
+  - Made some code improvements
 v1.0.39:
-    - Set nullable getModelClass method
+  - Set nullable getModelClass method
 v1.0.40:
-    - Fix issue filtering collection with ElementCollection methods name as params
+  - Fix issue filtering collection with ElementCollection methods name as params
 v1.0.41:
-    - Add events after index, list and show content
+  - Add events after index, list and show content
 v1.0.42:
-    - Fix setting sort data on collection
+  - Fix setting sort data on collection
 v1.0.43:
-    - Add isBackend, isFrontend helpers
+  - Add isBackend, isFrontend helpers
 v1.0.44:
-    - Set sort direction as null by default
+  - Set sort direction as null by default
 v1.0.45:
-    - New attach method
+  - New attach method
 v1.0.46:
-    - Suggest and increase plugin version on setVersion method
+  - Suggest and increase plugin version on setVersion method
 v1.0.47:
-    - New methods to clear fields cache
+  - New methods to clear fields cache
 v1.0.48:
-    - Add extendable sortBy method
+  - Add extendable sortBy method
 v1.0.49:
-    - Property arListFromDB only can be a non associated array
+  - Property arListFromDB only can be a non associated array
 v1.0.50:
-    - Improve clearCacheFields method
-    - New FilterListTrait store trait
+  - Improve clearCacheFields method
+  - New FilterListTrait store trait
 v1.0.51:
-    - Add method only
+  - Add method only
 v1.0.52:
-    - Detect model relation column on clearCacheFields
-    - getData value can be a Closure with return value
+  - Detect model relation column on clearCacheFields
+  - getData value can be a Closure with return value
 v1.0.53:
-    - '[New] Exclude keys to load api resource data'
+  - "[New] Exclude keys to load api resource data"
 v1.0.54:
-    - 'New scopeDate method on FilterListTrait'
-    - 'Read limit parameter to set itemsPerPage variable'
+  - "New scopeDate method on FilterListTrait"
+  - "Read limit parameter to set itemsPerPage variable"
 v1.0.55:
-    - 'Add comma option to thousands_sep setting property'
+  - "Add comma option to thousands_sep setting property"
 v1.0.56:
-    - 'Add count api method'
+  - "Add count api method"
 v2.0.0:
-    - Set php version ^8.0.2
-    - Add package torann/geoip
-    - Change Tymon/JWTAuth with PHPOpenSourceSaver/JWTAuth
-    - Replace plugin PlanetaDelEste.JWTAuth with ReaZzon.JWTAuth
+  - Set php version ^8.0.2
+  - Add package torann/geoip
+  - Change Tymon/JWTAuth with PHPOpenSourceSaver/JWTAuth
+  - Replace plugin PlanetaDelEste.JWTAuth with ReaZzon.JWTAuth
 v2.0.1:
-    - 'New makeResource method on api base class'
-    - 'Add jwt.auth middleware'
-    - 'Add without method on resource base class'
+  - "New makeResource method on api base class"
+  - "Add jwt.auth middleware"
+  - "Add without method on resource base class"
 v2.0.2:
-    - 'New ElementCollection extends Lovata.Toolbox ElementCollection class'
-    - 'Remove referencing collection object'
+  - "New ElementCollection extends Lovata.Toolbox ElementCollection class"
+  - "Remove referencing collection object"
 v2.0.3:
-    - 'New SearchListTrait store trait'
-    - 'Update code to newest verisons'
+  - "New SearchListTrait store trait"
+  - "Update code to newest verisons"
 v2.0.4:
-    - 'New load/{source}/{path?} api route to get a file'
+  - "New load/{source}/{path?} api route to get a file"
 v2.0.5:
-    - 'Fix returning value on list method'
-    - 'Improve search list store trait'
+  - "Fix returning value on list method"
+  - "Improve search list store trait"
 v2.0.6:
-    - 'Fix issue reading non instantiate properties'
+  - "Fix issue reading non instantiate properties"
 v2.0.7:
-    - 'Use Illuminate\Database\Eloquent\Model as model type'
+  - 'Use Illuminate\Database\Eloquent\Model as model type'
 v2.0.8:
-    - 'New event on Sorting list trait'
+  - "New event on Sorting list trait"
 v2.0.9:
-    - 'Improve FilterListTrait store'
-    - 'Prevent add page and limit to filters'
+  - "Improve FilterListTrait store"
+  - "Prevent add page and limit to filters"
 v2.0.10:
-    - 'Improve base vars'
-    - 'Check is_array on Filter class'
-    - 'Fix applyIntersect'
+  - "Improve base vars"
+  - "Check is_array on Filter class"
+  - "Fix applyIntersect"
 v2.0.11:
-    - 'Add missing MeasureHelper class'
-    - 'Add missing getColumns method'
+  - "Add missing MeasureHelper class"
+  - "Add missing getColumns method"
 v2.0.12:
-    - 'Override construct and add init method'
+  - "Override construct and add init method"
 v2.0.13:
-    - 'New ResourceCollection extends from json resource collection class'
+  - "New ResourceCollection extends from json resource collection class"
 v2.0.14:
-    - 'Use SoftResolveUser on jwt.auth middleware'
-    - 'New DbQueryTrait eloquent trait class'
-    - 'Improve getting resource classes'
+  - "Use SoftResolveUser on jwt.auth middleware"
+  - "New DbQueryTrait eloquent trait class"
+  - "Improve getting resource classes"
 v2.0.15:
-    - 'New method detach'
+  - "New method detach"
 v2.0.16:
-    - 'Use input instead of get for getting filters and sort params'
-    - 'Prevent filter scope with empty value, retuning a "0 = 1" query request'
+  - "Use input instead of get for getting filters and sort params"
+  - 'Prevent filter scope with empty value, retuning a "0 = 1" query request'
 v2.0.17:
-    - 'New modelExists method'
-    - 'Add safety delete method on models with softdelete'
+  - "New modelExists method"
+  - "Add safety delete method on models with softdelete"
 v2.0.18:
-    - 'Add validate method'
+  - "Add validate method"
 v2.0.19:
-    - 'Prevent null instance field'
+  - "Prevent null instance field"
 v2.0.20:
-    - 'New measure getter on base api controller'
-    - 'Improve measure usage'
+  - "New measure getter on base api controller"
+  - "Improve measure usage"
 v2.0.21:
-    - 'New collection interface'
-    - 'Fix issues on applyIntersect method'
+  - "New collection interface"
+  - "Fix issues on applyIntersect method"
 v2.0.22:
-    - 'Fix missing changing filters on extendFilters method'
-    - 'Add exists setter'
+  - "Fix missing changing filters on extendFilters method"
+  - "Add exists setter"
 v2.0.23:
-    - 'Fix validation on filter list trait'
+  - "Fix validation on filter list trait"
 v2.0.24:
-    - 'Fix issue on empty or null filters var'
+  - "Fix issue on empty or null filters var"
 v2.0.25:
-    - 'Refactor data retrieval in Base class to use resource getAttribute method'
+  - "Refactor data retrieval in Base class to use resource getAttribute method"
 v2.0.26:
-    - 'Improve DDD pattern on api classes'
+  - "Improve DDD pattern on api classes"
 v2.0.27:
-    - 'Add support for automatic image-to-webp conversion during file attachments in AbstractControllerDomain'
+  - "Add support for automatic image-to-webp conversion during file attachments in AbstractControllerDomain"
 v2.0.28:
-    - 'Replace AlvisHelper dependency with ApiHelper'
-    - 'Update API response structure'
+  - "Replace AlvisHelper dependency with ApiHelper"
+  - "Update API response structure"
 v2.0.29:
-    - 'Fix scope query filtering by table name to prevent column ambiguity errors'
-    - 'Add AbstractServiceDomain base class for managing CRUD operations and lifecycle events'
+  - "Fix scope query filtering by table name to prevent column ambiguity errors"
+  - "Add AbstractServiceDomain base class for managing CRUD operations and lifecycle events"
 v2.0.30:
-    - 'Implement AbstractControllerDomain with CRUD support, file handling, and response caching'
+  - "Implement AbstractControllerDomain with CRUD support, file handling, and response caching"
 v2.0.31:
-    - 'Ensure message translation only executes when message is not null'
+  - "Ensure message translation only executes when message is not null"
+v2.0.32:
+  - "Add castToFloat helper method on AbstractDtoDomain"
+  - "Add lightweight unpaginated list method with DTO field projection"
